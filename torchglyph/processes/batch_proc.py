@@ -75,8 +75,8 @@ class PadSubBatch(BatchProc):
         self.pad_token = pad_token
         self.batch_first = batch_first
 
-    def __call__(self, batch: Batch, vocab: Vocab) -> Any:
-        pass
+    def __call__(self, batch: Batch, vocab: Vocab) -> Tensor:
+        raise NotImplementedError
 
 
 class PackSubBatch(BatchProc):
