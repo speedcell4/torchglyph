@@ -65,7 +65,12 @@ class Pipeline(object):
 
     def build_vocab(self, *datasets) -> 'Pipeline':
         counter = self.preprocess(*datasets)
-        self.vocab = self._vocab_processing(counter)
+        vocab = self._vocab_processing(counter)
+        if isinstance(vocab, Vocab):
+            self.vocab = vocab
+        else:
+            raise ValueError(f"vocabulary building produced '{type(vocab).__name__}', "
+                             f"instead of '{Vocab.__name__}'")
         return self
 
     def collate_fn(self, collected_ins: List[Any]) -> Any:
