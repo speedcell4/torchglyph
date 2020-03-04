@@ -3,7 +3,7 @@ from typing import List, Tuple, Dict
 
 from torchglyph.dataset import Dataset, Pipeline, DataLoader
 from torchglyph.io import conllx_iter
-from torchglyph.pipelines import SeqPackPipe, CharArrayPackPipe
+from torchglyph.pipelines import SeqPackPipe, CharArrayPackPipe, SeqRangePipe, SeqLengthPipe
 
 
 class CoNLL2003(Dataset):
@@ -19,12 +19,14 @@ class CoNLL2003(Dataset):
     @classmethod
     def iters(cls, *paths: Path, batch_size: int) -> Tuple[DataLoader, ...]:
         word = SeqPackPipe()
+        word_len = SeqLengthPipe()
         char = CharArrayPackPipe()
+        word_range = SeqRangePipe()
         xpos = SeqPackPipe()
         target = SeqPackPipe()
 
         train, dev, test = tuple(cls(path, pipelines=[
-            {'word': word, 'char': char},
+            {'word': word, 'word_len': word_len, 'char': char, 'word_range': word_range},
             {'xpos': xpos},
             {},
             {},
@@ -40,3 +42,16 @@ class CoNLL2003(Dataset):
             (train, dev, test),
             batch_size=batch_size, shuffle=True,
         )
+
+
+if __name__ == '__main__':
+    path = Path('~/data/conll2003').expanduser().absolute()
+    train, dev, test = path / 'train.stanford', path / 'dev.stanford', path / 'test.stanford'
+
+    train, dev, test = CoNLL2003.iters(train, dev, test, batch_size=10)
+    for batch in train:
+        print(batch.word)
+        print(batch.word_len)
+        print(batch.char)
+        print(batch.word_range)
+        break

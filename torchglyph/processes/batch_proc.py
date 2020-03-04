@@ -45,6 +45,21 @@ class PackSeqBatch(BatchProc):
         return pack_sequence(batch, enforce_sorted=self.enforce_sorted)
 
 
+class PackAccSeqBatch(BatchProc):
+    Batch = List[Tensor]
+
+    def __init__(self, enforce_sorted: bool = False) -> None:
+        super(PackAccSeqBatch, self).__init__()
+        self.enforce_sorted = enforce_sorted
+
+    def __call__(self, batch: Batch, vocab: Vocab) -> PackedSequence:
+        acc_batch, acc = [], 0
+        for tensor in batch:
+            acc_batch.append(tensor + acc)
+            acc = acc + tensor.size(0)
+        return pack_sequence(acc_batch, enforce_sorted=self.enforce_sorted)
+
+
 class PadArrayBatch(BatchProc):
     Batch = List[List[Tensor]]
 

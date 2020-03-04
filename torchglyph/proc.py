@@ -5,39 +5,39 @@ from torchglyph.vocab import Vocab
 
 
 class Proc(object):
-    def __add__(self, rhs: Optional[Union['Proc', 'Compose']]) -> Union['Proc', 'Compose']:
+    def __add__(self, rhs: Optional[Union['Proc', 'Chain']]) -> Union['Proc', 'Chain']:
         if rhs is None:
             return self
-        return Compose(self, rhs)
+        return Chain(self, rhs)
 
-    def __radd__(self, lhs: Optional[Union['Proc', 'Compose']]) -> Union['Proc', 'Compose']:
+    def __radd__(self, lhs: Optional[Union['Proc', 'Chain']]) -> Union['Proc', 'Chain']:
         if lhs is None:
             return self
-        return Compose(lhs, self)
+        return Chain(lhs, self)
 
     def __call__(self, x: Any, *args, **kwargs) -> Any:
         return x
 
 
-class Compose(Proc):
-    def __init__(self, *procs: Optional[Union['Proc', 'Compose']]) -> None:
-        super(Compose, self).__init__()
+class Chain(Proc):
+    def __init__(self, *procs: Optional[Union['Proc', 'Chain']]) -> None:
+        super(Chain, self).__init__()
         self.procs = []
         for proc in procs:
             if proc is None:
                 pass
             elif isinstance(proc, Proc):
                 self.procs.append(proc)
-            elif isinstance(proc, Compose):
+            elif isinstance(proc, Chain):
                 self.procs.extend(proc.procs)
             else:
                 raise NotImplementedError(f'unsupported type :: {type(proc).__name__}')
 
-    def __add__(self, rhs: Optional[Union['Proc', 'Compose']]) -> 'Compose':
-        return Compose(*self.procs, rhs)
+    def __add__(self, rhs: Optional[Union['Proc', 'Chain']]) -> 'Chain':
+        return Chain(*self.procs, rhs)
 
-    def __radd__(self, lhs: Optional[Union['Proc', 'Compose']]) -> 'Compose':
-        return Compose(lhs, *self.procs)
+    def __radd__(self, lhs: Optional[Union['Proc', 'Chain']]) -> 'Chain':
+        return Chain(lhs, *self.procs)
 
     def __call__(self, x: Any, *args, **kwargs) -> Any:
         for process in self.procs:

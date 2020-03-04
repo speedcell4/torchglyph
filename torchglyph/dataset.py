@@ -4,30 +4,30 @@ from typing import Union, List, Tuple, Dict, Any, Optional, NamedTuple, Callable
 
 from torch.utils import data
 
-from torchglyph.proc import Compose, PreProc, VocabProc, PostProc, BatchProc
+from torchglyph.proc import Chain, PreProc, VocabProc, PostProc, BatchProc
 from torchglyph.vocab import Vocab
 
 
 class Pipeline(object):
     def __init__(self,
-                 pre_procs: Optional[Union[Compose, PreProc]],
-                 vocab_procs: Optional[Union[Compose, VocabProc]],
-                 post_procs: Optional[Union[Compose, PostProc]],
-                 batch_procs: Optional[Union[Compose, BatchProc]]) -> None:
+                 pre_procs: Optional[Union[Chain, PreProc]],
+                 vocab_procs: Optional[Union[Chain, VocabProc]],
+                 post_procs: Optional[Union[Chain, PostProc]],
+                 batch_procs: Optional[Union[Chain, BatchProc]]) -> None:
         super(Pipeline, self).__init__()
 
         self.vocab: Optional[Union[Vocab]] = None
 
-        self._pre_processing = Compose(pre_procs)
-        self._vocab_processing = Compose(vocab_procs)
-        self._post_processing = Compose(post_procs)
-        self._batch_processing = Compose(batch_procs)
+        self._pre_processing = Chain(pre_procs)
+        self._vocab_processing = Chain(vocab_procs)
+        self._post_processing = Chain(post_procs)
+        self._batch_processing = Chain(batch_procs)
 
     def replace(self,
-                pre_procs: Optional[Union[Compose, PreProc]] = None,
-                vocab_procs: Optional[Union[Compose, VocabProc]] = None,
-                post_procs: Optional[Union[Compose, PostProc]] = None,
-                batch_procs: Optional[Union[Compose, BatchProc]] = None) -> 'Pipeline':
+                pre_procs: Optional[Union[Chain, PreProc]] = None,
+                vocab_procs: Optional[Union[Chain, VocabProc]] = None,
+                post_procs: Optional[Union[Chain, PostProc]] = None,
+                batch_procs: Optional[Union[Chain, BatchProc]] = None) -> 'Pipeline':
         return Pipeline(
             pre_procs=self._pre_processing if pre_procs is None else pre_procs,
             vocab_procs=self._vocab_processing if vocab_procs is None else vocab_procs,
