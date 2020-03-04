@@ -12,13 +12,14 @@ from tqdm import tqdm
 
 class Vocab(object):
     def __init__(self, counter: Counter,
-                 unk_token: Optional[str],
+                 unk_token: Optional[str], pad_token: Optional[str],
                  special_tokens: Tuple[Optional[str], ...] = (),
                  max_size: Optional[int] = None, min_freq: int = 1) -> None:
         super(Vocab, self).__init__()
 
         self.counter = counter
         self.unk_token = unk_token
+        self.pad_token = pad_token
         self.special_tokens = special_tokens
         self.unk_idx = 0
         self.max_size = max_size
@@ -26,13 +27,13 @@ class Vocab(object):
 
         self.stoi = {}
         self.itos = []
-        self.vectors = None
+        self.vectors: Optional[Tensor] = None
 
         if unk_token is not None:
             self.unk_idx = self.add_token_(unk_token)
             self.stoi = defaultdict(self._default_factory, **self.stoi)
 
-        for token in special_tokens:
+        for token in (pad_token, *special_tokens):
             if token is not None:
                 self.add_token_(token)
 
@@ -76,7 +77,9 @@ class Vocab(object):
         })
         return Vocab(
             counter=counter,
-            unk_token=self.unk_token, special_tokens=self.special_tokens,
+            unk_token=self.unk_token,
+            pad_token=self.pad_token,
+            special_tokens=self.special_tokens,
             max_size=self.max_size, min_freq=self.min_freq,
         )
 
@@ -89,7 +92,9 @@ class Vocab(object):
         })
         return Vocab(
             counter=counter,
-            unk_token=self.unk_token, special_tokens=self.special_tokens,
+            unk_token=self.unk_token,
+            pad_token=self.pad_token,
+            special_tokens=self.special_tokens,
             max_size=self.max_size, min_freq=self.min_freq,
         )
 
@@ -103,7 +108,9 @@ class Vocab(object):
         })
         return Vocab(
             counter=counter,
-            unk_token=self.unk_token, special_tokens=self.special_tokens,
+            unk_token=self.unk_token,
+            pad_token=self.pad_token,
+            special_tokens=self.special_tokens,
             max_size=self.max_size, min_freq=self.min_freq,
         )
 
@@ -112,16 +119,13 @@ class Vocab(object):
         for token, index in self.stoi.items():
             vectors.update_(token, self.vectors[index])
 
-
-@torch.no_grad()
-def _unk_init(token: Tensor) -> Tensor:
-    init.normal_(token, 0, 1)
-    return token
+        if self.pad_token is not None:
+            init.zeros_(self.vectors[self.stoi[self.pad_token]])
 
 
 class Vectors(object):
-    def __init__(self, path: Path, unk_init_: Callable[[Tensor], Tensor] = _unk_init) -> None:
-        vocab = Vocab(Counter(), unk_token=None, special_tokens=())
+    def __init__(self, path: Path, unk_init_: Callable[[Tensor], Tensor] = init.normal_) -> None:
+        vocab = Vocab(Counter(), unk_token=None, pad_token=None, special_tokens=())
         vectors = []
 
         pt_path = path.with_suffix('.ptptpt')
@@ -163,7 +167,3 @@ class Vectors(object):
             vector[:] = self.vectors[self.vocab.stoi[token]]
         else:
             self.unk_init_(vector)
-
-
-if __name__ == '__main__':
-    Vectors(Path('/Users/speedcell/data/glove.6B/glove.6B.50d.txt'))
