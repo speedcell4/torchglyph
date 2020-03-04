@@ -19,13 +19,18 @@ class ToTensor(PostProc):
         self.dtype = dtype
 
     def __call__(self, ins: Any, vocab: Vocab) -> Tensor:
-        return torch.tensor(ins, dtype=self.dtype, requires_grad=False)
+        try:
+            return torch.tensor(ins, dtype=self.dtype, requires_grad=False)
+        except ValueError as err:
+            if err.args[0] == "too many dimensions 'str'":
+                raise ValueError(f'did you forget {Numbering.__name__} before {ToTensor.__name__}?')
+            raise err
 
 
 class ToTensorList(PostProc):
     def __init__(self, dtype: torch.dtype = torch.long) -> None:
         super(ToTensorList, self).__init__()
-        self.dtype = dtype
+        self.process = ToTensor(dtype=dtype)
 
     def __call__(self, ins: List[Any], vocab: Vocab) -> List[Tensor]:
-        return [torch.tensor(d, dtype=self.dtype, requires_grad=False) for d in ins]
+        return [self.process(d, vocab=vocab) for d in ins]
