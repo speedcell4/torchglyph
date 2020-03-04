@@ -22,15 +22,21 @@ class PadTokBatch(BatchProc):
 class PadSeqBatch(BatchProc):
     Batch = List[Tensor]
 
-    def __init__(self, pad_token: str, batch_first: bool = True) -> None:
+    def __init__(self, pad_token: Union[int, str], batch_first: bool = True) -> None:
         super(PadSeqBatch, self).__init__()
         self.pad_token = pad_token
         self.batch_first = batch_first
 
     def __call__(self, batch: Batch, vocab: Vocab) -> Tensor:
+        if isinstance(self.pad_token, str) and vocab is not None:
+            pad_token = vocab.stoi[self.pad_token]
+        else:
+            pad_token = self.pad_token
+
         return pad_sequence(
-            batch, batch_first=self.batch_first,
-            padding_value=vocab.stoi[self.pad_token],
+            batch,
+            batch_first=self.batch_first,
+            padding_value=pad_token,
         )
 
 

@@ -3,7 +3,7 @@ from typing import List, Tuple, Dict
 
 from torchglyph.dataset import Dataset, Pipeline, DataLoader
 from torchglyph.io import conllx_iter
-from torchglyph.pipelines import SeqPackPipe, CharArrayPackPipe, SeqRangePipe, SeqLengthPipe
+from torchglyph.pipelines import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PackedSubPipe
 
 
 class CoNLL2003(Dataset):
@@ -18,15 +18,15 @@ class CoNLL2003(Dataset):
 
     @classmethod
     def iters(cls, *paths: Path, batch_size: int) -> Tuple[DataLoader, ...]:
-        word = SeqPackPipe()
-        word_len = SeqLengthPipe()
-        char = CharArrayPackPipe()
-        word_range = SeqRangePipe()
-        xpos = SeqPackPipe()
-        target = SeqPackPipe()
+        word = PaddedSeqPipe(pad_token='<pad>')
+        wlen = SeqLengthPipe()
+        char = PackedSubPipe()
+        wrng = PackedSeqRangePipe()
+        xpos = PackedSeqPipe()
+        target = PackedSeqPipe()
 
         train, dev, test = tuple(cls(path, pipelines=[
-            {'word': word, 'word_len': word_len, 'char': char, 'word_range': word_range},
+            {'word': word, 'wlen': wlen, 'char': char, 'wrng': wrng},
             {'xpos': xpos},
             {},
             {},
@@ -49,9 +49,9 @@ if __name__ == '__main__':
     train, dev, test = path / 'train.stanford', path / 'dev.stanford', path / 'test.stanford'
 
     train, dev, test = CoNLL2003.iters(train, dev, test, batch_size=10)
+
+    print(train.dataset.pipelines['word'].vocab.stoi)
+
     for batch in train:
         print(batch.word)
-        print(batch.word_len)
-        print(batch.char)
-        print(batch.word_range)
         break
