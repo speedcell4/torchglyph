@@ -3,7 +3,7 @@ from typing import List, Tuple, Dict
 
 from torchglyph.dataset import Dataset, Pipeline, DataLoader
 from torchglyph.io import conllx_iter
-from torchglyph.pipelines import SeqPipe
+from torchglyph.pipelines import SeqPackPipe, CharArrayPackPipe
 
 
 class CoNLL2003(Dataset):
@@ -18,12 +18,13 @@ class CoNLL2003(Dataset):
 
     @classmethod
     def iters(cls, *paths: Path, batch_size: int) -> Tuple[DataLoader, ...]:
-        word = SeqPipe()
-        xpos = SeqPipe()
-        target = SeqPipe()
+        word = SeqPackPipe()
+        char = CharArrayPackPipe()
+        xpos = SeqPackPipe()
+        target = SeqPackPipe()
 
         train, dev, test = tuple(cls(path, pipelines=[
-            {'word': word},
+            {'word': word, 'char': char},
             {'xpos': xpos},
             {},
             {},
@@ -31,6 +32,7 @@ class CoNLL2003(Dataset):
         ]) for path in paths)
 
         word.build_vocab(train, dev, test)
+        char.build_vocab(train, dev, test)
         xpos.build_vocab(train)
         target.build_vocab(train)
 

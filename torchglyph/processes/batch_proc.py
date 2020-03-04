@@ -1,4 +1,3 @@
-import itertools
 from typing import List, Union, Tuple
 
 import torch
@@ -31,13 +30,14 @@ class PackBatch(BatchProc):
         return pack_sequence(batch, enforce_sorted=self.enforce_sorted)
 
 
-class CatPackBatch(BatchProc):
+class ArrayPackBatch(BatchProc):
     def __init__(self, enforce_sorted: bool = False) -> None:
-        super(CatPackBatch, self).__init__()
+        super(ArrayPackBatch, self).__init__()
         self.enforce_sorted = enforce_sorted
 
     def __call__(self, batch: List[List[Tensor]], vocab: Vocab) -> PackedSequence:
-        return pack_sequence(list(itertools.chain(batch)), enforce_sorted=self.enforce_sorted)
+        char = [torch.cat(words, dim=0) for words in batch]
+        return pack_sequence(char, enforce_sorted=self.enforce_sorted)
 
 
 class ToDevice(BatchProc):
