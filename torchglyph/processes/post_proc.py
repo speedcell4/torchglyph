@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Union
 
 import torch
 from torch import Tensor
@@ -11,6 +11,29 @@ class Numbering(RecurStrProc):
     def process(self, data: str, vocab: Vocab) -> int:
         res = vocab.stoi[data]
         return res
+
+
+class ToLength(PostProc):
+    def __call__(self, ins: List[Any], vocab: Vocab) -> int:
+        return len(ins)
+
+
+class ToMask(PostProc):
+    def __init__(self, mask_token: Union[str, int]) -> None:
+        super(ToMask, self).__init__()
+        self.mask_token = mask_token
+
+    def __call__(self, ins: List[Any], vocab: Vocab) -> List[int]:
+        if isinstance(self.mask_token, str) and vocab is not None:
+            mask_token = vocab.stoi[self.mask_token]
+        else:
+            mask_token = self.mask_token
+        return [mask_token for _ in ins]
+
+
+class ToRange(PostProc):
+    def __call__(self, ins: List[Any], vocab: Vocab) -> Any:
+        return list(range(len(ins)))
 
 
 class ToTensor(PostProc):

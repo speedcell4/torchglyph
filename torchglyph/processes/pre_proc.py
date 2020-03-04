@@ -2,7 +2,7 @@ from collections import Counter
 from typing import Any
 from typing import List
 
-from torchglyph.proc import RecurStrProc, RecurListStrProc, PreProc
+from torchglyph.proc import RecurStrProc, PreProc
 
 
 class ToInt(RecurStrProc):
@@ -48,19 +48,6 @@ class Append(PreProc):
 
     def __call__(self, ins: List[Any], counter: Counter) -> List:
         return list(ins) + [self.token for _ in range(self.num_repeats)]
-
-
-class ToMask(RecurStrProc):
-    def __init__(self, token: Any) -> None:
-        self.token = token
-
-    def process(self, data: str, *args, **kwargs) -> Any:
-        return self.token
-
-
-class ToRange(RecurListStrProc):
-    def process(self, data: List[str], *args, **kwargs) -> List[int]:
-        return list(range(len(data)))
 
 
 class AddToCounter(PreProc):
