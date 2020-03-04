@@ -1,5 +1,11 @@
-from collections import Counter, defaultdict
-from typing import Optional, Tuple, Union
+import logging
+from collections import Counter
+from collections import defaultdict
+from pathlib import Path
+from typing import Union, Optional, Tuple
+
+import torch
+from tqdm import tqdm
 
 
 class Vocab(object):
@@ -94,3 +100,35 @@ class Vocab(object):
             unk_token=self.unk_token, special_tokens=self.special_tokens,
             max_size=self.max_size, min_freq=self.min_freq,
         )
+
+
+class Vectors(object):
+    def __init__(self, path: Path) -> None:
+        vocab = Vocab(Counter(), unk_token=None, special_tokens=())
+        vectors = []
+
+        pt_path = path.with_suffix('.ptptpt')
+        if not pt_path.exists():
+            with path.open('rb') as fp:
+                token_dim = None
+                for raw in tqdm(fp, desc=str(path)):  # type:bytes
+                    token, *vs = raw.rstrip().split(b' ')
+
+                    if token_dim is None:
+                        token_dim = len(vs)
+                    elif token_dim != len(vs):
+                        raise ValueError(f'vector dimensions are not consistent, {token_dim} != {len(vs)}')
+
+                    vocab.add_token_(str(token, encoding='utf-8'))
+                    vectors.append(torch.tensor([float(v) for v in vs], dtype=torch.float32))
+
+            vectors = torch.stack(vectors, 0)
+            logging.info(f'saving vectors to {pt_path}')
+            torch.save((vocab.itos, vocab.stoi, vectors, token_dim), pt_path)
+        else:
+            logging.info(f'loading vectors from {pt_path}')
+            vocab.itos, vocab.stoi, vectors, token_dim = torch.load(pt_path)
+
+        self.vocab = vocab
+        self.vectors = vectors
+        self.token_dim = token_dim

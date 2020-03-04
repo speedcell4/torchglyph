@@ -13,4 +13,5 @@ setup(
     author_email='speedcell4@gmail.com',
     description='Data processing utilities for natural language processing',
     long_description=long_description,
+    install_requires=['tqdm'],
 )
