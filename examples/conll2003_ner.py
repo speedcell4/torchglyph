@@ -18,25 +18,25 @@ class CoNLL2003(Dataset):
 
     @classmethod
     def loaders(cls, *paths: Path, batch_size: int) -> Tuple[DataLoader, ...]:
-        word = PaddedSeqPipe(pad_token='<pad>')
-        wlen = SeqLengthPipe()
-        char = PackedSubPipe()
-        wrng = PackedSeqRangePipe()
-        xpos = PackedSeqPipe()
-        target = PackedSeqPipe()
+        WORD = PaddedSeqPipe(pad_token='<pad>')
+        WLEN = SeqLengthPipe()
+        CHAR = PackedSubPipe()
+        WRNG = PackedSeqRangePipe()
+        XPOS = PackedSeqPipe()
+        TARGET = PackedSeqPipe()
 
         train, dev, test = tuple(cls(path, pipelines=[
-            {'word': word, 'wlen': wlen, 'char': char, 'wrng': wrng},
-            {'xpos': xpos},
-            {},
-            {},
-            {'target': target},
+            dict(word=WORD, wlen=WLEN, char=CHAR, WRNG=WRNG),
+            dict(xpos=XPOS),
+            dict(),
+            dict(),
+            dict(target=TARGET),
         ]) for path in paths)
 
-        word.build_vocab(train, dev, test)
-        char.build_vocab(train, dev, test)
-        xpos.build_vocab(train)
-        target.build_vocab(train)
+        WORD.build_vocab(train, dev, test)
+        CHAR.build_vocab(train, dev, test)
+        XPOS.build_vocab(train)
+        TARGET.build_vocab(train)
 
         return DataLoader.loaders(
             (train, dev, test),
