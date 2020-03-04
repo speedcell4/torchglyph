@@ -2,9 +2,11 @@ import logging
 from collections import Counter
 from collections import defaultdict
 from pathlib import Path
-from typing import Union, Optional, Tuple
+from typing import Union, Optional, Tuple, Callable
 
 import torch
+from torch import Tensor
+from torch.nn import init
 from tqdm import tqdm
 
 
@@ -24,6 +26,7 @@ class Vocab(object):
 
         self.stoi = {}
         self.itos = []
+        self.vectors = None
 
         if unk_token is not None:
             self.unk_idx = self.add_token_(unk_token)
@@ -59,6 +62,9 @@ class Vocab(object):
 
     def __len__(self) -> int:
         return len(self.stoi)
+
+    def __contains__(self, token: str) -> bool:
+        return token in self.stoi
 
     def __and__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
         if isinstance(rhs, Vocab):
@@ -101,9 +107,20 @@ class Vocab(object):
             max_size=self.max_size, min_freq=self.min_freq,
         )
 
+    def load_vectors(self, vectors: 'Vectors') -> None:
+        self.vectors = torch.empty((len(self), vectors.token_dim), dtype=torch.float32)
+        for token, index in self.stoi.items():
+            vectors.update_(token, self.vectors[index])
+
+
+@torch.no_grad()
+def _unk_init(token: Tensor) -> Tensor:
+    init.normal_(token, 0, 1)
+    return token
+
 
 class Vectors(object):
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, unk_init_: Callable[[Tensor], Tensor] = _unk_init) -> None:
         vocab = Vocab(Counter(), unk_token=None, special_tokens=())
         vectors = []
 
@@ -111,7 +128,7 @@ class Vectors(object):
         if not pt_path.exists():
             with path.open('rb') as fp:
                 token_dim = None
-                for raw in tqdm(fp, desc=str(path)):  # type:bytes
+                for raw in tqdm(fp, desc=f'reading {path}', unit=' token'):  # type:bytes
                     token, *vs = raw.rstrip().split(b' ')
 
                     if token_dim is None:
@@ -132,3 +149,21 @@ class Vectors(object):
         self.vocab = vocab
         self.vectors = vectors
         self.token_dim = token_dim
+        self.unk_init_ = unk_init_
+
+    def __len__(self) -> int:
+        return self.vocab.__len__()
+
+    def __contains__(self, token: str) -> bool:
+        return self.vocab.__contains__(token)
+
+    @torch.no_grad()
+    def update_(self, token: str, vector: Tensor) -> None:
+        if token in self.vocab:
+            vector[:] = self.vectors[self.vocab.stoi[token]]
+        else:
+            self.unk_init_(vector)
+
+
+if __name__ == '__main__':
+    Vectors(Path('/Users/speedcell/data/glove.6B/glove.6B.50d.txt'))
