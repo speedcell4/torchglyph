@@ -3,7 +3,7 @@ from typing import List, Tuple, Dict
 
 from torchglyph.dataset import Dataset, Pipeline, DataLoader
 from torchglyph.io import conllx_iter
-from torchglyph.processes import ToLower, UpdateCounter, BuildVocab, ToTensor, PackBatch, Numbering
+from torchglyph.pipelines import SeqPipe
 
 
 class CoNLL2003(Dataset):
@@ -18,24 +18,9 @@ class CoNLL2003(Dataset):
 
     @classmethod
     def iters(cls, *paths: Path, batch_size: int) -> Tuple[DataLoader, ...]:
-        word = Pipeline(
-            pre_procs=ToLower() + UpdateCounter(),
-            vocab_procs=BuildVocab(),
-            post_procs=Numbering() + ToTensor(),
-            batch_procs=PackBatch(),
-        )
-        xpos = Pipeline(
-            pre_procs=UpdateCounter(),
-            vocab_procs=BuildVocab(),
-            post_procs=Numbering() + ToTensor(),
-            batch_procs=PackBatch(),
-        )
-        target = Pipeline(
-            pre_procs=UpdateCounter(),
-            vocab_procs=BuildVocab(),
-            post_procs=Numbering() + ToTensor(),
-            batch_procs=PackBatch(),
-        )
+        word = SeqPipe()
+        xpos = SeqPipe()
+        target = SeqPipe()
 
         train, dev, test = tuple(cls(path, pipelines=[
             {'word': word},

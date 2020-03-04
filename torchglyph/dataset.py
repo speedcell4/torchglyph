@@ -23,6 +23,18 @@ class Pipeline(object):
         self._post_processing = Compose(post_procs)
         self._batch_processing = Compose(batch_procs)
 
+    def replace(self,
+                pre_procs: Optional[Union[Compose, PreProc]] = None,
+                vocab_procs: Optional[Union[Compose, VocabProc]] = None,
+                post_procs: Optional[Union[Compose, PostProc]] = None,
+                batch_procs: Optional[Union[Compose, BatchProc]] = None) -> 'Pipeline':
+        return Pipeline(
+            pre_procs=self._pre_processing if pre_procs is None else pre_procs,
+            vocab_procs=self._vocab_processing if vocab_procs is None else vocab_procs,
+            post_procs=self._post_processing if post_procs is None else post_procs,
+            batch_procs=self._batch_processing if batch_procs is None else batch_procs,
+        )
+
     def preprocess(self, *datasets) -> Counter:
         counter = Counter()
         for dataset in datasets:
