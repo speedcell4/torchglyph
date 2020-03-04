@@ -63,7 +63,7 @@ class ToRange(RecurListStrProc):
         return list(range(len(data)))
 
 
-class UpdateCounter(PreProc):
+class AddToCounter(PreProc):
     @classmethod
     def obtain_tokens(cls, ins):
         if isinstance(ins, str):
