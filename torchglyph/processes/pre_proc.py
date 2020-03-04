@@ -30,9 +30,9 @@ class ToChar(RecurStrProc):
         return [c for c in data]
 
 
-class Prepped(PreProc):
+class Prepend(PreProc):
     def __init__(self, token: Any, num_repeats: int = 1) -> None:
-        super(Prepped, self).__init__()
+        super(Prepend, self).__init__()
         self.token = token
         self.num_repeats = num_repeats
 
