@@ -70,6 +70,8 @@ class Dataset(data.Dataset):
             for key, pipe in pipes.items()
         }
         self.Batch: Callable[[Any, ...], NamedTuple] = namedtuple('Batch', field_names=self.pipelines.keys())
+        if self.Batch.__name__ not in globals():
+            globals()[self.Batch.__name__] = self.Batch
 
         self.instances: Dict[str, List[Any]] = {}
         for ins, pipes in zip(zip(*instances), pipelines):
@@ -78,21 +80,24 @@ class Dataset(data.Dataset):
 
         self._len = len(instances)
 
-    def __getitem__(self, index: int) -> Dict[str, List[Any]]:
-        return {
-            key: ins[index]
-            for key, ins in self.instances.items()
-        }
+    def __getitem__(self, index: int) -> NamedTuple:
+        return self.Batch(*[
+            self.instances[key][index] for key in self.Batch._fields
+        ])
 
     def __len__(self) -> int:
         return self._len
 
-    def collact_fn(self, batch: List[NamedTuple]) -> NamedTuple:
+    def collate_fn(self, batch: List[NamedTuple]) -> NamedTuple:
         batch = self.Batch(*zip(*batch))
-        return self.Batch(
-            self.pipelines[key].collact_fn(collected_ins)
+        return self.Batch(*[
+            self.pipelines[key].collate_fn(collected_ins)
             for key, collected_ins in zip(batch._fields, batch)
-        )
+        ])
+
+    @classmethod
+    def iters(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
+        raise NotImplementedError
 
 
 class DataLoader(data.DataLoader):
@@ -111,7 +116,7 @@ class DataLoader(data.DataLoader):
         return tuple(
             DataLoader(
                 dataset=dataset, shuffle=shuffle and (index == 0),
-                batch_size=batch_size, collate_fn=dataset.collact_fn,
+                batch_size=batch_size, collate_fn=dataset.collate_fn,
                 num_workers=num_workers, pin_memory=pin_memory, drop_last=drop_last,
             )
             for index, (dataset, batch_size) in enumerate(zip(datasets, batch_sizes))

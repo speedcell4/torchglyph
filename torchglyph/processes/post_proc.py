@@ -9,7 +9,8 @@ from torchglyph.vocab import Vocab
 
 class Numbering(RecurStrProc):
     def process(self, data: str, vocab: Vocab) -> int:
-        return vocab.stoi[data]
+        res = vocab.stoi[data]
+        return res
 
 
 class ToTensor(PostProc):

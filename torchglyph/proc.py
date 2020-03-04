@@ -30,7 +30,8 @@ class Compose(Proc):
                 self.procs.append(proc)
             elif isinstance(proc, Compose):
                 self.procs.extend(proc.procs)
-            raise NotImplementedError(f'unsupported type :: {type(proc)}')
+            else:
+                raise NotImplementedError(f'unsupported type :: {type(proc).__name__}')
 
     def __add__(self, rhs: Optional[Union['Proc', 'Compose']]) -> 'Compose':
         return Compose(*self.procs, rhs)
