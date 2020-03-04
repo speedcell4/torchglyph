@@ -1,4 +1,5 @@
 import itertools
+import uuid
 from collections import namedtuple, Counter
 from typing import Union, List, Tuple, Dict, Any, Optional, NamedTuple, Callable
 
@@ -86,7 +87,8 @@ class Dataset(data.Dataset):
             for pipes in pipelines
             for key, pipe in pipes.items()
         }
-        self.Batch: Callable[[Any, ...], NamedTuple] = namedtuple('Batch', field_names=self.pipelines.keys())
+        self.Batch: Callable[[Any, ...], NamedTuple] = namedtuple(
+            f'Batch_{str(uuid.uuid4())[:8]}', field_names=self.pipelines.keys())
         if self.Batch.__name__ not in globals():
             globals()[self.Batch.__name__] = self.Batch
 
