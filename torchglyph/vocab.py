@@ -2,12 +2,15 @@ import logging
 from collections import Counter
 from collections import defaultdict
 from pathlib import Path
-from typing import Union, Optional, Tuple, Callable
+from typing import Union, Optional, Tuple, Callable, List
 
 import torch
 from torch import Tensor
 from torch.nn import init
 from tqdm import tqdm
+
+from torchglyph import data_path
+from torchglyph.io import download_and_unzip
 
 
 class Vocab(object):
@@ -124,12 +127,18 @@ class Vocab(object):
 
 
 class Vectors(object):
-    def __init__(self, path: Path, unk_init_: Callable[[Tensor], Tensor] = init.normal_) -> None:
+    def __init__(self, urls_dest: List[Tuple[str, Path]], path: Path,
+                 unk_init_: Callable[[Tensor], Tensor] = init.normal_) -> None:
         vocab = Vocab(Counter(), unk_token=None, pad_token=None, special_tokens=())
         vectors = []
 
-        pt_path = path.with_suffix('.ptptpt')
+        pt_path = path.with_suffix('.pt')
         if not pt_path.exists():
+
+            if not path.exists():
+                for url, dest in urls_dest:
+                    download_and_unzip(url, dest)
+
             with path.open('rb') as fp:
                 token_dim = None
                 for raw in tqdm(fp, desc=f'reading {path}', unit=' token'):  # type:bytes
@@ -167,3 +176,13 @@ class Vectors(object):
             vector[:] = self.vectors[self.vocab.stoi[token]]
         else:
             self.unk_init_(vector)
+
+
+class Glove(Vectors):
+    def __init__(self, name: str, dim: int) -> None:
+        super(Glove, self).__init__(
+            urls_dest=[
+                (f'http://nlp.stanford.edu/data/glove.{name}.zip', data_path / f'glove.{name}.zip')
+            ],
+            path=data_path / f'glove.{name}' / f'glove.{name}.{dim}d.txt',
+        )
