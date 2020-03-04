@@ -24,11 +24,13 @@ class ToMask(PostProc):
         self.mask_token = mask_token
 
     def __call__(self, ins: List[Any], vocab: Vocab) -> List[int]:
-        if isinstance(self.mask_token, str) and vocab is not None:
-            mask_token = vocab.stoi[self.mask_token]
+        if isinstance(self.mask_token, str):
+            assert vocab is not None, 'Vocab is not built yet'
+            assert self.mask_token in vocab.stoi, f'{self.mask_token} is not in Vocab'
+            mask_idx = vocab.stoi[self.mask_token]
         else:
-            mask_token = self.mask_token
-        return [mask_token for _ in ins]
+            mask_idx = self.mask_token
+        return [mask_idx for _ in ins]
 
 
 class ToRange(PostProc):

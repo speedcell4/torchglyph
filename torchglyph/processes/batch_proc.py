@@ -28,15 +28,16 @@ class PadSeqBatch(BatchProc):
         self.batch_first = batch_first
 
     def __call__(self, batch: Batch, vocab: Vocab) -> Tensor:
-        if isinstance(self.pad_token, str) and vocab is not None:
-            pad_token = vocab.stoi[self.pad_token]
+        if isinstance(self.pad_token, str):
+            assert vocab is not None, 'Vocab is not built yet'
+            assert self.pad_token in vocab.stoi, f'{self.pad_token} is not in Vocab'
+            pad_idx = vocab.stoi[self.pad_token]
         else:
-            pad_token = self.pad_token
+            pad_idx = self.pad_token
 
         return pad_sequence(
-            batch,
-            batch_first=self.batch_first,
-            padding_value=pad_token,
+            batch, batch_first=self.batch_first,
+            padding_value=pad_idx,
         )
 
 
