@@ -87,5 +87,7 @@ class PostProc(Proc):
 
 
 class BatchProc(Proc):
-    def __call__(self, batch: List[Any], vocab: Vocab) -> Any:
+    Batch = List[Any]
+
+    def __call__(self, batch: Batch, vocab: Vocab) -> Any:
         raise NotImplementedError

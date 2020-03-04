@@ -9,12 +9,14 @@ from torchglyph.vocab import Vocab
 
 
 class PadBatch(BatchProc):
+    Batch = List[Tensor]
+
     def __init__(self, pad_token: str, batch_first: bool = True) -> None:
         super(PadBatch, self).__init__()
         self.batch_first = batch_first
         self.pad_token = pad_token
 
-    def __call__(self, batch: List[Tensor], vocab: Vocab) -> Tensor:
+    def __call__(self, batch: Batch, vocab: Vocab) -> Tensor:
         return pad_sequence(
             batch, batch_first=self.batch_first,
             padding_value=vocab.stoi[self.pad_token],
@@ -22,20 +24,24 @@ class PadBatch(BatchProc):
 
 
 class PackBatch(BatchProc):
+    Batch = List[Tensor]
+
     def __init__(self, enforce_sorted: bool = False) -> None:
         super(PackBatch, self).__init__()
         self.enforce_sorted = enforce_sorted
 
-    def __call__(self, batch: List[Tensor], vocab: Vocab) -> PackedSequence:
+    def __call__(self, batch: Batch, vocab: Vocab) -> PackedSequence:
         return pack_sequence(batch, enforce_sorted=self.enforce_sorted)
 
 
 class ArrayPackBatch(BatchProc):
+    Batch = List[List[Tensor]]
+
     def __init__(self, enforce_sorted: bool = False) -> None:
         super(ArrayPackBatch, self).__init__()
         self.enforce_sorted = enforce_sorted
 
-    def __call__(self, batch: List[List[Tensor]], vocab: Vocab) -> PackedSequence:
+    def __call__(self, batch: Batch, vocab: Vocab) -> PackedSequence:
         char = [torch.cat(words, dim=0) for words in batch]
         return pack_sequence(char, enforce_sorted=self.enforce_sorted)
 
