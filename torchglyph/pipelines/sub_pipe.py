@@ -1,5 +1,5 @@
 from torchglyph.dataset import Pipeline
-from torchglyph.processes import ToChar, AddToCounter, BuildVocab, Numbering, ToTensorList, PackArrayBatch
+from torchglyph.processes import ToChar, AddToCounter, BuildVocab, Numbering, ToTensorList, PackSubBatch
 
 
 class PackedSubPipe(Pipeline):
@@ -8,5 +8,5 @@ class PackedSubPipe(Pipeline):
             pre_procs=ToChar() + AddToCounter(),
             vocab_procs=BuildVocab(),
             post_procs=Numbering() + ToTensorList(),
-            batch_procs=PackArrayBatch(),
+            batch_procs=PackSubBatch(),
         )

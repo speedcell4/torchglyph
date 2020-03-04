@@ -67,11 +67,11 @@ class PackAccSeqBatch(BatchProc):
         return pack_sequence(acc_batch, enforce_sorted=self.enforce_sorted)
 
 
-class PadArrayBatch(BatchProc):
+class PadSubBatch(BatchProc):
     Batch = List[List[Tensor]]
 
     def __init__(self, pad_token: str, batch_first: bool = True) -> None:
-        super(PadArrayBatch, self).__init__()
+        super(PadSubBatch, self).__init__()
         self.pad_token = pad_token
         self.batch_first = batch_first
 
@@ -79,11 +79,11 @@ class PadArrayBatch(BatchProc):
         pass
 
 
-class PackArrayBatch(BatchProc):
+class PackSubBatch(BatchProc):
     Batch = List[List[Tensor]]
 
     def __init__(self, enforce_sorted: bool = False) -> None:
-        super(PackArrayBatch, self).__init__()
+        super(PackSubBatch, self).__init__()
         self.enforce_sorted = enforce_sorted
 
     def __call__(self, batch: Batch, vocab: Vocab) -> PackedSequence:
