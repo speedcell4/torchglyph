@@ -25,7 +25,7 @@ class ToCapitalized(RecurStrProc):
         return data.capitalize()
 
 
-class ToChar(RecurStrProc):
+class ToSub(RecurStrProc):
     def process(self, data: str, *args, **kwargs) -> List[str]:
         return [c for c in data]
 
