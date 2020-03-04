@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Optional, Union, Any, List
+from typing import Optional, Union, Any, List, Dict
 
 from torchglyph.vocab import Vocab
 
@@ -88,3 +88,57 @@ class PostProc(Proc):
 class BatchProc(Proc):
     def __call__(self, batch: List[Any], vocab: Vocab) -> Any:
         raise NotImplementedError
+
+
+# pipeline
+
+class Pipeline(object):
+    def __init__(self,
+                 pre_procs: Optional[Union[Compose, PreProc]],
+                 vocab_procs: Optional[Union[Compose, VocabProc]],
+                 post_procs: Optional[Union[Compose, PostProc]],
+                 batch_procs: Optional[Union[Compose, BatchProc]]) -> None:
+        super(Pipeline, self).__init__()
+
+        self.vocab: Optional[Union[Vocab]] = None
+
+        self._pre_processing = Compose(pre_procs)
+        self._vocab_processing = Compose(vocab_procs)
+        self._post_processing = Compose(post_procs)
+        self._batch_processing = Compose(batch_procs)
+
+    def preprocess(self, *datasets) -> Counter:
+        counter = Counter()
+        for dataset in datasets:
+            for key, pipe in dataset.pipelines.items():
+                flag = f'@{key}_{self.preprocess.__name__}_done'
+                if pipe is self and not getattr(dataset, flag, False):
+                    dataset.instances[key] = [
+                        self._pre_processing(ins, counter=counter)
+                        for ins in dataset.instances[key]
+                    ]
+                    setattr(dataset, flag, True)
+
+        return counter
+
+    def postprocess(self, *datasets) -> 'Pipeline':
+        _ = self.preprocess(*datasets)
+        for dataset in datasets:
+            for name, pipe in dataset.pipelines.items():
+                flag = f'@{name}_{self.postprocess.__name__}_done'
+                if pipe is self and not getattr(dataset, flag, False):
+                    dataset.instances[name] = [
+                        self._post_processing(ins, vocab=self.vocab)
+                        for ins in dataset.instances[name]
+                    ]
+                    setattr(dataset, flag, True)
+
+        return self
+
+    def build_vocab(self, *datasets) -> 'Pipeline':
+        counter = self.preprocess(*datasets)
+        self.vocab = self._vocab_processing(counter)
+        return self
+
+    def collate_fn(self, batch: Dict[str, List[Any]]) -> Any:
+        return self._batch_processing(batch, vocab=self.vocab)
