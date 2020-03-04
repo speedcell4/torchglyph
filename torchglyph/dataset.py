@@ -115,14 +115,14 @@ class Dataset(data.Dataset):
         ])
 
     @classmethod
-    def iters(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
+    def loaders(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
         raise NotImplementedError
 
 
 class DataLoader(data.DataLoader):
     @classmethod
-    def iters(cls, datasets: Tuple[Dataset, ...], batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
-              num_workers: int = 1, pin_memory: bool = False, drop_last: bool = False) -> Tuple['DataLoader', ...]:
+    def loaders(cls, datasets: Tuple[Dataset, ...], batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
+                num_workers: int = 1, pin_memory: bool = False, drop_last: bool = False) -> Tuple['DataLoader', ...]:
         if isinstance(batch_size, int):
             batch_sizes = itertools.repeat(batch_size)
         else:

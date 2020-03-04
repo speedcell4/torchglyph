@@ -17,7 +17,7 @@ class CoNLL2003(Dataset):
         )
 
     @classmethod
-    def iters(cls, *paths: Path, batch_size: int) -> Tuple[DataLoader, ...]:
+    def loaders(cls, *paths: Path, batch_size: int) -> Tuple[DataLoader, ...]:
         word = PaddedSeqPipe(pad_token='<pad>')
         wlen = SeqLengthPipe()
         char = PackedSubPipe()
@@ -38,7 +38,7 @@ class CoNLL2003(Dataset):
         xpos.build_vocab(train)
         target.build_vocab(train)
 
-        return DataLoader.iters(
+        return DataLoader.loaders(
             (train, dev, test),
             batch_size=batch_size, shuffle=True,
         )
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     path = Path('~/data/conll2003').expanduser().absolute()
     train, dev, test = path / 'train.stanford', path / 'dev.stanford', path / 'test.stanford'
 
-    train, dev, test = CoNLL2003.iters(train, dev, test, batch_size=10)
+    train, dev, test = CoNLL2003.loaders(train, dev, test, batch_size=10)
 
     print(train.dataset.pipelines['word'].vocab.stoi)
 
