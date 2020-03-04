@@ -1,6 +1,6 @@
 from torchglyph.dataset import Pipeline
-from torchglyph.processes import AddToCounter, BuildVocab, Numbering, ToTensor, PackBatch, ToChar, ToTensorList, \
-    ArrayPackBatch
+from torchglyph.processes import AddToCounter, BuildVocab, Numbering, ToTensor, PackSeqBatch, ToChar, ToTensorList, \
+    PackArrayBatch
 
 
 class SeqPackPipe(Pipeline):
@@ -9,7 +9,7 @@ class SeqPackPipe(Pipeline):
             pre_procs=AddToCounter(),
             vocab_procs=BuildVocab(),
             post_procs=Numbering() + ToTensor(),
-            batch_procs=PackBatch(),
+            batch_procs=PackSeqBatch(),
         )
 
 
@@ -19,5 +19,5 @@ class CharArrayPackPipe(Pipeline):
             pre_procs=ToChar() + AddToCounter(),
             vocab_procs=BuildVocab(),
             post_procs=Numbering() + ToTensorList(),
-            batch_procs=ArrayPackBatch(),
+            batch_procs=PackArrayBatch(),
         )

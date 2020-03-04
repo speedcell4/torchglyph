@@ -1,4 +1,4 @@
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Any
 
 import torch
 from torch import Tensor
@@ -8,13 +8,24 @@ from torchglyph.proc import BatchProc
 from torchglyph.vocab import Vocab
 
 
-class PadBatch(BatchProc):
+class PadTokBatch(BatchProc):
+    Batch = List[int]
+
+    def __init__(self, dtype: torch.dtype = torch.long) -> None:
+        super(PadTokBatch, self).__init__()
+        self.dtype = dtype
+
+    def __call__(self, batch: Batch, vocab: Vocab) -> Tensor:
+        return torch.tensor(batch, dtype=self.dtype, requires_grad=False)
+
+
+class PadSeqBatch(BatchProc):
     Batch = List[Tensor]
 
     def __init__(self, pad_token: str, batch_first: bool = True) -> None:
-        super(PadBatch, self).__init__()
-        self.batch_first = batch_first
+        super(PadSeqBatch, self).__init__()
         self.pad_token = pad_token
+        self.batch_first = batch_first
 
     def __call__(self, batch: Batch, vocab: Vocab) -> Tensor:
         return pad_sequence(
@@ -23,22 +34,34 @@ class PadBatch(BatchProc):
         )
 
 
-class PackBatch(BatchProc):
+class PackSeqBatch(BatchProc):
     Batch = List[Tensor]
 
     def __init__(self, enforce_sorted: bool = False) -> None:
-        super(PackBatch, self).__init__()
+        super(PackSeqBatch, self).__init__()
         self.enforce_sorted = enforce_sorted
 
     def __call__(self, batch: Batch, vocab: Vocab) -> PackedSequence:
         return pack_sequence(batch, enforce_sorted=self.enforce_sorted)
 
 
-class ArrayPackBatch(BatchProc):
+class PadArrayBatch(BatchProc):
+    Batch = List[List[Tensor]]
+
+    def __init__(self, pad_token: str, batch_first: bool = True) -> None:
+        super(PadArrayBatch, self).__init__()
+        self.pad_token = pad_token
+        self.batch_first = batch_first
+
+    def __call__(self, batch: Batch, vocab: Vocab) -> Any:
+        pass
+
+
+class PackArrayBatch(BatchProc):
     Batch = List[List[Tensor]]
 
     def __init__(self, enforce_sorted: bool = False) -> None:
-        super(ArrayPackBatch, self).__init__()
+        super(PackArrayBatch, self).__init__()
         self.enforce_sorted = enforce_sorted
 
     def __call__(self, batch: Batch, vocab: Vocab) -> PackedSequence:
