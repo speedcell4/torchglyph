@@ -58,10 +58,11 @@ class Vocab(object):
         return self.stoi[token]
 
     def __repr__(self) -> str:
-        args = ', '.join([
-            f'size={self.__len__()}',
+        args = ', '.join([a for a in [
+            f'tok={self.__len__()}',
+            f'dim={self.vectors.size(1)}' if self.vectors is not None else None,
             f'unk_token={self.unk_token}',
-        ])
+        ] if a is not None])
         return f'{self.__class__.__name__}({args})'
 
     def __len__(self) -> int:
@@ -118,7 +119,7 @@ class Vocab(object):
         )
 
     def load_vectors(self, vectors: 'Vectors') -> None:
-        self.vectors = torch.empty((len(self), vectors.token_dim), dtype=torch.float32)
+        self.vectors = torch.empty((len(self), vectors.vec_dim), dtype=torch.float32)
         for token, index in self.stoi.items():
             vectors.update_(token, self.vectors[index])
 
@@ -126,54 +127,49 @@ class Vocab(object):
             init.zeros_(self.vectors[self.stoi[self.pad_token]])
 
 
-class Vectors(object):
+class Vectors(Vocab):
     def __init__(self, urls_dest: List[Tuple[str, Path]], path: Path,
                  unk_init_: Callable[[Tensor], Tensor] = init.normal_) -> None:
-        vocab = Vocab(Counter(), unk_token=None, pad_token=None, special_tokens=())
-        vectors = []
+        super(Vectors, self).__init__(
+            counter=Counter(),
+            unk_token=None, pad_token=None,
+            special_tokens=(), max_size=None, min_freq=1,
+        )
+
+        self.vectors = []
+        self.unk_init_ = unk_init_
 
         pt_path = path.with_suffix('.pt')
         if not pt_path.exists():
-
             if not path.exists():
                 for url, dest in urls_dest:
                     download_and_unzip(url, dest)
 
             with path.open('rb') as fp:
-                token_dim = None
+                vec_dim = None
+
                 for raw in tqdm(fp, desc=f'reading {path}', unit=' tokens'):  # type:bytes
                     token, *vs = raw.rstrip().split(b' ')
 
-                    if token_dim is None:
-                        token_dim = len(vs)
-                    elif token_dim != len(vs):
-                        raise ValueError(f'vector dimensions are not consistent, {token_dim} != {len(vs)}')
+                    if vec_dim is None:
+                        vec_dim = len(vs)
+                    elif vec_dim != len(vs):
+                        raise ValueError(f'vector dimensions are not consistent, {vec_dim} != {len(vs)}')
 
-                    vocab.add_token_(str(token, encoding='utf-8'))
-                    vectors.append(torch.tensor([float(v) for v in vs], dtype=torch.float32))
+                    self.add_token_(str(token, encoding='utf-8'))
+                    self.vectors.append(torch.tensor([float(v) for v in vs], dtype=torch.float32))
 
-            vectors = torch.stack(vectors, 0)
+            self.vectors = torch.stack(self.vectors, 0)
             logging.info(f'saving vectors to {pt_path}')
-            torch.save((vocab.itos, vocab.stoi, vectors, token_dim), pt_path)
+            torch.save((self.itos, self.stoi, self.vectors), pt_path)
         else:
             logging.info(f'loading vectors from {pt_path}')
-            vocab.itos, vocab.stoi, vectors, token_dim = torch.load(pt_path)
-
-        self.vocab = vocab
-        self.vectors = vectors
-        self.token_dim = token_dim
-        self.unk_init_ = unk_init_
-
-    def __len__(self) -> int:
-        return self.vocab.__len__()
-
-    def __contains__(self, token: str) -> bool:
-        return self.vocab.__contains__(token)
+            self.itos, self.stoi, self.vectors = torch.load(pt_path)
 
     @torch.no_grad()
     def update_(self, token: str, vector: Tensor) -> None:
-        if token in self.vocab:
-            vector[:] = self.vectors[self.vocab.stoi[token]]
+        if token in self:
+            vector[:] = self.vectors[self.stoi[token]]
         else:
             self.unk_init_(vector)
 
@@ -186,3 +182,10 @@ class Glove(Vectors):
             ],
             path=data_path / f'glove.{name}' / f'glove.{name}.{dim}d.txt',
         )
+
+
+if __name__ == '__main__':
+    vectors = Glove('6B', 50)
+    print(f'vectors => {vectors}')
+    vectors.vectors = None
+    print(f'vectors => {vectors}')
