@@ -141,7 +141,7 @@ class Vectors(object):
 
             with path.open('rb') as fp:
                 token_dim = None
-                for raw in tqdm(fp, desc=f'reading {path}', unit=' token'):  # type:bytes
+                for raw in tqdm(fp, desc=f'reading {path}', unit=' tokens'):  # type:bytes
                     token, *vs = raw.rstrip().split(b' ')
 
                     if token_dim is None:
@@ -182,7 +182,7 @@ class Glove(Vectors):
     def __init__(self, name: str, dim: int) -> None:
         super(Glove, self).__init__(
             urls_dest=[
-                (f'http://nlp.stanford.edu/data/glove.{name}.zip', data_path / f'glove.{name}.zip')
+                (f'http://nlp.stanford.edu/data/glove.{name}.zip', data_path / f'glove.{name}' / f'glove.{name}.zip'),
             ],
             path=data_path / f'glove.{name}' / f'glove.{name}.{dim}d.txt',
         )

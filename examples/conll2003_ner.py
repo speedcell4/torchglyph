@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import List, Tuple, Dict
 
+from tqdm import tqdm
+
 from torchglyph.dataset import Dataset, Pipeline, DataLoader
 from torchglyph.io import conllx_iter
 from torchglyph.pipelines import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PackedSubPipe
@@ -11,32 +13,32 @@ class CoNLL2003(Dataset):
         super(CoNLL2003, self).__init__(
             instances=[
                 [datum for datum in zip(*sentence)]
-                for sentence in conllx_iter(path)
+                for sentence in tqdm(conllx_iter(path), desc=f'reading {path}', unit=' sentences')
             ],
             pipelines=pipelines,
         )
 
     @classmethod
     def loaders(cls, *paths: Path, batch_size: int) -> Tuple[DataLoader, ...]:
-        WORD = PaddedSeqPipe(pad_token='<pad>')
+        WORD = PaddedSeqPipe(pad_token='<pad>', dim=50)
         WLEN = SeqLengthPipe()
         CHAR = PackedSubPipe()
         WRNG = PackedSeqRangePipe()
         XPOS = PackedSeqPipe()
-        TARGET = PackedSeqPipe()
+        TRGT = PackedSeqPipe()
 
         train, dev, test = tuple(cls(path, pipelines=[
             dict(word=WORD, wlen=WLEN, char=CHAR, WRNG=WRNG),
             dict(xpos=XPOS),
             dict(),
             dict(),
-            dict(target=TARGET),
+            dict(target=TRGT),
         ]) for path in paths)
 
         WORD.build_vocab(train, dev, test)
         CHAR.build_vocab(train, dev, test)
         XPOS.build_vocab(train)
-        TARGET.build_vocab(train)
+        TRGT.build_vocab(train)
 
         return DataLoader.loaders(
             (train, dev, test),
@@ -53,5 +55,8 @@ if __name__ == '__main__':
     print(train.dataset.pipelines['word'].vocab.stoi)
 
     for batch in train:
+        print(batch.word)
+        break
+    for batch in dev:
         print(batch.word)
         break

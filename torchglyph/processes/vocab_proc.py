@@ -2,7 +2,7 @@ from collections import Counter
 from typing import Tuple
 
 from torchglyph.proc import VocabProc
-from torchglyph.vocab import Vocab
+from torchglyph.vocab import Vocab, Vectors, Glove
 
 
 class BuildVocab(VocabProc):
@@ -23,4 +23,23 @@ class BuildVocab(VocabProc):
             pad_token=self.pad_token,
             special_tokens=self.special_tokens,
             max_size=self.max_size, min_freq=self.min_freq,
+        )
+
+
+class LoadVectors(VocabProc):
+    def __init__(self, vectors: Vectors) -> None:
+        super(LoadVectors, self).__init__()
+        self.vectors = vectors
+
+    def __call__(self, vocab: Vocab) -> Vocab:
+        assert vocab is not None, f"did you forget '{BuildVocab.__name__}' before '{LoadVectors.__name__}'?"
+
+        vocab.load_vectors(self.vectors)
+        return vocab
+
+
+class LoadGlove(LoadVectors):
+    def __init__(self, name: str, dim: int) -> None:
+        super(LoadGlove, self).__init__(
+            vectors=Glove(name=name, dim=dim),
         )

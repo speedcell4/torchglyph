@@ -32,6 +32,9 @@ def reporthook(t):
 
 # copied and modified from https://github.com/pytorch/text
 def download_and_unzip(url: str, dest: Path) -> None:
+    if not dest.parent.exists():
+        dest.parent.mkdir(parents=True, exist_ok=True)
+
     with tqdm(unit='B', unit_scale=True, miniters=1, desc=f'downloading {dest}') as t:
         try:
             urlretrieve(url, str(dest), reporthook=reporthook(t))
