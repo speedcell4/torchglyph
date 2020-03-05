@@ -182,10 +182,3 @@ class Glove(Vectors):
             ],
             path=data_path / f'glove.{name}' / f'glove.{name}.{dim}d.txt',
         )
-
-
-if __name__ == '__main__':
-    vectors = Glove('6B', 50)
-    print(f'vectors => {vectors}')
-    vectors.vectors = None
-    print(f'vectors => {vectors}')
