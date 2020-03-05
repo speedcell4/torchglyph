@@ -1,7 +1,9 @@
-from typing import List, Any, Union
+from typing import Any
+from typing import Union, List
 
 import torch
 from torch import Tensor
+from torch.nn.utils.rnn import pad_sequence
 
 from torchglyph.proc import RecurStrProc, PostProc
 from torchglyph.vocab import Vocab
@@ -59,3 +61,22 @@ class ToTensorList(PostProc):
 
     def __call__(self, ins: List[Any], vocab: Vocab) -> List[Tensor]:
         return [self.process(d, vocab=vocab) for d in ins]
+
+
+class ToPad(PostProc):
+    def __init__(self, pad_token: Union[str, int], batch_first: bool = True,
+                 dtype: torch.dtype = torch.long) -> None:
+        super(ToPad, self).__init__()
+        self.dtype = dtype
+        self.pad_token = pad_token
+        self.batch_first = batch_first
+
+    def __call__(self, ins: List[Tensor], vocab: Vocab) -> None:
+        if isinstance(self.pad_token, str):
+            assert vocab is not None
+            assert self.pad_token in vocab.stoi
+            pad_idx = vocab.stoi[self.pad_token]
+        else:
+            pad_idx = self.pad_token
+
+        return pad_sequence(ins, batch_first=self.batch_first, padding_value=pad_idx)

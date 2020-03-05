@@ -6,7 +6,7 @@ from torchglyph.vocab import Vocab, Vectors, Glove
 
 
 class BuildVocab(VocabProc):
-    def __init__(self, unk_token: str = '<unk>', pad_token: str = '<pad>',
+    def __init__(self, unk_token: str = '<unk>', pad_token: str = None,
                  special_tokens: Tuple[str, ...] = (),
                  max_size: int = None, min_freq: int = 1) -> None:
         super(BuildVocab, self).__init__()

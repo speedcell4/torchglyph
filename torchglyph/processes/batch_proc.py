@@ -1,4 +1,4 @@
-from typing import List, Union, Tuple, Any
+from typing import List, Union, Tuple
 
 import torch
 from torch import Tensor
@@ -68,7 +68,7 @@ class PackAccSeqBatch(BatchProc):
 
 
 class PadSubBatch(BatchProc):
-    Batch = List[List[Tensor]]
+    Batch = List[Tensor]
 
     def __init__(self, pad_token: str, batch_first: bool = True) -> None:
         super(PadSubBatch, self).__init__()
@@ -76,7 +76,25 @@ class PadSubBatch(BatchProc):
         self.batch_first = batch_first
 
     def __call__(self, batch: Batch, vocab: Vocab) -> Tensor:
-        raise NotImplementedError
+        if isinstance(self.pad_token, str):
+            assert vocab is not None
+            assert self.pad_token in vocab.stoi
+
+            pad_idx = vocab.stoi[self.pad_token]
+        else:
+            pad_idx = self.pad_token
+
+        dim1, dim2 = zip(*[d.size() for d in batch])
+        dim0 = len(batch)
+        dim1 = max(dim1)
+        dim2 = max(dim2)
+
+        tensor = torch.full((dim0, dim1, dim2), fill_value=pad_idx, dtype=torch.long)
+        for index, d in enumerate(batch):
+            dim1, dim2 = d.size()
+            tensor[index, :dim1, :dim2] = d
+
+        return tensor.clone()
 
 
 class PackSubBatch(BatchProc):

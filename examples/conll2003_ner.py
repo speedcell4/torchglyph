@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from torchglyph.dataset import Dataset, Pipeline, DataLoader
 from torchglyph.io import conllx_iter
-from torchglyph.pipelines import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PackedSubPipe
+from torchglyph.pipelines import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PaddedSubPipe
 
 
 class CoNLL2003(Dataset):
@@ -22,7 +22,7 @@ class CoNLL2003(Dataset):
     def loaders(cls, *paths: Path, batch_size: int) -> Tuple[DataLoader, ...]:
         WORD = PaddedSeqPipe(pad_token='<pad>', dim=50)
         WLEN = SeqLengthPipe()
-        CHAR = PackedSubPipe()
+        CHAR = PaddedSubPipe()
         WRNG = PackedSeqRangePipe()
         XPOS = PackedSeqPipe()
         TRGT = PackedSeqPipe()
@@ -55,8 +55,8 @@ if __name__ == '__main__':
     print(train.dataset.pipelines['word'].vocab.stoi)
 
     for batch in train:
-        print(batch.word)
+        print(batch.char.size())
         break
     for batch in dev:
-        print(batch.word)
+        print(batch.char.size())
         break
