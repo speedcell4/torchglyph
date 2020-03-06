@@ -20,14 +20,14 @@ class CoNLL2003(Dataset):
         )
 
     @classmethod
-    def loaders(cls, *paths: Path, batch_size: int) -> Tuple[DataLoader, ...]:
-        WORD = PaddedSeqPipe(pad_token='<pad>', dim=50)
-        WLEN = SeqLengthPipe()
-        CHAR1 = PaddedSubPipe()
-        CHAR2 = PackedSubPipe()
-        WRNG = PackedSeqRangePipe()
-        XPOS = PackedSeqPipe()
-        TRGT = PackedSeqPipe()
+    def loaders(cls, *paths: Path, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
+        WORD = PaddedSeqPipe(pad_token='<pad>', dim=50, device=device)
+        WLEN = SeqLengthPipe(device=device)
+        CHAR1 = PaddedSubPipe(device=device)
+        CHAR2 = PackedSubPipe(device=device)
+        WRNG = PackedSeqRangePipe(device=device)
+        XPOS = PackedSeqPipe(device=device)
+        TRGT = PackedSeqPipe(device=device)
 
         train, dev, test = tuple(cls(path, pipelines=[
             dict(word=WORD, wlen=WLEN, char1=CHAR1, char2=CHAR2, wrng=WRNG),
