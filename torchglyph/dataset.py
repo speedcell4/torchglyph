@@ -2,7 +2,7 @@ import itertools
 import uuid
 from collections import namedtuple
 from typing import Iterable, Any, Optional
-from typing import Union, List, Tuple, NamedTuple, Dict, Callable
+from typing import Union, List, Type, Tuple, NamedTuple, Dict
 
 from torch.utils import data
 
@@ -19,7 +19,7 @@ class Dataset(data.Dataset):
             for ps in pipes
             for key, pipe in ps.items()
         }
-        self.Batch: Callable[[Any, ...], NamedTuple] = namedtuple(
+        self.Batch: Type[NamedTuple] = namedtuple(
             f'Batch_{str(uuid.uuid4())[:8]}', field_names=self.pipes.keys())
         if self.Batch.__name__ not in globals():
             globals()[self.Batch.__name__] = self.Batch
@@ -67,9 +67,10 @@ class Dataset(data.Dataset):
 
 class DataLoader(data.DataLoader):
     @classmethod
-    def dataloaders(cls, datasets: Tuple[Dataset, ...], batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
-                    num_workers: int = 1, pin_memory: bool = False, drop_last: bool = False) -> Tuple[
-        'DataLoader', ...]:
+    def dataloaders(cls, datasets: Tuple[Dataset, ...],
+                    batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
+                    num_workers: int = 1, pin_memory: bool = False,
+                    drop_last: bool = False) -> Tuple['DataLoader', ...]:
         if isinstance(batch_size, int):
             batch_sizes = itertools.repeat(batch_size)
         else:
