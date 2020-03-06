@@ -1,11 +1,19 @@
 from collections import Counter
-from typing import Tuple
+from typing import Tuple, List, Union
 
-from torchglyph.proc import VocabProc
+from torchglyph.proc import Flatten, Proc, stoi
 from torchglyph.vocab import Vocab, Vectors, Glove
 
 
-class BuildVocab(VocabProc):
+class UpdateCounter(Proc):
+    def __call__(self, data: Union[str, List[str]], counter: Counter, **kwargs) -> Union[str, List[str]]:
+        if isinstance(data, str):
+            data = (data,)
+        counter.update(data)
+        return data
+
+
+class BuildVocab(Proc):
     def __init__(self, unk_token: str = '<unk>', pad_token: str = None,
                  special_tokens: Tuple[str, ...] = (),
                  max_size: int = None, min_freq: int = 1) -> None:
@@ -16,7 +24,7 @@ class BuildVocab(VocabProc):
         self.max_size = max_size
         self.min_freq = min_freq
 
-    def __call__(self, vocab: Counter) -> Vocab:
+    def __call__(self, vocab: Counter, **kwargs) -> Vocab:
         return Vocab(
             counter=vocab,
             unk_token=self.unk_token,
@@ -26,12 +34,17 @@ class BuildVocab(VocabProc):
         )
 
 
-class LoadVectors(VocabProc):
+class Numbering(Flatten):
+    def process(self, token: str, vocab: Vocab, **kwargs) -> int:
+        return stoi(token=token, vocab=vocab)
+
+
+class LoadVectors(Proc):
     def __init__(self, vectors: Vectors) -> None:
         super(LoadVectors, self).__init__()
         self.vectors = vectors
 
-    def __call__(self, vocab: Vocab) -> Vocab:
+    def __call__(self, vocab: Vocab, **kwargs) -> Vocab:
         assert vocab is not None, f"did you forget '{BuildVocab.__name__}' before '{LoadVectors.__name__}'?"
 
         vocab.load_vectors(self.vectors)

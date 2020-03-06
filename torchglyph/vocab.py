@@ -60,7 +60,7 @@ class Vocab(object):
     def __repr__(self) -> str:
         args = ', '.join([a for a in [
             f'tok={self.__len__()}',
-            f'dim={self.vectors.size(1)}' if self.vectors is not None else None,
+            f'dim={self.vec_dim}' if self.vectors is not None else None,
             f'unk_token={self.unk_token}',
         ] if a is not None])
         return f'{self.__class__.__name__}({args})'
@@ -117,6 +117,12 @@ class Vocab(object):
             special_tokens=self.special_tokens,
             max_size=self.max_size, min_freq=self.min_freq,
         )
+
+    @property
+    def vec_dim(self) -> int:
+        if self.vectors is None:
+            return 0
+        return self.vectors.size(1)
 
     def load_vectors(self, vectors: 'Vectors') -> None:
         self.vectors = torch.empty((len(self), vectors.vec_dim), dtype=torch.float32)

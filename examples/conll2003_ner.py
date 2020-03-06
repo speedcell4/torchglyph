@@ -3,13 +3,15 @@ from typing import List, Tuple, Dict
 
 from tqdm import tqdm
 
-from torchglyph.dataset import Dataset, Pipeline, DataLoader
+from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.io import conllx_iter
-from torchglyph.pipelines import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PaddedSubPipe
+from torchglyph.pipe import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PaddedSubPipe
+from torchglyph.pipe import PackedSubPipe
+from torchglyph.pipe import Pipe
 
 
 class CoNLL2003(Dataset):
-    def __init__(self, path: Path, pipelines: List[Dict[str, Pipeline]]) -> None:
+    def __init__(self, path: Path, pipelines: List[Dict[str, Pipe]]) -> None:
         super(CoNLL2003, self).__init__(
             instances=[
                 [datum for datum in zip(*sentence)]
@@ -19,16 +21,17 @@ class CoNLL2003(Dataset):
         )
 
     @classmethod
-    def loaders(cls, *paths: Path, batch_size: int) -> Tuple[DataLoader, ...]:
-        WORD = PaddedSeqPipe(pad_token='<pad>', dim=50)
-        WLEN = SeqLengthPipe()
-        CHAR = PaddedSubPipe()
-        WRNG = PackedSeqRangePipe()
-        XPOS = PackedSeqPipe()
-        TRGT = PackedSeqPipe()
+    def loaders(cls, *paths: Path, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
+        WORD = PaddedSeqPipe(pad_token='<pad>', dim=50, device=device)
+        WLEN = SeqLengthPipe(device=device)
+        CHAR1 = PaddedSubPipe(device=device)
+        CHAR2 = PackedSubPipe(device=device)
+        WRNG = PackedSeqRangePipe(device=device)
+        XPOS = PackedSeqPipe(device=device)
+        TRGT = PackedSeqPipe(device=device)
 
         train, dev, test = tuple(cls(path, pipelines=[
-            dict(word=WORD, wlen=WLEN, char=CHAR, WRNG=WRNG),
+            dict(word=WORD, wlen=WLEN, char1=CHAR1, char2=CHAR2, wrng=WRNG),
             dict(xpos=XPOS),
             dict(),
             dict(),
@@ -36,7 +39,8 @@ class CoNLL2003(Dataset):
         ]) for path in paths)
 
         WORD.build_vocab(train, dev, test)
-        CHAR.build_vocab(train, dev, test)
+        CHAR1.build_vocab(train, dev, test)
+        CHAR2.build_vocab(train, dev, test)
         XPOS.build_vocab(train)
         TRGT.build_vocab(train)
 
@@ -55,8 +59,8 @@ if __name__ == '__main__':
     print(train.dataset.pipelines['word'].vocab.stoi)
 
     for batch in train:
-        print(batch.char.size())
-        break
-    for batch in dev:
-        print(batch.char.size())
+        print(f'batch.char1 => {batch.char1}')
+        print(f'batch.char2 => {batch.char2}')
+        print(f'batch.wrng => {batch.wrng}')
+        print(f'batch.wlen => {batch.wlen}')
         break
