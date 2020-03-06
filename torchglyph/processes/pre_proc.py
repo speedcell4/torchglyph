@@ -2,30 +2,30 @@ from collections import Counter
 from typing import Any
 from typing import List
 
-from torchglyph.proc import RecurStrProc, PreProc
+from torchglyph.proc import Flatten, PreProc
 
 
-class ToInt(RecurStrProc):
+class ToInt(Flatten):
     def process(self, data: str, *args, **kwargs) -> int:
         return int(data)
 
 
-class ToUpper(RecurStrProc):
+class ToUpper(Flatten):
     def process(self, data: str, *args, **kwargs) -> str:
         return data.upper()
 
 
-class ToLower(RecurStrProc):
+class ToLower(Flatten):
     def process(self, data: str, *args, **kwargs) -> str:
         return data.lower()
 
 
-class ToCapitalized(RecurStrProc):
+class ToCapitalized(Flatten):
     def process(self, data: str, *args, **kwargs) -> str:
         return data.capitalize()
 
 
-class ToSub(RecurStrProc):
+class ToSub(Flatten):
     def process(self, data: str, *args, **kwargs) -> List[str]:
         return [c for c in data]
 

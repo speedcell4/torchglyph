@@ -5,14 +5,15 @@ import torch
 from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence
 
-from torchglyph.proc import RecurStrProc, PostProc
+from torchglyph.proc import Flatten, PostProc
 from torchglyph.vocab import Vocab
 
 
-class Numbering(RecurStrProc):
-    def process(self, data: str, vocab: Vocab) -> int:
-        res = vocab.stoi[data]
-        return res
+class Numbering(Flatten):
+    def process(self, token: str, vocab: Vocab) -> int:
+        assert vocab is not None, f'did you forget build_vocab?'
+
+        return vocab.stoi[token]
 
 
 class ToLength(PostProc):
@@ -52,15 +53,6 @@ class ToTensor(PostProc):
             if err.args[0] == "too many dimensions 'str'":
                 raise ValueError(f'did you forget {Numbering.__name__} before {ToTensor.__name__}?')
             raise err
-
-
-class ToTensorList(PostProc):
-    def __init__(self, dtype: torch.dtype = torch.long) -> None:
-        super(ToTensorList, self).__init__()
-        self.process = ToTensor(dtype=dtype)
-
-    def __call__(self, ins: List[Any], vocab: Vocab) -> List[Tensor]:
-        return [self.process(d, vocab=vocab) for d in ins]
 
 
 class ToPad(PostProc):

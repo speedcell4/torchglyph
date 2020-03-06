@@ -24,6 +24,25 @@ class Identity(Proc):
         return x
 
 
+class Lift(Proc):
+    def __init__(self, proc: Proc) -> None:
+        super(Lift, self).__init__()
+        self.proc = proc
+
+    def __call__(self, data: Any, *args, **kwargs) -> Any:
+        return type(data)([self.proc(datum, *args, **kwargs) for datum in data])
+
+
+class Flatten(Proc):
+    def process(self, data: str, *args, **kwargs) -> Any:
+        raise NotImplementedError
+
+    def __call__(self, data: Any, *args, **kwargs) -> Any:
+        if isinstance(data, str):
+            return self.process(data, *args, **kwargs)
+        return type(data)([self(datum, *args, **kwargs) for datum in data])
+
+
 class Chain(Proc):
     def __init__(self, *procs: Optional[Union['Proc', 'Chain']]) -> None:
         super(Chain, self).__init__()
@@ -48,30 +67,6 @@ class Chain(Proc):
         for process in self.procs:
             x = process(x, *args, **kwargs)
         return x
-
-
-# recursive processes
-
-class RecurStrProc(Proc):
-    def process(self, data: str, *args, **kwargs) -> Any:
-        raise NotImplementedError
-
-    def __call__(self, data: Any, *args, **kwargs) -> Any:
-        if isinstance(data, str):
-            return self.process(data, *args, **kwargs)
-        return type(data)(self(datum, *args, **kwargs) for datum in data)
-
-
-class RecurListStrProc(Proc):
-    def process(self, data: List[str], *args, **kwargs) -> Any:
-        raise NotImplementedError
-
-    def __call__(self, data: Any, *args, **kwargs) -> Any:
-        if isinstance(data, list):
-            assert len(data) > 0
-            if isinstance(data[0], str):
-                return self.process(data, *args, **kwargs)
-        return type(data)(self(datum, *args, **kwargs) for datum in data)
 
 
 # stage processes
