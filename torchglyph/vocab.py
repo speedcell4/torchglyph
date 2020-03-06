@@ -59,9 +59,10 @@ class Vocab(object):
 
     def __repr__(self) -> str:
         args = ', '.join([a for a in [
-            f'tok={self.__len__()}',
-            f'dim={self.vec_dim}' if self.vectors is not None else None,
-            f'unk_token={self.unk_token}',
+            f"tok={self.__len__()}",
+            None if self.vectors is None else f"dim={self.vec_dim}",
+            None if self.unk_token is None else f"unk_token='{self.unk_token}'",
+            None if self.pad_token is None else f"pad_token='{self.pad_token}'",
         ] if a is not None])
         return f'{self.__class__.__name__}({args})'
 
