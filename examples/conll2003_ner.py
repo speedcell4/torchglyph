@@ -3,10 +3,11 @@ from typing import List, Tuple, Dict
 
 from tqdm import tqdm
 
-from torchglyph.dataset import Dataset, Pipeline, DataLoader
+from torchglyph.dataset import Dataset, DataLoader
+from torchglyph.pipe.abc import Pipeline
 from torchglyph.io import conllx_iter
-from torchglyph.pipelines import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PaddedSubPipe
-from torchglyph.pipelines.sub_pipe import PackedSubPipe
+from torchglyph.pipe import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PaddedSubPipe
+from torchglyph.pipe import PackedSubPipe
 
 
 class CoNLL2003(Dataset):
