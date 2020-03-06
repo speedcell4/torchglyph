@@ -5,14 +5,14 @@ from typing import Union, List, Tuple, Dict, Any, NamedTuple, Callable
 
 from torch.utils import data
 
-from torchglyph.pipe import Pipeline
+from torchglyph.pipe import Pipe
 
 
 class Dataset(data.Dataset):
-    def __init__(self, instances: List[List[Any]], pipelines: List[Dict[str, Pipeline]]) -> None:
+    def __init__(self, instances: List[List[Any]], pipelines: List[Dict[str, Pipe]]) -> None:
         super(Dataset, self).__init__()
 
-        self.pipelines: Dict[str, Pipeline] = {
+        self.pipelines: Dict[str, Pipe] = {
             key: pipe
             for pipes in pipelines
             for key, pipe in pipes.items()

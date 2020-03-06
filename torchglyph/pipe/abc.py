@@ -5,13 +5,13 @@ from torchglyph.proc import Chain, Proc
 from torchglyph.vocab import Vocab
 
 
-class Pipeline(object):
+class Pipe(object):
     def __init__(self,
                  pre_procs: Optional[Union[Chain, Proc]],
                  vocab_procs: Optional[Union[Chain, Proc]],
                  post_procs: Optional[Union[Chain, Proc]],
                  batch_procs: Optional[Union[Chain, Proc]]) -> None:
-        super(Pipeline, self).__init__()
+        super(Pipe, self).__init__()
 
         self.vocab: Optional[Union[Vocab]] = None
 
@@ -24,8 +24,8 @@ class Pipeline(object):
                 pre_procs: Optional[Union[Chain, Proc]] = None,
                 vocab_procs: Optional[Union[Chain, Proc]] = None,
                 post_procs: Optional[Union[Chain, Proc]] = None,
-                batch_procs: Optional[Union[Chain, Proc]] = None) -> 'Pipeline':
-        return Pipeline(
+                batch_procs: Optional[Union[Chain, Proc]] = None) -> 'Pipe':
+        return Pipe(
             pre_procs=self._pre_processing if pre_procs is None else pre_procs,
             vocab_procs=self._vocab_processing if vocab_procs is None else vocab_procs,
             post_procs=self._post_processing if post_procs is None else post_procs,
@@ -46,7 +46,7 @@ class Pipeline(object):
 
         return counter
 
-    def postprocess(self, *datasets) -> 'Pipeline':
+    def postprocess(self, *datasets) -> 'Pipe':
         _ = self.preprocess(*datasets)
         for dataset in datasets:
             for name, pipe in dataset.pipelines.items():
@@ -60,7 +60,7 @@ class Pipeline(object):
 
         return self
 
-    def build_vocab(self, *datasets) -> 'Pipeline':
+    def build_vocab(self, *datasets) -> 'Pipe':
         counter = self.preprocess(*datasets)
         vocab = self._vocab_processing(counter)
         if isinstance(vocab, Vocab):

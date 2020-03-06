@@ -2,12 +2,12 @@ from typing import Union
 
 import torch
 
-from torchglyph.pipe import Pipeline
+from torchglyph.pipe import Pipe
 from torchglyph.proc import GetRange, ToDevice, Numbering, UpdateCounter, BuildVocab, LoadGlove
 from torchglyph.proc import Scan, ToTensor, PadSeq, PackSeq
 
 
-class PaddedSeqPipe(Pipeline):
+class PaddedSeqPipe(Pipe):
     def __init__(self, device: Union[int, torch.device],
                  pad_token: Union[str, int], batch_first: bool = True,
                  dim: int = None) -> None:
@@ -19,7 +19,7 @@ class PaddedSeqPipe(Pipeline):
         )
 
 
-class PackedSeqPipe(Pipeline):
+class PackedSeqPipe(Pipe):
     def __init__(self, device: Union[int, torch.device]) -> None:
         super(PackedSeqPipe, self).__init__(
             pre_procs=UpdateCounter(),
@@ -29,7 +29,7 @@ class PackedSeqPipe(Pipeline):
         )
 
 
-class PackedSeqRangePipe(Pipeline):
+class PackedSeqRangePipe(Pipe):
     def __init__(self, device: Union[int, torch.device]) -> None:
         super(PackedSeqRangePipe, self).__init__(
             pre_procs=None,

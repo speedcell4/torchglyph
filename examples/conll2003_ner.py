@@ -7,11 +7,11 @@ from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.io import conllx_iter
 from torchglyph.pipe import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PaddedSubPipe
 from torchglyph.pipe import PackedSubPipe
-from torchglyph.pipe import Pipeline
+from torchglyph.pipe import Pipe
 
 
 class CoNLL2003(Dataset):
-    def __init__(self, path: Path, pipelines: List[Dict[str, Pipeline]]) -> None:
+    def __init__(self, path: Path, pipelines: List[Dict[str, Pipe]]) -> None:
         super(CoNLL2003, self).__init__(
             instances=[
                 [datum for datum in zip(*sentence)]
