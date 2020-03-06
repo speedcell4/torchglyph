@@ -1,65 +1,79 @@
 import itertools
 import uuid
 from collections import namedtuple
-from typing import Union, List, Tuple, Dict, Any, NamedTuple, Callable
+from typing import Iterable, Any, Optional
+from typing import Union, List, Tuple, NamedTuple, Dict, Callable
 
 from torch.utils import data
 
 from torchglyph.pipe import Pipe
+from torchglyph.vocab import Vocab
 
 
 class Dataset(data.Dataset):
-    def __init__(self, instances: List[List[Any]], pipelines: List[Dict[str, Pipe]]) -> None:
+    def __init__(self, pipes: List[Dict[str, Pipe]], **kwargs) -> None:
         super(Dataset, self).__init__()
 
-        self.pipelines: Dict[str, Pipe] = {
+        self.pipes: Dict[str, Pipe] = {
             key: pipe
-            for pipes in pipelines
-            for key, pipe in pipes.items()
+            for ps in pipes
+            for key, pipe in ps.items()
         }
         self.Batch: Callable[[Any, ...], NamedTuple] = namedtuple(
-            f'Batch_{str(uuid.uuid4())[:8]}', field_names=self.pipelines.keys())
+            f'Batch_{str(uuid.uuid4())[:8]}', field_names=self.pipes.keys())
         if self.Batch.__name__ not in globals():
             globals()[self.Batch.__name__] = self.Batch
 
-        self.instances: Dict[str, List[Any]] = {}
-        for ins, pipes in zip(zip(*instances), pipelines):
+        self._len = 0
+        self.data: Dict[str, List[Any]] = {}
+        for ins, pipes in zip(zip(*self.instance_iter(**kwargs)), pipes):
             for key, pipe in pipes.items():
-                self.instances.setdefault(key, []).extend(ins)
-
-        self._len = len(instances)
+                self.data.setdefault(key, []).extend(ins)
+            self._len += 1
 
     def __getitem__(self, index: int) -> NamedTuple:
         return self.Batch(*[
-            self.instances[key][index] for key in self.Batch._fields
+            self.data[key][index]
+            for key in self.Batch._fields
         ])
 
     def __len__(self) -> int:
         return self._len
 
+    def vocab(self, name: str) -> Optional[Dict[str, Vocab]]:
+        return self.pipes[name].vocab
+
     def collate_fn(self, batch: List[NamedTuple]) -> NamedTuple:
         batch = self.Batch(*zip(*batch))
         return self.Batch(*[
-            self.pipelines[key].collate_fn(collected_ins)
+            self.pipes[key].collate_fn(collected_ins)
             for key, collected_ins in zip(batch._fields, batch)
         ])
 
     @classmethod
-    def loaders(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
+    def instance_iter(cls, **kwargs) -> Iterable[List[Any]]:
+        raise NotImplementedError
+
+    def dump(self, fp, batch: NamedTuple, *args, **kwargs) -> None:
+        raise NotImplementedError
+
+    @classmethod
+    def dataloaders(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
         raise NotImplementedError
 
 
 class DataLoader(data.DataLoader):
     @classmethod
-    def loaders(cls, datasets: Tuple[Dataset, ...], batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
-                num_workers: int = 1, pin_memory: bool = False, drop_last: bool = False) -> Tuple['DataLoader', ...]:
+    def dataloaders(cls, datasets: Tuple[Dataset, ...], batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
+                    num_workers: int = 1, pin_memory: bool = False, drop_last: bool = False) -> Tuple[
+        'DataLoader', ...]:
         if isinstance(batch_size, int):
             batch_sizes = itertools.repeat(batch_size)
         else:
             batch_sizes = batch_size
 
         for dataset in datasets:
-            for pipe in dataset.pipelines.values():
+            for pipe in dataset.pipes.values():
                 pipe.postprocess(dataset)
 
         return tuple(

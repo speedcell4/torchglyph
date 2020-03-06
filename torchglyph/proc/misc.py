@@ -1,7 +1,7 @@
 import re
 from typing import Pattern
 
-from torchglyph.proc import Flatten
+from torchglyph.proc.abc import Flatten
 
 
 class ToUpper(Flatten):

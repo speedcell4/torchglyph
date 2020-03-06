@@ -35,12 +35,12 @@ class Pipe(object):
     def preprocess(self, *datasets) -> Counter:
         counter = Counter()
         for dataset in datasets:
-            for key, pipe in dataset.pipelines.items():
+            for key, pipe in dataset.pipes.items():
                 flag = f'@{key}_{self.preprocess.__name__}_done'
                 if pipe is self and not getattr(dataset, flag, False):
-                    dataset.instances[key] = [
+                    dataset.data[key] = [
                         self._pre_processing(ins, counter=counter)
-                        for ins in dataset.instances[key]
+                        for ins in dataset.data[key]
                     ]
                     setattr(dataset, flag, True)
 
@@ -49,12 +49,12 @@ class Pipe(object):
     def postprocess(self, *datasets) -> 'Pipe':
         _ = self.preprocess(*datasets)
         for dataset in datasets:
-            for name, pipe in dataset.pipelines.items():
+            for name, pipe in dataset.pipes.items():
                 flag = f'@{name}_{self.postprocess.__name__}_done'
                 if pipe is self and not getattr(dataset, flag, False):
-                    dataset.instances[name] = [
+                    dataset.data[name] = [
                         self._post_processing(ins, vocab=self.vocab)
-                        for ins in dataset.instances[name]
+                        for ins in dataset.data[name]
                     ]
                     setattr(dataset, flag, True)
 

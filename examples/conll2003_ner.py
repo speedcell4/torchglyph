@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Iterable, Any
 
 from tqdm import tqdm
 
@@ -7,21 +7,16 @@ from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.io import conllx_iter
 from torchglyph.pipe import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PaddedSubPipe
 from torchglyph.pipe import PackedSubPipe
-from torchglyph.pipe import Pipe
 
 
 class CoNLL2003(Dataset):
-    def __init__(self, path: Path, pipelines: List[Dict[str, Pipe]]) -> None:
-        super(CoNLL2003, self).__init__(
-            instances=[
-                [datum for datum in zip(*sentence)]
-                for sentence in tqdm(conllx_iter(path), desc=f'reading {path}', unit=' sentences')
-            ],
-            pipelines=pipelines,
-        )
+    @classmethod
+    def instance_iter(cls, path: Path) -> Iterable[List[Any]]:
+        for sentence in tqdm(conllx_iter(path), desc=f'reading {path}', unit=' sentences'):
+            yield list(zip(*sentence))
 
     @classmethod
-    def loaders(cls, *paths: Path, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
+    def dataloaders(cls, *paths: Path, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
         WORD = PaddedSeqPipe(pad_token='<pad>', dim=50, device=device)
         WLEN = SeqLengthPipe(device=device)
         CHAR1 = PaddedSubPipe(device=device)
@@ -30,7 +25,7 @@ class CoNLL2003(Dataset):
         XPOS = PackedSeqPipe(device=device)
         TRGT = PackedSeqPipe(device=device)
 
-        train, dev, test = tuple(cls(path, pipelines=[
+        train, dev, test = tuple(cls(path=path, pipes=[
             dict(word=WORD, wlen=WLEN, char1=CHAR1, char2=CHAR2, wrng=WRNG),
             dict(xpos=XPOS),
             dict(),
@@ -44,7 +39,7 @@ class CoNLL2003(Dataset):
         XPOS.build_vocab(train)
         TRGT.build_vocab(train)
 
-        return DataLoader.loaders(
+        return DataLoader.dataloaders(
             (train, dev, test),
             batch_size=batch_size, shuffle=True,
         )
@@ -54,9 +49,9 @@ if __name__ == '__main__':
     path = Path('~/data/conll2003').expanduser().absolute()
     train, dev, test = path / 'train.stanford', path / 'dev.stanford', path / 'test.stanford'
 
-    train, dev, test = CoNLL2003.loaders(train, dev, test, batch_size=10)
+    train, dev, test = CoNLL2003.dataloaders(train, dev, test, batch_size=10)
 
-    print(train.dataset.pipelines['word'].vocab.stoi)
+    print(train.dataset.vocab("word").stoi)
 
     for batch in train:
         print(f'batch.char1 => {batch.char1}')
