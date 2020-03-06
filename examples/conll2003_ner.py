@@ -4,10 +4,10 @@ from typing import List, Tuple, Dict
 from tqdm import tqdm
 
 from torchglyph.dataset import Dataset, DataLoader
-from torchglyph.pipe.abc import Pipeline
 from torchglyph.io import conllx_iter
 from torchglyph.pipe import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PaddedSubPipe
 from torchglyph.pipe import PackedSubPipe
+from torchglyph.pipe import Pipeline
 
 
 class CoNLL2003(Dataset):

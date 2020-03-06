@@ -3,10 +3,8 @@ from typing import Union
 import torch
 
 from torchglyph.pipe import Pipeline
-from torchglyph.proc import Lift, ToDevice
-from torchglyph.proc import Numbering, UpdateCounter, BuildVocab
-from torchglyph.proc import ToSub
-from torchglyph.proc import ToTensor, PadSeq, PadSub, PackSub
+from torchglyph.proc import Lift, ToDevice, Numbering, UpdateCounter, BuildVocab
+from torchglyph.proc import ToSub, ToTensor, PadSeq, PadSub, PackSub
 
 
 class PaddedSubPipe(Pipeline):

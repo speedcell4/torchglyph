@@ -3,8 +3,7 @@ from typing import Union
 import torch
 
 from torchglyph.pipe import Pipeline
-from torchglyph.proc import GetLength, ToDevice
-from torchglyph.proc import Numbering, UpdateCounter, BuildVocab
+from torchglyph.proc import GetLength, ToDevice, Numbering, UpdateCounter, BuildVocab
 from torchglyph.proc import ToTensor
 
 
