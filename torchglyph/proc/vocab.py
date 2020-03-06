@@ -1,23 +1,17 @@
 from collections import Counter
-from typing import Any, Tuple
+from typing import Tuple, List, Union
 
 from torchglyph.proc import Flatten, Proc
 from torchglyph.proc.utiles import stoi
 from torchglyph.vocab import Vocab, Vectors, Glove
 
 
-class AddToCounter(Proc):
-    @classmethod
-    def obtain_tokens(cls, ins):
-        if isinstance(ins, str):
-            yield ins
-        else:
-            for x in ins:
-                yield from cls.obtain_tokens(x)
-
-    def __call__(self, ins, counter: Counter, **kwargs) -> Any:
-        counter.update(self.obtain_tokens(ins))
-        return ins
+class UpdateCounter(Proc):
+    def __call__(self, data: Union[str, List[str]], counter: Counter, **kwargs) -> Union[str, List[str]]:
+        if isinstance(data, str):
+            data = (data,)
+        counter.update(data)
+        return data
 
 
 class BuildVocab(Proc):
