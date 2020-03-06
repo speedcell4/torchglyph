@@ -3,7 +3,9 @@ from typing import Union
 import torch
 
 from torchglyph.dataset import Pipeline
-from torchglyph.proc import ToLength, ToTensor, AddToCounter, BuildVocab, Numbering, ToDevice
+from torchglyph.proc import GetLength, ToDevice
+from torchglyph.proc import Numbering, AddToCounter, BuildVocab
+from torchglyph.proc import ToTensor
 
 
 class PaddedTokPipe(Pipeline):
@@ -21,6 +23,6 @@ class SeqLengthPipe(Pipeline):
         super(SeqLengthPipe, self).__init__(
             pre_procs=None,
             vocab_procs=None,
-            post_procs=ToLength(),
+            post_procs=GetLength(),
             batch_procs=ToTensor() + ToDevice(device=device),
         )

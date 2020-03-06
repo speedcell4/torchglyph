@@ -1,8 +1,23 @@
 from collections import Counter
-from typing import Tuple
+from typing import Any, Tuple
 
-from torchglyph.proc import Proc
+from torchglyph.proc import Flatten, Proc
+from torchglyph.proc.utiles import stoi
 from torchglyph.vocab import Vocab, Vectors, Glove
+
+
+class AddToCounter(Proc):
+    @classmethod
+    def obtain_tokens(cls, ins):
+        if isinstance(ins, str):
+            yield ins
+        else:
+            for x in ins:
+                yield from cls.obtain_tokens(x)
+
+    def __call__(self, ins, counter: Counter, **kwargs) -> Any:
+        counter.update(self.obtain_tokens(ins))
+        return ins
 
 
 class BuildVocab(Proc):
@@ -16,7 +31,7 @@ class BuildVocab(Proc):
         self.max_size = max_size
         self.min_freq = min_freq
 
-    def __call__(self, vocab: Counter) -> Vocab:
+    def __call__(self, vocab: Counter, **kwargs) -> Vocab:
         return Vocab(
             counter=vocab,
             unk_token=self.unk_token,
@@ -26,12 +41,17 @@ class BuildVocab(Proc):
         )
 
 
+class Numbering(Flatten):
+    def process(self, token: str, vocab: Vocab, **kwargs) -> int:
+        return stoi(token=token, vocab=vocab)
+
+
 class LoadVectors(Proc):
     def __init__(self, vectors: Vectors) -> None:
         super(LoadVectors, self).__init__()
         self.vectors = vectors
 
-    def __call__(self, vocab: Vocab) -> Vocab:
+    def __call__(self, vocab: Vocab, **kwargs) -> Vocab:
         assert vocab is not None, f"did you forget '{BuildVocab.__name__}' before '{LoadVectors.__name__}'?"
 
         vocab.load_vectors(self.vectors)
