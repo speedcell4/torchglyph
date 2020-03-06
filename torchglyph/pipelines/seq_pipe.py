@@ -2,7 +2,8 @@ from typing import Union
 
 from torchglyph.dataset import Pipeline
 from torchglyph.processes import AddToCounter, BuildVocab, ToTensor, ToRange, LoadGlove
-from torchglyph.processes import PackAccSeqBatch, Numbering, PackSeqBatch, PadSeqBatch
+from torchglyph.proc import Scan
+from torchglyph.processes import Numbering, PackSeqBatch, PadSeqBatch
 
 
 class PaddedSeqPipe(Pipeline):
@@ -31,5 +32,5 @@ class PackedSeqRangePipe(Pipeline):
             pre_procs=None,
             vocab_procs=None,
             post_procs=ToRange() + ToTensor(),
-            batch_procs=PackAccSeqBatch(),
+            batch_procs=Scan(lambda t, a: (t + a, t.size(0) + a), 0) + PackSeqBatch(),
         )

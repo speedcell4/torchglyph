@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Optional, Union, Any, List
+from typing import Optional, Union, Any, List, Callable, Tuple
 
 from torchglyph.vocab import Vocab
 
@@ -41,6 +41,22 @@ class Flatten(Proc):
         if isinstance(data, str):
             return self.process(data, *args, **kwargs)
         return type(data)([self(datum, *args, **kwargs) for datum in data])
+
+
+class Scan(Proc):
+    def __init__(self, fn: Callable[[Any, Any], Tuple[Any, Any]], init: Any) -> None:
+        super(Scan, self).__init__()
+        self.fn = fn
+        self.init = init
+
+    def __call__(self, xs: List[Any], vocab: Vocab = None) -> List[Any]:
+        z = self.init
+
+        ys = []
+        for x in xs:
+            y, z = self.fn(x, z)
+            ys.append(y)
+        return ys
 
 
 class Chain(Proc):

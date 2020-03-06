@@ -30,7 +30,7 @@ class CoNLL2003(Dataset):
         TRGT = PackedSeqPipe()
 
         train, dev, test = tuple(cls(path, pipelines=[
-            dict(word=WORD, wlen=WLEN, char1=CHAR1, char2=CHAR2, WRNG=WRNG),
+            dict(word=WORD, wlen=WLEN, char1=CHAR1, char2=CHAR2, wrng=WRNG),
             dict(xpos=XPOS),
             dict(),
             dict(),
@@ -60,4 +60,5 @@ if __name__ == '__main__':
     for batch in train:
         print(f'batch.char1 => {batch.char1}')
         print(f'batch.char2 => {batch.char2}')
+        print(f'batch.wrng => {batch.wrng}')
         break
