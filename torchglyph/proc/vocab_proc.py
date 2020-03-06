@@ -1,11 +1,11 @@
 from collections import Counter
 from typing import Tuple
 
-from torchglyph.proc.abc import VocabProc
+from torchglyph.proc import Proc
 from torchglyph.vocab import Vocab, Vectors, Glove
 
 
-class BuildVocab(VocabProc):
+class BuildVocab(Proc):
     def __init__(self, unk_token: str = '<unk>', pad_token: str = None,
                  special_tokens: Tuple[str, ...] = (),
                  max_size: int = None, min_freq: int = 1) -> None:
@@ -26,7 +26,7 @@ class BuildVocab(VocabProc):
         )
 
 
-class LoadVectors(VocabProc):
+class LoadVectors(Proc):
     def __init__(self, vectors: Vectors) -> None:
         super(LoadVectors, self).__init__()
         self.vectors = vectors

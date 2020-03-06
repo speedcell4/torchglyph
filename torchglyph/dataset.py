@@ -5,16 +5,16 @@ from typing import Union, List, Tuple, Dict, Any, Optional, NamedTuple, Callable
 
 from torch.utils import data
 
-from torchglyph.proc import Chain, PreProc, VocabProc, PostProc, BatchProc
+from torchglyph.proc import Chain, Proc
 from torchglyph.vocab import Vocab
 
 
 class Pipeline(object):
     def __init__(self,
-                 pre_procs: Optional[Union[Chain, PreProc]],
-                 vocab_procs: Optional[Union[Chain, VocabProc]],
-                 post_procs: Optional[Union[Chain, PostProc]],
-                 batch_procs: Optional[Union[Chain, BatchProc]]) -> None:
+                 pre_procs: Optional[Union[Chain, Proc]],
+                 vocab_procs: Optional[Union[Chain, Proc]],
+                 post_procs: Optional[Union[Chain, Proc]],
+                 batch_procs: Optional[Union[Chain, Proc]]) -> None:
         super(Pipeline, self).__init__()
 
         self.vocab: Optional[Union[Vocab]] = None
@@ -25,10 +25,10 @@ class Pipeline(object):
         self._batch_processing = Chain(batch_procs)
 
     def replace(self,
-                pre_procs: Optional[Union[Chain, PreProc]] = None,
-                vocab_procs: Optional[Union[Chain, VocabProc]] = None,
-                post_procs: Optional[Union[Chain, PostProc]] = None,
-                batch_procs: Optional[Union[Chain, BatchProc]] = None) -> 'Pipeline':
+                pre_procs: Optional[Union[Chain, Proc]] = None,
+                vocab_procs: Optional[Union[Chain, Proc]] = None,
+                post_procs: Optional[Union[Chain, Proc]] = None,
+                batch_procs: Optional[Union[Chain, Proc]] = None) -> 'Pipeline':
         return Pipeline(
             pre_procs=self._pre_processing if pre_procs is None else pre_procs,
             vocab_procs=self._vocab_processing if vocab_procs is None else vocab_procs,

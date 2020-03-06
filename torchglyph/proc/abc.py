@@ -1,4 +1,3 @@
-from collections import Counter
 from typing import Optional, Union, Any, List, Callable, Tuple
 
 from torchglyph.vocab import Vocab
@@ -83,27 +82,3 @@ class Chain(Proc):
         for process in self.procs:
             x = process(x, *args, **kwargs)
         return x
-
-
-# stage processes
-
-class PreProc(Proc):
-    def __call__(self, ins: Any, counter: Counter) -> Any:
-        raise NotImplementedError
-
-
-class VocabProc(Proc):
-    def __call__(self, vocab: Union[Counter, Vocab]) -> Union[Counter, Vocab]:
-        raise NotImplementedError
-
-
-class PostProc(Proc):
-    def __call__(self, ins: Any, vocab: Vocab) -> Any:
-        raise NotImplementedError
-
-
-class BatchProc(Proc):
-    Batch = List[Any]
-
-    def __call__(self, batch: Batch, vocab: Vocab) -> Any:
-        raise NotImplementedError

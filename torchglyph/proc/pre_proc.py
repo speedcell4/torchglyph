@@ -2,7 +2,7 @@ from collections import Counter
 from typing import Any
 from typing import List
 
-from torchglyph.proc.abc import Flatten, PreProc
+from torchglyph.proc import Flatten, Proc
 
 
 class ToInt(Flatten):
@@ -30,7 +30,7 @@ class ToSub(Flatten):
         return [c for c in data]
 
 
-class Prepend(PreProc):
+class Prepend(Proc):
     def __init__(self, token: Any, num_repeats: int = 1) -> None:
         super(Prepend, self).__init__()
         self.token = token
@@ -40,7 +40,7 @@ class Prepend(PreProc):
         return [self.token for _ in range(self.num_repeats)] + list(ins)
 
 
-class Append(PreProc):
+class Append(Proc):
     def __init__(self, token: Any, num_repeats: int = 1) -> None:
         super(Append, self).__init__()
         self.token = token
@@ -50,7 +50,7 @@ class Append(PreProc):
         return list(ins) + [self.token for _ in range(self.num_repeats)]
 
 
-class AddToCounter(PreProc):
+class AddToCounter(Proc):
     @classmethod
     def obtain_tokens(cls, ins):
         if isinstance(ins, str):

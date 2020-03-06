@@ -1,7 +1,7 @@
 from torchglyph.dataset import Pipeline
-from torchglyph.proc import Lift
+from torchglyph.proc import Lift, PadSeq
 from torchglyph.proc import ToSub, AddToCounter, BuildVocab, Numbering, PackSub, PadSub, \
-    Union, ToPad
+    Union
 from torchglyph.proc import ToTensor
 
 
@@ -10,7 +10,7 @@ class PaddedSubPipe(Pipeline):
         super(PaddedSubPipe, self).__init__(
             pre_procs=ToSub() + AddToCounter(),
             vocab_procs=BuildVocab(pad_token=pad_token),
-            post_procs=Numbering() + Lift(ToTensor()) + ToPad(pad_token=pad_token, batch_first=True),
+            post_procs=Numbering() + Lift(ToTensor()) + PadSeq(pad_token=pad_token, batch_first=True),
             batch_procs=PadSub(pad_token=pad_token, batch_first=batch_first),
         )
 
