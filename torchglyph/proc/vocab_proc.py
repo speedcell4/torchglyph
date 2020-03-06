@@ -1,7 +1,7 @@
 from collections import Counter
 from typing import Tuple
 
-from torchglyph.proc import VocabProc
+from torchglyph.proc.abc import VocabProc
 from torchglyph.vocab import Vocab, Vectors, Glove
 
 

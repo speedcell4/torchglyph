@@ -1,5 +1,5 @@
 from torchglyph.dataset import Pipeline
-from torchglyph.processes import ToLength, PadTokBatch
+from torchglyph.proc import ToLength, PadTokBatch
 
 
 class SeqLengthPipe(Pipeline):

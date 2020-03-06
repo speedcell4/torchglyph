@@ -1,9 +1,8 @@
-from torchglyph.proc import Lift
-from torchglyph.processes.post_proc import ToTensor
-
 from torchglyph.dataset import Pipeline
-from torchglyph.processes import ToSub, AddToCounter, BuildVocab, Numbering, PackSubBatch, PadSubBatch, \
+from torchglyph.proc import Lift
+from torchglyph.proc import ToSub, AddToCounter, BuildVocab, Numbering, PackSubBatch, PadSubBatch, \
     Union, ToPad
+from torchglyph.proc import ToTensor
 
 
 class PaddedSubPipe(Pipeline):

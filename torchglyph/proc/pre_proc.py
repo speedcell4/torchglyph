@@ -2,7 +2,7 @@ from collections import Counter
 from typing import Any
 from typing import List
 
-from torchglyph.proc import Flatten, PreProc
+from torchglyph.proc.abc import Flatten, PreProc
 
 
 class ToInt(Flatten):

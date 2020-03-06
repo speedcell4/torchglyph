@@ -4,7 +4,7 @@ import torch
 from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence
 
-from torchglyph.proc import BatchProc
+from torchglyph.proc.abc import BatchProc
 from torchglyph.vocab import Vocab
 
 

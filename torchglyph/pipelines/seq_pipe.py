@@ -1,9 +1,9 @@
 from typing import Union
 
 from torchglyph.dataset import Pipeline
-from torchglyph.processes import AddToCounter, BuildVocab, ToTensor, ToRange, LoadGlove
+from torchglyph.proc import AddToCounter, BuildVocab, ToTensor, ToRange, LoadGlove
+from torchglyph.proc import Numbering, PackSeqBatch, PadSeqBatch
 from torchglyph.proc import Scan
-from torchglyph.processes import Numbering, PackSeqBatch, PadSeqBatch
 
 
 class PaddedSeqPipe(Pipeline):

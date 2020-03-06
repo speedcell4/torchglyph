@@ -5,7 +5,7 @@ import torch
 from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence
 
-from torchglyph.proc import Flatten, PostProc
+from torchglyph.proc.abc import Flatten, PostProc
 from torchglyph.vocab import Vocab
 
 
