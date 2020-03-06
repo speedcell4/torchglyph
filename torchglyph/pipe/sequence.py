@@ -7,6 +7,37 @@ from torchglyph.proc import GetRange, ToDevice, Numbering, UpdateCounter, BuildV
 from torchglyph.proc import Scan, ToTensor, PadSeq, PackSeq
 
 
+class RawStrPipe(Pipe):
+    def __init__(self) -> None:
+        super(RawStrPipe, self).__init__(
+            pre_procs=None,
+            vocab_procs=None,
+            post_procs=None,
+            batch_procs=None,
+        )
+
+
+class RawPaddedTensorPipe(Pipe):
+    def __init__(self, device: Union[int, torch.device], pad_token: Union[str, int],
+                 dtype: torch.dtype = torch.long, batch_first: bool = True) -> None:
+        super(RawPaddedTensorPipe, self).__init__(
+            pre_procs=None,
+            vocab_procs=None,
+            post_procs=ToTensor(dtype=dtype),
+            batch_procs=PadSeq(pad_token, batch_first) + ToDevice(device=device),
+        )
+
+
+class RawPackedTensorPipe(Pipe):
+    def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
+        super(RawPackedTensorPipe, self).__init__(
+            pre_procs=None,
+            vocab_procs=None,
+            post_procs=ToTensor(dtype=dtype),
+            batch_procs=PackSeq() + ToDevice(device=device),
+        )
+
+
 class PaddedSeqPipe(Pipe):
     def __init__(self, device: Union[int, torch.device],
                  pad_token: Union[str, int], batch_first: bool = True,
