@@ -16,6 +16,11 @@ class Proc(object):
         return Chain(lhs, self)
 
     def __call__(self, x: Any, *args, **kwargs) -> Any:
+        raise NotImplementedError
+
+
+class Identity(Proc):
+    def __call__(self, x: Any, *args, **kwargs) -> Any:
         return x
 
 
