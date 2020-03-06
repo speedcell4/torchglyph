@@ -8,26 +8,13 @@ from torchglyph.proc.abc import BatchProc
 from torchglyph.vocab import Vocab
 
 
-class PadTokBatch(BatchProc):
-    Batch = List[int]
-
-    def __init__(self, dtype: torch.dtype = torch.long) -> None:
-        super(PadTokBatch, self).__init__()
-        self.dtype = dtype
-
-    def __call__(self, batch: Batch, vocab: Vocab) -> Tensor:
-        return torch.tensor(batch, dtype=self.dtype, requires_grad=False)
-
-
-class PadSeqBatch(BatchProc):
-    Batch = List[Tensor]
-
+class PadSeq(BatchProc):
     def __init__(self, pad_token: Union[int, str], batch_first: bool = True) -> None:
-        super(PadSeqBatch, self).__init__()
+        super(PadSeq, self).__init__()
         self.pad_token = pad_token
         self.batch_first = batch_first
 
-    def __call__(self, batch: Batch, vocab: Vocab) -> Tensor:
+    def __call__(self, batch: List[Tensor], vocab: Vocab) -> Tensor:
         if isinstance(self.pad_token, str):
             assert vocab is not None, 'Vocab is not built yet'
             assert self.pad_token in vocab.stoi, f'{self.pad_token} is not in Vocab'
@@ -41,26 +28,22 @@ class PadSeqBatch(BatchProc):
         )
 
 
-class PackSeqBatch(BatchProc):
-    Batch = List[Tensor]
-
+class PackSeq(BatchProc):
     def __init__(self, enforce_sorted: bool = False) -> None:
-        super(PackSeqBatch, self).__init__()
+        super(PackSeq, self).__init__()
         self.enforce_sorted = enforce_sorted
 
-    def __call__(self, batch: Batch, vocab: Vocab) -> PackedSequence:
+    def __call__(self, batch: List[Tensor], vocab: Vocab) -> PackedSequence:
         return pack_sequence(batch, enforce_sorted=self.enforce_sorted)
 
 
-class PadSubBatch(BatchProc):
-    Batch = List[Tensor]
-
+class PadSub(BatchProc):
     def __init__(self, pad_token: str, batch_first: bool = True) -> None:
-        super(PadSubBatch, self).__init__()
+        super(PadSub, self).__init__()
         self.pad_token = pad_token
         self.batch_first = batch_first
 
-    def __call__(self, batch: Batch, vocab: Vocab) -> Tensor:
+    def __call__(self, batch: List[Tensor], vocab: Vocab) -> Tensor:
         if isinstance(self.pad_token, str):
             assert vocab is not None
             assert self.pad_token in vocab.stoi
@@ -82,14 +65,12 @@ class PadSubBatch(BatchProc):
         return tensor.clone()
 
 
-class PackSubBatch(BatchProc):
-    Batch = List[List[Tensor]]
-
+class PackSub(BatchProc):
     def __init__(self, enforce_sorted: bool = False) -> None:
-        super(PackSubBatch, self).__init__()
+        super(PackSub, self).__init__()
         self.enforce_sorted = enforce_sorted
 
-    def __call__(self, batch: Batch, vocab: Vocab) -> PackedSequence:
+    def __call__(self, batch: List[List[Tensor]], vocab: Vocab) -> PackedSequence:
         char = [torch.cat(words, dim=0) for words in batch]
         return pack_sequence(char, enforce_sorted=self.enforce_sorted)
 

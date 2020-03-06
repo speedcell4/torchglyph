@@ -1,5 +1,5 @@
 from torchglyph.dataset import Pipeline
-from torchglyph.proc import ToLength, PadTokBatch
+from torchglyph.proc import ToLength, ToTensor
 
 
 class SeqLengthPipe(Pipeline):
@@ -8,5 +8,5 @@ class SeqLengthPipe(Pipeline):
             pre_procs=None,
             vocab_procs=None,
             post_procs=ToLength(),
-            batch_procs=PadTokBatch(),
+            batch_procs=ToTensor(),
         )

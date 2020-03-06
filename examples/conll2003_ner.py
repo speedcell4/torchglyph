@@ -61,4 +61,5 @@ if __name__ == '__main__':
         print(f'batch.char1 => {batch.char1}')
         print(f'batch.char2 => {batch.char2}')
         print(f'batch.wrng => {batch.wrng}')
+        print(f'batch.wlen => {batch.wlen}')
         break
