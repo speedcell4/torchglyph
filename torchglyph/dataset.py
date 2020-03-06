@@ -24,12 +24,15 @@ class Dataset(data.Dataset):
         if self.Batch.__name__ not in globals():
             globals()[self.Batch.__name__] = self.Batch
 
-        self._len = 0
         self.data: Dict[str, List[Any]] = {}
         for ins, pipes in zip(zip(*self.instance_iter(**kwargs)), pipes):
             for key, pipe in pipes.items():
                 self.data.setdefault(key, []).extend(ins)
-            self._len += 1
+
+        self._len = 0  # cache the number of instances
+        for datum in self.data.values():
+            self._len = len(datum)
+            break
 
     def __getitem__(self, index: int) -> NamedTuple:
         return self.Batch(*[
