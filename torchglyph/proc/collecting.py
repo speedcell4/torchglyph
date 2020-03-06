@@ -5,8 +5,8 @@ from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence
 
 from torchglyph.proc.abc import Proc
-from torchglyph.proc.vocab import Numbering
 from torchglyph.proc.utiles import stoi
+from torchglyph.proc.vocab import Numbering
 from torchglyph.vocab import Vocab
 
 
@@ -65,10 +65,9 @@ class PackSeq(Proc):
 
 
 class PadSub(Proc):
-    def __init__(self, pad_token: str, batch_first: bool = True) -> None:
+    def __init__(self, pad_token: str) -> None:
         super(PadSub, self).__init__()
         self.pad_token = pad_token
-        self.batch_first = batch_first
 
     def __call__(self, data: List[Tensor], vocab: Vocab, **kwargs) -> Tensor:
         dim1, dim2 = zip(*[d.size() for d in data])
