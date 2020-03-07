@@ -23,16 +23,16 @@ class CoNLL2000Chunking(Dataset):
 
     @classmethod
     def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
-        word = PackedSeqPipe(device=device).with_(
+        word = PackedSeqPipe(device=device, unk_token='<unk>').with_(
             pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
             vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
         )
         length = SeqLengthPipe(device=device)
-        char = PackedSubPipe(device=device)
+        char = PackedSubPipe(device=device, unk_token='<unk>')
         word_indices = PackedSeqIndicesPipe(device=device)
         mask = PaddedSeqMaskPipe(device=device, filling_mask=True)
-        pos = PackedSeqPipe(device=device)
-        chunk = PaddedSeqPipe(pad_token='<pad>', device=device)
+        pos = PackedSeqPipe(device=device, unk_token='<unk>')
+        chunk = PaddedSeqPipe(unk_token='<O>', pad_token='O', device=device)
 
         pipes = [
             dict(word=word, length=length, char=char, word_indices=word_indices, mask=mask, raw_word=RawStrPipe()),
@@ -73,17 +73,17 @@ class CoNLL2003NER(Dataset):
 
     @classmethod
     def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
-        word = PackedSeqPipe(device=device).with_(
+        word = PackedSeqPipe(device=device, unk_token='<unk>').with_(
             pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
             vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
         )
         length = SeqLengthPipe(device=device)
-        char = PackedSubPipe(device=device)
+        char = PackedSubPipe(device=device, unk_token='<unk>')
         word_indices = PackedSeqIndicesPipe(device=device)
         mask = PaddedSeqMaskPipe(device=device, filling_mask=True)
-        pos = PackedSeqPipe(device=device)
-        chunk = PackedSeqPipe(device=device)
-        ner = PaddedSeqPipe(pad_token='<pad>', device=device)
+        pos = PackedSeqPipe(device=device, unk_token='<unk>')
+        chunk = PackedSeqPipe(device=device, unk_token='<unk>')
+        ner = PaddedSeqPipe(unk_token='O', pad_token='O', device=device)
 
         pipes = [
             dict(word=word, length=length, char=char, word_indices=word_indices, mask=mask, raw_word=RawStrPipe()),

@@ -41,20 +41,21 @@ class RawPackedTensorPipe(Pipe):
 
 class PaddedSeqPipe(Pipe):
     def __init__(self, device: Union[int, torch.device],
-                 pad_token: Union[str, int], threshold: int = 10, batch_first: bool = True) -> None:
+                 unk_token: Union[str, int], pad_token: Union[str, int],
+                 threshold: int = 10, batch_first: bool = True) -> None:
         super(PaddedSeqPipe, self).__init__(
             pre=UpdateCounter(),
-            vocab=BuildVocab(special_tokens=(pad_token,)) + StatsVocab(threshold=threshold),
+            vocab=BuildVocab(unk_token=unk_token, special_tokens=(pad_token,)) + StatsVocab(threshold=threshold),
             post=Numbering() + ToTensor(),
             batch=PadSeq(pad_token=pad_token, batch_first=batch_first) + ToDevice(device=device),
         )
 
 
 class PackedSeqPipe(Pipe):
-    def __init__(self, device: Union[int, torch.device], threshold: int = 10) -> None:
+    def __init__(self, device: Union[int, torch.device], unk_token: Union[str, int], threshold: int = 10) -> None:
         super(PackedSeqPipe, self).__init__(
             pre=UpdateCounter(),
-            vocab=BuildVocab() + StatsVocab(threshold=threshold),
+            vocab=BuildVocab(unk_token=unk_token, ) + StatsVocab(threshold=threshold),
             post=Numbering() + ToTensor(),
             batch=PackSeq() + ToDevice(device=device),
         )

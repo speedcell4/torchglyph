@@ -8,10 +8,10 @@ from torchglyph.proc import ToTensor, StatsVocab
 
 
 class PaddedTokPipe(Pipe):
-    def __init__(self, device: Union[int, torch.device], threshold: int = 10) -> None:
+    def __init__(self, device: Union[int, torch.device], unk_token: Union[str, int], threshold: int = 10) -> None:
         super(PaddedTokPipe, self).__init__(
             pre=UpdateCounter(),
-            vocab=BuildVocab(pad_token=None) + StatsVocab(threshold=threshold),
+            vocab=BuildVocab(unk_token=unk_token, pad_token=None) + StatsVocab(threshold=threshold),
             post=Numbering(),
             batch=ToTensor() + ToDevice(device=device),
         )
