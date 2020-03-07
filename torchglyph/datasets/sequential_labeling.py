@@ -1,15 +1,12 @@
 import logging
 from pathlib import Path
-from typing import List, Tuple, Iterable, Any
+from typing import Iterable, List, Any, Tuple, Optional
 
 from tqdm import tqdm
 
-from torchglyph import PaddedSeqMaskPipe
-from torchglyph.dataset import Dataset, DataLoader
+from torchglyph import Dataset, DataLoader, PackedSeqPipe, ToLower, ReplaceDigits, LoadGlove, SeqLengthPipe, \
+    PackedSubPipe, PackedSeqIndicesPipe, PaddedSeqMaskPipe, PaddedSeqPipe, RawStrPipe, Identity
 from torchglyph.io import conllx_iter
-from torchglyph.pipe import PackedSeqPipe, PackedSubPipe, PackedSeqIndicesPipe
-from torchglyph.pipe import PaddedSeqPipe, SeqLengthPipe, RawStrPipe
-from torchglyph.proc import LoadGlove, ReplaceDigits, ToLower
 
 
 class CoNLL2003(Dataset):
@@ -26,10 +23,10 @@ class CoNLL2003(Dataset):
             yield [word, pos, chunk, ner]
 
     @classmethod
-    def new(cls, batch_size: int, word_dim: int, device: int = -1) -> Tuple[DataLoader, ...]:
+    def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
         word = PackedSeqPipe(device=device).with_(
             pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
-            vocab=... + LoadGlove(name='6B', dim=word_dim),
+            vocab=... + Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim),
         )
         wsln = SeqLengthPipe(device=device)
         char = PackedSubPipe(device=device)
@@ -64,27 +61,3 @@ class CoNLL2003(Dataset):
             (train, dev, test),
             batch_size=batch_size, shuffle=True,
         )
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-
-    train, dev, test = CoNLL2003.new(batch_size=10, word_dim=50)
-    logging.info(f'len(train.dataset) => {len(train.dataset)}')
-    logging.info(f'len(dev.dataset) => {len(dev.dataset)}')
-    logging.info(f'len(test.dataset) => {len(test.dataset)}')
-
-    vocabs = train.vocabs
-    for name, vocab in zip(vocabs._fields, vocabs):
-        logging.info(f'{name} => {vocab}')
-
-    for batch in train:
-        logging.info(f'batch.word => {batch.word.size()}')
-        logging.info(f'batch.wsln => {batch.wsln.size()}')
-        logging.info(f'batch.char => {batch.char.size()}')
-        logging.info(f'batch.widx => {batch.widx.size()}')
-        logging.info(f'batch.pos => {batch.pos.size()}')
-        logging.info(f'batch.chunk => {batch.chunk.size()}')
-        logging.info(f'batch.ner => {batch.ner.size()}')
-        logging.info(f'batch.mask => {batch.mask.size()}')
-        break
