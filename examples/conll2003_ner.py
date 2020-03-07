@@ -12,13 +12,13 @@ from torchglyph.proc import LoadGlove, ReplaceDigits, ToLower, StatsVocab
 
 class CoNLL2003(Dataset):
     @classmethod
-    def instance_iter(cls, path: Path) -> Iterable[List[Any]]:
+    def iter(cls, path: Path) -> Iterable[List[Any]]:
         for sentence in tqdm(conllx_iter(path), desc=f'reading {path}', unit=' sentences'):
             word, pos, head, drel, ner = list(zip(*sentence))
             yield [word, pos, [int(h) for h in head], drel, ner]
 
     @classmethod
-    def loader_iter(cls, *paths: Path, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
+    def new(cls, *paths: Path, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
         word = PackedSeqPipe(device=device).with_(
             pre=ToLower() + ReplaceDigits('<digits>') + ...,
             vocab=... + LoadGlove(name='6B', dim=50) + StatsVocab(),
@@ -55,7 +55,7 @@ class CoNLL2003(Dataset):
         pos.build_vocab(train, name='pos')
         ner.build_vocab(train, name='ner')
 
-        return DataLoader.loader_iter(
+        return DataLoader.new(
             (train, dev, test),
             batch_size=batch_size, shuffle=True,
         )
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     root = Path('~/data/conll2003').expanduser().absolute()
     train, dev, test = root / 'train.stanford', root / 'dev.stanford', root / 'test.stanford'
 
-    train, dev, test = CoNLL2003.loader_iter(train, dev, test, batch_size=10)
+    train, dev, test = CoNLL2003.new(train, dev, test, batch_size=10)
     print(f'len(train) => {len(train)}')
     print(f'len(dev) => {len(dev)}')
     print(f'len(test) => {len(test)}')

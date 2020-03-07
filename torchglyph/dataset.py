@@ -24,7 +24,7 @@ class Dataset(data.Dataset):
             globals()[self.Batch.__name__] = self.Batch
 
         self.data: Dict[str, List[Any]] = {}
-        for ins, pipes in zip(zip(*self.instance_iter(**kwargs)), pipes):
+        for ins, pipes in zip(zip(*self.iter(**kwargs)), pipes):
             for key, pipe in pipes.items():
                 self.data.setdefault(key, []).extend(ins)
 
@@ -50,23 +50,23 @@ class Dataset(data.Dataset):
         ])
 
     @classmethod
-    def instance_iter(cls, **kwargs) -> Iterable[List[Any]]:
+    def iter(cls, **kwargs) -> Iterable[List[Any]]:
         raise NotImplementedError
 
     def dump(self, fp, batch: NamedTuple, *args, **kwargs) -> None:
         raise NotImplementedError
 
     @classmethod
-    def loader_iter(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
+    def new(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
         raise NotImplementedError
 
 
 class DataLoader(data.DataLoader):
     @classmethod
-    def loader_iter(cls, datasets: Tuple[Dataset, ...],
-                    batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
-                    num_workers: int = 1, pin_memory: bool = False,
-                    drop_last: bool = False) -> Tuple['DataLoader', ...]:
+    def new(cls, datasets: Tuple[Dataset, ...],
+            batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
+            num_workers: int = 1, pin_memory: bool = False,
+            drop_last: bool = False) -> Tuple['DataLoader', ...]:
         if isinstance(batch_size, int):
             batch_sizes = itertools.repeat(batch_size)
         else:
