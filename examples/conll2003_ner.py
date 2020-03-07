@@ -7,7 +7,7 @@ from tqdm import tqdm
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.io import conllx_iter
 from torchglyph.pipe import PackedSeqPipe, PackedSubPipe, PackedSeqIndicesPipe, PaddedSeqPipe, SeqLengthPipe, RawStrPipe
-from torchglyph.proc import LoadGlove, ReplaceDigits, ToLower, StatsVocab
+from torchglyph.proc import LoadGlove, ReplaceDigits, ToLower
 
 
 class CoNLL2003(Dataset):
@@ -27,22 +27,14 @@ class CoNLL2003(Dataset):
     def new(cls, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
         word = PackedSeqPipe(device=device).with_(
             pre=ToLower() + ReplaceDigits('<digits>') + ...,
-            vocab=... + LoadGlove(name='6B', dim=50) + StatsVocab(),
+            vocab=... + LoadGlove(name='6B', dim=50),
         )
         wsln = SeqLengthPipe(device=device)
-        char = PackedSubPipe(device=device).with_(
-            vocab=... + StatsVocab(),
-        )
+        char = PackedSubPipe(device=device)
         widx = PackedSeqIndicesPipe(device=device)
-        pos = PackedSeqPipe(device=device).with_(
-            vocab=... + StatsVocab(),
-        )
-        chunk = PackedSeqPipe(device=device).with_(
-            vocab=... + StatsVocab(),
-        )
-        ner = PaddedSeqPipe(pad_token='<pad>', device=device).with_(
-            vocab=... + StatsVocab(),
-        )
+        pos = PackedSeqPipe(device=device)
+        chunk = PackedSeqPipe(device=device)
+        ner = PaddedSeqPipe(pad_token='<pad>', device=device)
 
         pipes = [
             dict(word=word, wsln=wsln, char=char, widx=widx, raw_word=RawStrPipe()),
