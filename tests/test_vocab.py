@@ -1,8 +1,10 @@
+from hypothesis import given, strategies as st
+
 from torchglyph.vocab import Glove
 
 
-def test_glove_repr() -> None:
-    vectors = Glove('6B', 50)
-    assert 'Glove(tok=400000, dim=50, unk_token=None)' == f'{vectors}'
-    vectors.vectors = None
-    assert 'Glove(tok=400000, unk_token=None)' == f'{vectors}'
+@given(vec_dim=st.sampled_from([50, 100, 200]))
+def test_glove(vec_dim: int) -> None:
+    vectors = Glove(name='6B', dim=vec_dim)
+    assert len(vectors) == 400000
+    assert vectors.vec_dim == vec_dim
