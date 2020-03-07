@@ -26,11 +26,19 @@ class CoNLL2003(Dataset):
             vocab=... + LoadGlove(name='6B', dim=50) + StatsVocab(),
         )
         WLEN = SeqLengthPipe(device=device)
-        CHAR1 = PaddedSubPipe(device=device)
-        CHAR2 = PackedSubPipe(device=device)
+        CHAR1 = PaddedSubPipe(device=device).new_(
+            vocab=... + StatsVocab(),
+        )
+        CHAR2 = PackedSubPipe(device=device).new_(
+            vocab=... + StatsVocab(),
+        )
         WRNG = PackedSeqRangePipe(device=device)
-        XPOS = PackedSeqPipe(device=device)
-        TRGT = PackedSeqPipe(device=device)
+        XPOS = PackedSeqPipe(device=device).new_(
+            vocab=... + StatsVocab(),
+        )
+        TARGET = PackedSeqPipe(device=device).new_(
+            vocab=... + StatsVocab(),
+        )
 
         print(f'WORD => {WORD}')
         print(f'WLEN => {WLEN}')
@@ -38,7 +46,7 @@ class CoNLL2003(Dataset):
         print(f'CHAR2 => {CHAR2}')
         print(f'WRNG => {WRNG}')
         print(f'XPOS => {XPOS}')
-        print(f'TRGT => {TRGT}')
+        print(f'TARGET => {TARGET}')
 
         train, dev, test = tuple(cls(path=path, pipes=[
             dict(word=WORD, wlen=WLEN, char1=CHAR1, char2=CHAR2, wrng=WRNG, raw_word=RawStrPipe()),
@@ -46,14 +54,14 @@ class CoNLL2003(Dataset):
             dict(raw_head_pad=RawPaddedTensorPipe(device=device, pad_token=-1),
                  raw_head_pack=RawPackedTensorPipe(device=device)),
             dict(raw_drel=RawStrPipe()),
-            dict(target=TRGT),
+            dict(target=TARGET),
         ]) for path in paths)
 
         WORD.build_vocab(train, dev, test, name='word')
-        CHAR1.build_vocab(train, dev, test)
-        CHAR2.build_vocab(train, dev, test)
-        XPOS.build_vocab(train)
-        TRGT.build_vocab(train)
+        CHAR1.build_vocab(train, dev, test, name='char1')
+        CHAR2.build_vocab(train, dev, test, name='char2')
+        XPOS.build_vocab(train, name='xpos')
+        TARGET.build_vocab(train, name='target')
 
         return DataLoader.dataloaders(
             (train, dev, test),
