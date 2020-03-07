@@ -5,7 +5,7 @@ import torch
 from torchglyph.pipe import Pipe
 from torchglyph.pipe.utilities import cum_index
 from torchglyph.proc import GetRange, ToDevice, Numbering, UpdateCounter, BuildVocab
-from torchglyph.proc import ScanL, ToTensor, PadSeq, PackSeq, StatsVocab, GetMask
+from torchglyph.proc import ScanL, ToTensor, PadSeq, PackSeq, StatsVocab, GetMask, ToInt
 
 
 class RawStrPipe(Pipe):
@@ -22,7 +22,7 @@ class RawPaddedTensorPipe(Pipe):
     def __init__(self, device: Union[int, torch.device], pad_token: Union[str, int],
                  dtype: torch.dtype = torch.long, batch_first: bool = True) -> None:
         super(RawPaddedTensorPipe, self).__init__(
-            pre=None,
+            pre=ToInt(),
             vocab=None,
             post=ToTensor(dtype=dtype),
             batch=PadSeq(pad_token=pad_token, batch_first=batch_first) + ToDevice(device=device),
@@ -32,7 +32,7 @@ class RawPaddedTensorPipe(Pipe):
 class RawPackedTensorPipe(Pipe):
     def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
         super(RawPackedTensorPipe, self).__init__(
-            pre=None,
+            pre=ToInt(),
             vocab=None,
             post=ToTensor(dtype=dtype),
             batch=PackSeq() + ToDevice(device=device),

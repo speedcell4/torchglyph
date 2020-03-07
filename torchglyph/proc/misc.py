@@ -1,7 +1,12 @@
 import re
-from typing import Pattern
+from typing import Pattern, Any
 
 from torchglyph.proc.abc import Recur
+
+
+class ToInt(Recur):
+    def process(self, datum: Any, *args, **kwargs) -> int:
+        return int(datum)
 
 
 class ToUpper(Recur):
