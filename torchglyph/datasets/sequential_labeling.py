@@ -25,7 +25,7 @@ class CoNLL2000Chunking(Dataset):
     def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
         word = PackedSeqPipe(device=device).with_(
             pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
-            vocab=... + Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim),
+            vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
         )
         wsln = SeqLengthPipe(device=device)
         char = PackedSubPipe(device=device)
@@ -75,7 +75,7 @@ class CoNLL2003NER(Dataset):
     def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
         word = PackedSeqPipe(device=device).with_(
             pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
-            vocab=... + Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim),
+            vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
         )
         wsln = SeqLengthPipe(device=device)
         char = PackedSubPipe(device=device)
