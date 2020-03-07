@@ -1,32 +1,38 @@
 import re
 from typing import Pattern
 
-from torchglyph.proc.abc import Flatten
+from torchglyph.proc.abc import Recur
 
 
-class ToUpper(Flatten):
-    def process(self, data: str, *args, **kwargs) -> str:
-        return data.upper()
+class ToUpper(Recur):
+    def process(self, datum: str, *args, **kwargs) -> str:
+        return datum.upper()
 
 
-class ToLower(Flatten):
-    def process(self, data: str, *args, **kwargs) -> str:
-        return data.lower()
+class ToLower(Recur):
+    def process(self, datum: str, *args, **kwargs) -> str:
+        return datum.lower()
 
 
-class ToCapitalized(Flatten):
-    def process(self, data: str, *args, **kwargs) -> str:
-        return data.capitalize()
+class ToCapitalized(Recur):
+    def process(self, datum: str, *args, **kwargs) -> str:
+        return datum.capitalize()
 
 
-class RegexSubs(Flatten):
+class RegexSubs(Recur):
     def __init__(self, pattern: Pattern, repl_token: str) -> None:
         super(RegexSubs, self).__init__()
         self.pattern = pattern
         self.repl_token = repl_token
 
-    def process(self, data: str, *args, **kwargs) -> str:
-        return re.sub(self.pattern, self.repl_token, data)
+    def extra_repr(self) -> str:
+        return f', '.join([
+            f'{self.pattern.pattern}',
+            f"repl='{self.repl_token}'",
+        ])
+
+    def process(self, datum: str, *args, **kwargs) -> str:
+        return re.sub(self.pattern, self.repl_token, datum)
 
 
 class ReplaceDigits(RegexSubs):

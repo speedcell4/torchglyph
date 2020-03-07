@@ -2,24 +2,82 @@ from typing import Optional, Union, Any, List, Callable, Tuple
 
 from torchglyph.vocab import Vocab
 
+PaLP = Union[Optional['Proc'], List[Optional['Proc']]]
+
+
+# TODO: is allowing ellipsis generally safe?
+def compress(procs: PaLP, allow_ellipsis: bool = True) -> List['Proc']:
+    if procs is None or isinstance(procs, Identity):
+        return []
+    if procs is ...:
+        if allow_ellipsis:
+            return [...]
+        else:
+            raise ValueError(f'ellipsis is not allowed here')
+    if isinstance(procs, Chain):
+        return procs.procs
+    if isinstance(procs, Proc):
+        return [procs]
+    return [x for proc in procs for x in compress(proc, allow_ellipsis=allow_ellipsis)]
+
+
+def subs(procs: PaLP, repl: 'Proc') -> PaLP:
+    return [repl if proc is ... else proc for proc in compress(procs, allow_ellipsis=True)]
+
 
 class Proc(object):
-    def __add__(self, rhs: Optional[Union['Proc', 'Chain']]) -> Union['Proc', 'Chain']:
-        if rhs is None:
-            return self
-        return Chain(self, rhs)
+    @classmethod
+    def from_list(cls, procs: List['Proc']) -> 'Proc':
+        if len(procs) == 0:
+            return Identity()
+        if len(procs) == 1:
+            return procs[0]
+        return Chain(procs)
 
-    def __radd__(self, lhs: Optional[Union['Proc', 'Chain']]) -> Union['Proc', 'Chain']:
-        if lhs is None:
-            return self
-        return Chain(lhs, self)
+    def extra_repr(self) -> str:
+        return f''
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.extra_repr()})'
+
+    def __add__(self, rhs: PaLP) -> 'Proc':
+        return self.from_list([self] + compress(rhs))
+
+    def __radd__(self, lhs: PaLP) -> 'Proc':
+        return self.from_list(compress(lhs) + [self])
 
     def __call__(self, x: Any, *args, **kwargs) -> Any:
         raise NotImplementedError
 
 
 class Identity(Proc):
+    def __repr__(self) -> str:
+        return f'{None}'
+
     def __call__(self, x: Any, *args, **kwargs) -> Any:
+        return x
+
+
+class Chain(Proc):
+    def __init__(self, procs: PaLP) -> None:
+        super(Chain, self).__init__()
+        self.procs = compress(procs)
+
+    def extra_repr(self) -> str:
+        return ' + '.join([str(proc) for proc in self.procs])
+
+    def __repr__(self) -> str:
+        return f'{self.extra_repr()}'
+
+    def __add__(self, rhs: PaLP) -> 'Proc':
+        return self.from_list(self.procs + compress(rhs))
+
+    def __radd__(self, lhs: PaLP) -> 'Proc':
+        return self.from_list(compress(lhs) + self.procs)
+
+    def __call__(self, x: Any, *args, **kwargs) -> Any:
+        for process in self.procs:
+            x = process(x, *args, **kwargs)
         return x
 
 
@@ -28,12 +86,15 @@ class Lift(Proc):
         super(Lift, self).__init__()
         self.proc = proc
 
+    def __repr__(self) -> str:
+        return f'[{self.proc.__repr__()}]'
+
     def __call__(self, data: Any, *args, **kwargs) -> Any:
         return type(data)([self.proc(datum, *args, **kwargs) for datum in data])
 
 
-class Flatten(Proc):
-    def process(self, data: str, *args, **kwargs) -> Any:
+class Recur(Proc):
+    def process(self, datum: str, *args, **kwargs) -> Any:
         raise NotImplementedError
 
     def __call__(self, data: Any, *args, **kwargs) -> Any:
@@ -42,11 +103,14 @@ class Flatten(Proc):
         return type(data)([self(datum, *args, **kwargs) for datum in data])
 
 
-class Scan(Proc):
+class ScanL(Proc):
     def __init__(self, fn: Callable[[Any, Any], Tuple[Any, Any]], init: Any) -> None:
-        super(Scan, self).__init__()
+        super(ScanL, self).__init__()
         self.fn = fn
         self.init = init
+
+    def extra_repr(self) -> str:
+        return f'fn={self.fn.__name__}, init={self.init}'
 
     def __call__(self, xs: List[Any], vocab: Vocab = None) -> List[Any]:
         z = self.init
@@ -55,30 +119,23 @@ class Scan(Proc):
         for x in xs:
             y, z = self.fn(x, z)
             ys.append(y)
-        return ys
+        return type(xs)(ys)
 
 
-class Chain(Proc):
-    def __init__(self, *procs: Optional[Union['Proc', 'Chain']]) -> None:
-        super(Chain, self).__init__()
-        self.procs = []
-        for proc in procs:
-            if proc is None:
-                pass
-            elif isinstance(proc, Proc):
-                self.procs.append(proc)
-            elif isinstance(proc, Chain):
-                self.procs.extend(proc.procs)
-            else:
-                raise NotImplementedError(f'unsupported type :: {type(proc).__name__}')
+class ScanR(Proc):
+    def __init__(self, fn: Callable[[Any, Any], Tuple[Any, Any]], init: Any) -> None:
+        super(ScanR, self).__init__()
+        self.fn = fn
+        self.init = init
 
-    def __add__(self, rhs: Optional[Union['Proc', 'Chain']]) -> 'Chain':
-        return Chain(*self.procs, rhs)
+    def extra_repr(self) -> str:
+        return f'init={self.init}, fn={self.fn.__name__}'
 
-    def __radd__(self, lhs: Optional[Union['Proc', 'Chain']]) -> 'Chain':
-        return Chain(lhs, *self.procs)
+    def __call__(self, xs: List[Any], vocab: Vocab = None) -> List[Any]:
+        z = self.init
 
-    def __call__(self, x: Any, *args, **kwargs) -> Any:
-        for process in self.procs:
-            x = process(x, *args, **kwargs)
-        return x
+        ys = []
+        for x in xs:
+            z, y = self.fn(z, x)
+            ys.append(y)
+        return type(xs)(ys)

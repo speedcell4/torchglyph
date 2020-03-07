@@ -1,16 +1,20 @@
 import itertools
 import uuid
 from collections import namedtuple
-from typing import Iterable, Any, Optional
+from pathlib import Path
+from typing import Iterable, Any
 from typing import Union, List, Type, Tuple, NamedTuple, Dict
 
 from torch.utils import data
 
+from torchglyph import data_path
+from torchglyph.io import download_and_unzip
 from torchglyph.pipe import Pipe
-from torchglyph.vocab import Vocab
 
 
 class Dataset(data.Dataset):
+    urls: List[Union[Tuple[str, ...]]]
+
     def __init__(self, pipes: List[Dict[str, Pipe]], **kwargs) -> None:
         super(Dataset, self).__init__()
 
@@ -25,7 +29,7 @@ class Dataset(data.Dataset):
             globals()[self.Batch.__name__] = self.Batch
 
         self.data: Dict[str, List[Any]] = {}
-        for ins, pipes in zip(zip(*self.instance_iter(**kwargs)), pipes):
+        for ins, pipes in zip(zip(*self.iter(**kwargs)), pipes):
             for key, pipe in pipes.items():
                 self.data.setdefault(key, []).extend(ins)
 
@@ -43,9 +47,6 @@ class Dataset(data.Dataset):
     def __len__(self) -> int:
         return self._len
 
-    def vocab(self, name: str) -> Optional[Dict[str, Vocab]]:
-        return self.pipes[name].vocab
-
     def collate_fn(self, batch: List[NamedTuple]) -> NamedTuple:
         batch = self.Batch(*zip(*batch))
         return self.Batch(*[
@@ -54,23 +55,36 @@ class Dataset(data.Dataset):
         ])
 
     @classmethod
-    def instance_iter(cls, **kwargs) -> Iterable[List[Any]]:
+    def paths(cls, root: Path = data_path) -> Tuple[Path, ...]:
+        ans = []
+        for url, name, *filenames in cls.urls:
+            if len(filenames) == 0:
+                filenames = [name]
+            if any(not (root / cls.__name__.lower() / n).exists() for n in filenames):
+                download_and_unzip(url, root / cls.__name__.lower() / name)
+            for n in filenames:
+                ans.append(root / cls.__name__.lower() / n)
+
+        return tuple(ans)
+
+    @classmethod
+    def iter(cls, **kwargs) -> Iterable[List[Any]]:
         raise NotImplementedError
 
     def dump(self, fp, batch: NamedTuple, *args, **kwargs) -> None:
         raise NotImplementedError
 
     @classmethod
-    def dataloaders(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
+    def new(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
         raise NotImplementedError
 
 
 class DataLoader(data.DataLoader):
     @classmethod
-    def dataloaders(cls, datasets: Tuple[Dataset, ...],
-                    batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
-                    num_workers: int = 1, pin_memory: bool = False,
-                    drop_last: bool = False) -> Tuple['DataLoader', ...]:
+    def new(cls, datasets: Tuple[Dataset, ...],
+            batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
+            num_workers: int = 1, pin_memory: bool = False,
+            drop_last: bool = False) -> Tuple['DataLoader', ...]:
         if isinstance(batch_size, int):
             batch_sizes = itertools.repeat(batch_size)
         else:

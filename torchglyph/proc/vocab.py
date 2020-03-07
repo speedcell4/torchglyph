@@ -1,8 +1,8 @@
+import logging
 from collections import Counter
 from typing import Tuple, List, Union
 
-from torchglyph.proc.abc import Flatten, Proc
-from torchglyph.proc.utiles import stoi
+from torchglyph.proc.abc import Recur, Proc
 from torchglyph.vocab import Vocab, Vectors, Glove
 
 
@@ -25,6 +25,12 @@ class BuildVocab(Proc):
         self.max_size = max_size
         self.min_freq = min_freq
 
+    def extra_repr(self) -> str:
+        return f', '.join([
+            f'max_size={self.max_size if self.max_size is not None else "inf"}',
+            f'min_freq={self.min_freq}',
+        ])
+
     def __call__(self, vocab: Counter, **kwargs) -> Vocab:
         return Vocab(
             counter=vocab,
@@ -35,9 +41,37 @@ class BuildVocab(Proc):
         )
 
 
-class Numbering(Flatten):
-    def process(self, token: str, vocab: Vocab, **kwargs) -> int:
-        return stoi(token=token, vocab=vocab)
+class StatsVocab(Proc):
+    def __init__(self, threshold: int = 10) -> None:
+        super(StatsVocab, self).__init__()
+        self.threshold = threshold
+
+    def extra_repr(self) -> str:
+        return f'{self.threshold}'
+
+    def __call__(self, vocab: Vocab, name: str, **kwargs) -> Vocab:
+        assert vocab is not None
+        assert name is not None
+
+        tok_min, occ_min = min(vocab.freq.items(), key=lambda x: x[1])
+        tok_max, occ_max = max(vocab.freq.items(), key=lambda x: x[1])
+        tok_cnt = len(vocab.freq.values())
+        occ_avg = sum(vocab.freq.values()) / max(1, tok_cnt)
+
+        name = f"{vocab.__class__.__name__} '{name}'"
+        logging.info(f"{name} has {tok_cnt} token(s) => "
+                     f"{occ_avg:.1f} occurrence(s)/token ["
+                     f"{occ_min} :: '{tok_min}', "
+                     f"{occ_max} :: '{tok_max}']")
+        if tok_cnt <= self.threshold:
+            logging.info(f'{name} => [{", ".join(vocab.freq.keys())}]')
+
+        return vocab
+
+
+class Numbering(Recur):
+    def process(self, datum: str, vocab: Vocab, **kwargs) -> int:
+        return vocab.stoi[datum]
 
 
 class LoadVectors(Proc):
@@ -45,10 +79,16 @@ class LoadVectors(Proc):
         super(LoadVectors, self).__init__()
         self.vectors = vectors
 
-    def __call__(self, vocab: Vocab, **kwargs) -> Vocab:
+    def extra_repr(self) -> str:
+        return f'{self.vectors.extra_repr()}'
+
+    def __call__(self, vocab: Vocab, name: str, **kwargs) -> Vocab:
         assert vocab is not None, f"did you forget '{BuildVocab.__name__}' before '{LoadVectors.__name__}'?"
 
-        vocab.load_vectors(self.vectors)
+        tok, occ = vocab.load_vectors(self.vectors)
+        tok = tok / max(1, len(vocab.freq.values())) * 100
+        occ = occ / max(1, sum(vocab.freq.values())) * 100
+        logging.info(f"{self.vectors} hits {tok:.1f}% tokens and {occ:.1f}% occurrences of {Vocab.__name__} '{name}'")
         return vocab
 
 

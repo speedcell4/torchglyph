@@ -20,7 +20,10 @@ class Vocab(object):
                  max_size: Optional[int] = None, min_freq: int = 1) -> None:
         super(Vocab, self).__init__()
 
-        self.counter = counter
+        if max_size is not None:
+            counter = Counter(counter.most_common(n=max_size))
+
+        self.freq = counter
         self.unk_token = unk_token
         self.pad_token = pad_token
         self.special_tokens = special_tokens
@@ -40,7 +43,7 @@ class Vocab(object):
             if token is not None:
                 self.add_token_(token)
 
-        for token, freq in counter.most_common(n=max_size):
+        for token, freq in self.freq.most_common(n=max_size):
             if freq < min_freq:
                 break
             self.add_token_(token)
@@ -57,14 +60,16 @@ class Vocab(object):
 
         return self.stoi[token]
 
-    def __repr__(self) -> str:
-        args = ', '.join([a for a in [
+    def extra_repr(self) -> str:
+        return ', '.join([a for a in [
             f"tok={self.__len__()}",
             None if self.vectors is None else f"dim={self.vec_dim}",
             None if self.unk_token is None else f"unk_token='{self.unk_token}'",
             None if self.pad_token is None else f"pad_token='{self.pad_token}'",
         ] if a is not None])
-        return f'{self.__class__.__name__}({args})'
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.extra_repr()})'
 
     def __len__(self) -> int:
         return len(self.stoi)
@@ -74,14 +79,13 @@ class Vocab(object):
 
     def __and__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
         if isinstance(rhs, Vocab):
-            rhs = rhs.counter
-        counter = Counter({
-            token: freq
-            for token, freq in self.counter.items()
-            if token in rhs
-        })
+            rhs = rhs.freq
         return Vocab(
-            counter=counter,
+            counter=Counter({
+                token: freq
+                for token, freq in self.freq.items()
+                if token in rhs
+            }),
             unk_token=self.unk_token,
             pad_token=self.pad_token,
             special_tokens=self.special_tokens,
@@ -90,13 +94,12 @@ class Vocab(object):
 
     def __add__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
         if isinstance(rhs, Vocab):
-            rhs = rhs.counter
-        counter = Counter({
-            token: self.counter[token] + rhs[token]
-            for token in {*self.counter.keys(), *rhs.keys()}
-        })
+            rhs = rhs.freq
         return Vocab(
-            counter=counter,
+            counter=Counter({
+                token: self.freq[token] + rhs[token]
+                for token in {*self.freq.keys(), *rhs.keys()}
+            }),
             unk_token=self.unk_token,
             pad_token=self.pad_token,
             special_tokens=self.special_tokens,
@@ -105,14 +108,13 @@ class Vocab(object):
 
     def __sub__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
         if isinstance(rhs, Vocab):
-            rhs = rhs.counter
-        counter = Counter({
-            token: freq
-            for token, freq in self.counter.items()
-            if token not in rhs
-        })
+            rhs = rhs.freq
         return Vocab(
-            counter=counter,
+            counter=Counter({
+                token: freq
+                for token, freq in self.freq.items()
+                if token not in rhs
+            }),
             unk_token=self.unk_token,
             pad_token=self.pad_token,
             special_tokens=self.special_tokens,
@@ -125,13 +127,19 @@ class Vocab(object):
             return 0
         return self.vectors.size(1)
 
-    def load_vectors(self, vectors: 'Vectors') -> None:
+    def load_vectors(self, vectors: 'Vectors') -> Union[int, int]:
         self.vectors = torch.empty((len(self), vectors.vec_dim), dtype=torch.float32)
+
+        tok, occ = 0, 0
         for token, index in self.stoi.items():
-            vectors.update_(token, self.vectors[index])
+            if vectors.query_(token, self.vectors[index]):
+                tok += 1
+                occ += self.freq[token]
 
         if self.pad_token is not None:
             init.zeros_(self.vectors[self.stoi[self.pad_token]])
+
+        return tok, occ
 
 
 class Vectors(Vocab):
@@ -174,11 +182,13 @@ class Vectors(Vocab):
             self.itos, self.stoi, self.vectors = torch.load(pt_path)
 
     @torch.no_grad()
-    def update_(self, token: str, vector: Tensor) -> None:
+    def query_(self, token: str, vector: Tensor) -> bool:
         if token in self:
             vector[:] = self.vectors[self.stoi[token]]
+            return True
         else:
             self.unk_init_(vector)
+            return False
 
 
 class Glove(Vectors):

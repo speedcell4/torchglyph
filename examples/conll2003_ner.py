@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import List, Tuple, Iterable, Any
 
@@ -5,67 +6,82 @@ from tqdm import tqdm
 
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.io import conllx_iter
-from torchglyph.pipe import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PaddedSubPipe, RawStrPipe, \
-    RawPackedTensorPipe
-from torchglyph.pipe import PackedSubPipe, RawPaddedTensorPipe
+from torchglyph.pipe import PackedSeqPipe, PackedSubPipe, PackedSeqIndicesPipe, PaddedSeqPipe, SeqLengthPipe, RawStrPipe
+from torchglyph.proc import LoadGlove, ReplaceDigits, ToLower
 
 
 class CoNLL2003(Dataset):
-    @classmethod
-    def instance_iter(cls, path: Path) -> Iterable[List[Any]]:
-        for sentence in tqdm(conllx_iter(path), desc=f'reading {path}', unit=' sentences'):
-            word, pos, head, drel, ner = list(zip(*sentence))
-            yield [word, pos, [int(h) for h in head], drel, ner]
+    urls = [
+        ('https://github.com/glample/tagger/raw/master/dataset/eng.train', 'train.eng'),
+        ('https://github.com/glample/tagger/raw/master/dataset/eng.testa', 'dev.eng'),
+        ('https://github.com/glample/tagger/raw/master/dataset/eng.testb', 'test.eng'),
+    ]
 
     @classmethod
-    def dataloaders(cls, *paths: Path, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
-        WORD = PaddedSeqPipe(pad_token='<pad>', dim=50, device=device)
-        WLEN = SeqLengthPipe(device=device)
-        CHAR1 = PaddedSubPipe(device=device)
-        CHAR2 = PackedSubPipe(device=device)
-        WRNG = PackedSeqRangePipe(device=device)
-        XPOS = PackedSeqPipe(device=device)
-        TRGT = PackedSeqPipe(device=device)
+    def iter(cls, path: Path) -> Iterable[List[Any]]:
+        for sentence in tqdm(conllx_iter(path, sep=' '), desc=f'reading {path}', unit=' sent'):
+            word, pos, chunk, ner = list(zip(*sentence))
+            yield [word, pos, chunk, ner]
 
-        train, dev, test = tuple(cls(path=path, pipes=[
-            dict(word=WORD, wlen=WLEN, char1=CHAR1, char2=CHAR2, wrng=WRNG, raw_word=RawStrPipe()),
-            dict(xpos=XPOS),
-            dict(raw_head_pad=RawPaddedTensorPipe(device=device, pad_token=-1),
-                 raw_head_pack=RawPackedTensorPipe(device=device)),
-            dict(raw_drel=RawStrPipe()),
-            dict(target=TRGT),
-        ]) for path in paths)
+    @classmethod
+    def new(cls, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
+        word = PackedSeqPipe(device=device).with_(
+            pre=ToLower() + ReplaceDigits('<digits>') + ...,
+            vocab=... + LoadGlove(name='6B', dim=50),
+        )
+        wsln = SeqLengthPipe(device=device)
+        char = PackedSubPipe(device=device)
+        widx = PackedSeqIndicesPipe(device=device)
+        pos = PackedSeqPipe(device=device)
+        chunk = PackedSeqPipe(device=device)
+        ner = PaddedSeqPipe(pad_token='<pad>', device=device)
 
-        WORD.build_vocab(train, dev, test)
-        CHAR1.build_vocab(train, dev, test)
-        CHAR2.build_vocab(train, dev, test)
-        XPOS.build_vocab(train)
-        TRGT.build_vocab(train)
+        pipes = [
+            dict(word=word, wsln=wsln, char=char, widx=widx, raw_word=RawStrPipe()),
+            dict(pos=pos, raw_pos=RawStrPipe()),
+            dict(chunk=chunk, raw_chunk=RawStrPipe()),
+            dict(ner=ner, raw_ner=RawStrPipe()),
+        ]
 
-        return DataLoader.dataloaders(
+        print(f'word => {word}')
+        print(f'wsln => {wsln}')
+        print(f'char => {char}')
+        print(f'widx => {widx}')
+        print(f'pos => {pos}')
+        print(f'chunk => {chunk}')
+        print(f'ner => {ner}')
+
+        train, dev, test = cls.paths()
+        train = cls(path=train, pipes=pipes)
+        dev = cls(path=dev, pipes=pipes)
+        test = cls(path=test, pipes=pipes)
+
+        word.build_vocab(train, dev, test, name='word')
+        char.build_vocab(train, dev, test, name='char')
+        pos.build_vocab(train, name='pos')
+        chunk.build_vocab(train, name='chunk')
+        ner.build_vocab(train, name='ner')
+
+        return DataLoader.new(
             (train, dev, test),
             batch_size=batch_size, shuffle=True,
         )
 
 
 if __name__ == '__main__':
-    root = Path('~/data/conll2003').expanduser().absolute()
-    train, dev, test = root / 'train.stanford', root / 'dev.stanford', root / 'test.stanford'
+    logging.basicConfig(level=logging.DEBUG)
 
-    train, dev, test = CoNLL2003.dataloaders(train, dev, test, batch_size=10)
-    print(f'len(train) => {len(train)}')
-    print(f'len(dev) => {len(dev)}')
-    print(f'len(test) => {len(test)}')
-
-    print(train.dataset.vocab("word").stoi)
+    train, dev, test = CoNLL2003.new(batch_size=10)
+    print(f'len(train.dataset) => {len(train.dataset)}')
+    print(f'len(dev.dataset) => {len(dev.dataset)}')
+    print(f'len(test.dataset) => {len(test.dataset)}')
 
     for batch in train:
-        print(f'batch.char1 => {batch.char1}')
-        print(f'batch.char2 => {batch.char2}')
-        print(f'batch.wrng => {batch.wrng}')
-        print(f'batch.wlen => {batch.wlen}')
-        print(f'batch.raw_word => {batch.raw_word}')
-        print(f'batch.raw_head_pad => {batch.raw_head_pad}')
-        print(f'batch.raw_head_pack => {batch.raw_head_pack}')
-        print(f'batch.raw_drel => {batch.raw_drel}')
+        print(f'batch.word => {batch.word}')
+        print(f'batch.wsln => {batch.wsln}')
+        print(f'batch.char => {batch.char}')
+        print(f'batch.widx => {batch.widx}')
+        print(f'batch.pos => {batch.pos}')
+        print(f'batch.chunk => {batch.chunk}')
+        print(f'batch.ner => {batch.ner}')
         break
