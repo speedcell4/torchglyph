@@ -3,7 +3,6 @@ from collections import Counter
 from typing import Tuple, List, Union
 
 from torchglyph.proc.abc import Recur, Proc
-from torchglyph.proc.utilities import stoi
 from torchglyph.vocab import Vocab, Vectors, Glove
 
 
@@ -62,7 +61,7 @@ class StatsVocab(Proc):
 
 class Numbering(Recur):
     def process(self, datum: str, vocab: Vocab, **kwargs) -> int:
-        return stoi(token=datum, vocab=vocab)
+        return vocab.stoi[datum]
 
 
 class LoadVectors(Proc):
