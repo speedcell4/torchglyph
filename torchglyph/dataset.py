@@ -94,7 +94,7 @@ class DataLoader(data.DataLoader):
     @classmethod
     def new(cls, datasets: Tuple[Dataset, ...],
             batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
-            num_workers: int = 1, pin_memory: bool = False,
+            num_workers: int = 0, pin_memory: bool = False,
             drop_last: bool = False) -> Tuple['DataLoader', ...]:
         if isinstance(batch_size, int):
             batch_sizes = itertools.repeat(batch_size)
