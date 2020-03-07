@@ -4,7 +4,7 @@ import torch
 from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence
 
-from torchglyph.proc.abc import Proc
+from torchglyph.proc.abc import Proc, Chain, Lift
 from torchglyph.proc.utilities import stoi
 from torchglyph.proc.vocab import Numbering
 from torchglyph.vocab import Vocab
@@ -46,6 +46,24 @@ class ToTensor(Proc):
             if err.args[0] == "too many dimensions 'str'":
                 raise ValueError(f'did you forget {Numbering.__name__} before {ToTensor.__name__}?')
             raise err
+
+
+class CatSeq(Proc):
+    def __init__(self, dim: int = 0) -> None:
+        super(CatSeq, self).__init__()
+        self.dim = dim
+
+    def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
+        return torch.cat(data, dim=self.dim)
+
+
+class StackSeq(Proc):
+    def __init__(self, dim: int = 0) -> None:
+        super(StackSeq, self).__init__()
+        self.dim = dim
+
+    def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
+        return torch.stack(data, dim=self.dim)
 
 
 class PadSeq(Proc):
@@ -104,14 +122,10 @@ class PadSub(Proc):
         return tensor.detach()
 
 
-class PackSub(Proc):
+class PackSub(Chain):
     def __init__(self, enforce_sorted: bool = False) -> None:
-        super(PackSub, self).__init__()
+        super(PackSub, self).__init__([
+            Lift(CatSeq()),
+            PackSeq(enforce_sorted=enforce_sorted),
+        ])
         self.enforce_sorted = enforce_sorted
-
-    def extra_repr(self) -> str:
-        return f'sorted={self.enforce_sorted}'
-
-    def __call__(self, data: List[List[Tensor]], **kwargs) -> PackedSequence:
-        char = [torch.cat(words, dim=0) for words in data]
-        return pack_sequence(char, enforce_sorted=self.enforce_sorted)
