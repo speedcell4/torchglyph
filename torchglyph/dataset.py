@@ -1,13 +1,12 @@
 import itertools
 import uuid
 from collections import namedtuple
-from typing import Iterable, Any, Optional
+from typing import Iterable, Any
 from typing import Union, List, Type, Tuple, NamedTuple, Dict
 
 from torch.utils import data
 
 from torchglyph.pipe import Pipe
-from torchglyph.vocab import Vocab
 
 
 class Dataset(data.Dataset):
@@ -43,8 +42,7 @@ class Dataset(data.Dataset):
     def __len__(self) -> int:
         return self._len
 
-    def vocab(self, name: str) -> Optional[Dict[str, Vocab]]:
-        return self.pipes[name].vocab
+
 
     def collate_fn(self, batch: List[NamedTuple]) -> NamedTuple:
         batch = self.Batch(*zip(*batch))
