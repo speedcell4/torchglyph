@@ -69,7 +69,7 @@ if __name__ == '__main__':
     print(f'len(dev) => {len(dev)}')
     print(f'len(test) => {len(test)}')
 
-    print(train.dataset.vocab("word").stoi)
+    print(train.dataset.pipes["word"].vocab.stoi)
 
     for batch in train:
         print(f'batch.char1 => {batch.char1}')

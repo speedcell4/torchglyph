@@ -37,12 +37,12 @@ class Pipe(object):
     def preprocess(self, *datasets) -> Counter:
         counter = Counter()
         for dataset in datasets:
-            for key, pipe in dataset.pipes.items():
-                flag = f'@{key}_{self.preprocess.__name__}_done'
+            for name, pipe in dataset.pipes.items():
+                flag = f'@{name}_{self.preprocess.__name__}_done'
                 if pipe is self and not getattr(dataset, flag, False):
-                    dataset.data[key] = [
-                        self._pre_proc(ins, counter=counter)
-                        for ins in dataset.data[key]
+                    dataset.data[name] = [
+                        self._pre_proc(ins, counter=counter, name=name)
+                        for ins in dataset.data[name]
                     ]
                     setattr(dataset, flag, True)
 
@@ -55,16 +55,16 @@ class Pipe(object):
                 flag = f'@{name}_{self.postprocess.__name__}_done'
                 if pipe is self and not getattr(dataset, flag, False):
                     dataset.data[name] = [
-                        self._post_proc(ins, vocab=self.vocab)
+                        self._post_proc(ins, vocab=self.vocab, name=name)
                         for ins in dataset.data[name]
                     ]
                     setattr(dataset, flag, True)
 
         return self
 
-    def build_vocab(self, *datasets) -> 'Pipe':
+    def build_vocab(self, *datasets, name: str = None) -> 'Pipe':
         counter = self.preprocess(*datasets)
-        vocab = self._vocab_proc(counter)
+        vocab = self._vocab_proc(counter, name=name)
         if isinstance(vocab, Vocab):
             self.vocab = vocab
         else:
