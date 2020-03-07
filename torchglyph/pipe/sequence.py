@@ -62,12 +62,12 @@ class PackedSeqPipe(Pipe):
 
 
 class PaddedSeqMaskPipe(Pipe):
-    def __init__(self, device: Union[int, torch.device], filling_mask: bool) -> None:
+    def __init__(self, device: Union[int, torch.device], filling_mask: bool, batch_first: bool = True) -> None:
         super(PaddedSeqMaskPipe, self).__init__(
             pre=None,
             vocab=None,
             post=GetMask(mask_token=1 if filling_mask else 0) + ToTensor(dtype=torch.bool),
-            batch=PadSeq(pad_token=0 if filling_mask else 1, batch_first=True) + ToDevice(device=device),
+            batch=PadSeq(pad_token=0 if filling_mask else 1, batch_first=batch_first) + ToDevice(device=device),
         )
 
 
