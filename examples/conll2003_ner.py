@@ -46,18 +46,13 @@ class CoNLL2003(Dataset):
             dict(ner=ner, raw_ner=RawStrPipe()),
         ]
 
-        logging.info(f'word => {word}')
-        logging.info(f'wsln => {wsln}')
-        logging.info(f'char => {char}')
-        logging.info(f'widx => {widx}')
-        logging.info(f'pos => {pos}')
-        logging.info(f'chunk => {chunk}')
-        logging.info(f'ner => {ner}')
-
         train, dev, test = cls.paths()
         train = cls(path=train, pipes=pipes)
         dev = cls(path=dev, pipes=pipes)
         test = cls(path=test, pipes=pipes)
+
+        for name, pipe in train.pipes.items():
+            logging.info(f'{name} => {pipe}')
 
         word.build_vocab(train, dev, test, name='word')
         char.build_vocab(train, dev, test, name='char')
@@ -80,11 +75,8 @@ if __name__ == '__main__':
     logging.info(f'len(test.dataset) => {len(test.dataset)}')
 
     vocabs = train.vocabs
-    logging.info(f'vocabs.word => {vocabs.word}')
-    logging.info(f'vocabs.char => {vocabs.char}')
-    logging.info(f'vocabs.pos => {vocabs.pos}')
-    logging.info(f'vocabs.chunk => {vocabs.chunk}')
-    logging.info(f'vocabs.ner => {vocabs.ner}')
+    for name, vocab in zip(vocabs._fields, vocabs):
+        logging.info(f'{name} => {vocab}')
 
     for batch in train:
         logging.info(f'batch.word => {batch.word}')

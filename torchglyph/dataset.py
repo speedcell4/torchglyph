@@ -47,6 +47,13 @@ class Dataset(data.Dataset):
     def __len__(self) -> int:
         return self._len
 
+    @property
+    def vocabs(self) -> NamedTuple:
+        return self.Batch(**{
+            key: pipe.vocab
+            for key, pipe in self.pipes.items()
+        })
+
     def collate_fn(self, batch: List[NamedTuple]) -> NamedTuple:
         batch = self.Batch(*zip(*batch))
         return self.Batch(*[
@@ -82,10 +89,7 @@ class Dataset(data.Dataset):
 class DataLoader(data.DataLoader):
     @property
     def vocabs(self) -> NamedTuple:
-        return self.dataset.Batch(**{
-            key: pipe.vocab
-            for key, pipe in self.dataset.pipes.items()
-        })
+        return self.dataset.vocabs
 
     @classmethod
     def new(cls, datasets: Tuple[Dataset, ...],
