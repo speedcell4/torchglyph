@@ -19,8 +19,8 @@ class CoNLL2003(Dataset):
 
     @classmethod
     def iter(cls, path: Path) -> Iterable[List[Any]]:
-        for sentence in tqdm(conllx_iter(path, sep=' '), desc=f'reading {path}', unit=' sent'):
-            word, pos, chunk, ner = list(zip(*sentence))
+        for sent in tqdm(conllx_iter(path, sep=' '), desc=f'reading {path}', unit=' sents'):
+            word, pos, chunk, ner = list(zip(*sent))
             yield [word, pos, chunk, ner]
 
     @classmethod
