@@ -42,6 +42,13 @@ class BuildVocab(Proc):
 
 
 class StatsVocab(Proc):
+    def __init__(self, threshold: int = 10) -> None:
+        super(StatsVocab, self).__init__()
+        self.threshold = threshold
+
+    def extra_repr(self) -> str:
+        return f'{self.threshold}'
+
     def __call__(self, vocab: Vocab, name: str, **kwargs) -> Vocab:
         assert vocab is not None
         assert name is not None
@@ -51,10 +58,13 @@ class StatsVocab(Proc):
         tok_cnt = len(vocab.freq.values())
         occ_avg = sum(vocab.freq.values()) / max(1, tok_cnt)
 
-        logging.info(f"{vocab.__class__.__name__} '{name}' has {tok_cnt} token(s) => "
+        name = f"{vocab.__class__.__name__} '{name}'"
+        logging.info(f"{name} has {tok_cnt} token(s) => "
                      f"{occ_avg:.1f} occurrence(s)/token ["
                      f"{occ_min} :: '{tok_min}', "
                      f"{occ_max} :: '{tok_max}']")
+        if tok_cnt <= self.threshold:
+            logging.info(f'{name} => [{", ".join(vocab.freq.keys())}]')
 
         return vocab
 
