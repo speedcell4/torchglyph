@@ -2,7 +2,7 @@ from collections import Counter
 from typing import Tuple, List, Union
 
 from torchglyph.proc.abc import Flatten, Proc
-from torchglyph.proc.utiles import stoi
+from torchglyph.proc.utilities import stoi
 from torchglyph.vocab import Vocab, Vectors, Glove
 
 

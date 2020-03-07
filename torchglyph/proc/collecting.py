@@ -5,7 +5,7 @@ from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence
 
 from torchglyph.proc.abc import Proc
-from torchglyph.proc.utiles import stoi
+from torchglyph.proc.utilities import stoi
 from torchglyph.proc.vocab import Numbering
 from torchglyph.vocab import Vocab
 
