@@ -1,7 +1,7 @@
 from collections import Counter
 from typing import List, Any, Union
 
-from torchglyph.proc.abc import Proc, Flatten
+from torchglyph.proc.abc import Proc, Recur
 from torchglyph.proc.utilities import stoi
 from torchglyph.vocab import Vocab
 
@@ -26,9 +26,9 @@ class GetMask(Proc):
         return [mask_idx for _ in ins]
 
 
-class ToSub(Flatten):
-    def process(self, data: Any, *args, **kwargs) -> List[Any]:
-        return [c for c in data]
+class ToSub(Recur):
+    def process(self, datum: Any, *args, **kwargs) -> List[Any]:
+        return [sub for sub in datum]
 
 
 class Prepend(Proc):

@@ -32,8 +32,8 @@ class Lift(Proc):
         return type(data)([self.proc(datum, *args, **kwargs) for datum in data])
 
 
-class Flatten(Proc):
-    def process(self, data: str, *args, **kwargs) -> Any:
+class Recur(Proc):
+    def process(self, datum: str, *args, **kwargs) -> Any:
         raise NotImplementedError
 
     def __call__(self, data: Any, *args, **kwargs) -> Any:
