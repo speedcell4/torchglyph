@@ -11,10 +11,10 @@ class Pipe(object):
 
         self.vocab: Optional[Union[Vocab]] = None
 
-        self._pre_proc = Proc.from_list(compress(pre))
-        self._vocab_proc = Proc.from_list(compress(vocab))
-        self._post_proc = Proc.from_list(compress(post))
-        self._batch_proc = Proc.from_list(compress(batch))
+        self._pre_proc = Proc.from_list(compress(procs=pre))
+        self._vocab_proc = Proc.from_list(compress(procs=vocab))
+        self._post_proc = Proc.from_list(compress(procs=post))
+        self._batch_proc = Proc.from_list(compress(procs=batch))
 
     def new_(self, pre: PaLP = ..., vocab: PaLP = ..., post: PaLP = ..., batch: PaLP = ...) -> 'Pipe':
         self._pre_proc = Proc.from_list(subs(procs=pre, repl=self._pre_proc))

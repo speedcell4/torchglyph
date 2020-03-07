@@ -47,14 +47,15 @@ class StatsVocab(Proc):
         assert vocab is not None
         assert name is not None
 
-        tok_min, cnt_min = min(vocab.freq.items(), key=lambda x: x[1])
-        tok_max, cnt_max = max(vocab.freq.items(), key=lambda x: x[1])
+        tok_min, occ_min = min(vocab.freq.items(), key=lambda x: x[1])
+        tok_max, occ_max = max(vocab.freq.items(), key=lambda x: x[1])
         tok_cnt = len(vocab.freq.values())
-        freq_mean = sum(vocab.freq.values()) / max(1, tok_cnt)
+        occ_avg = sum(vocab.freq.values()) / max(1, tok_cnt)
 
-        logging.info(f"{Vocab.__name__} '{name}' has {tok_cnt} token(s) => {freq_mean:.1f} time(s)/token ["
-                     f"{cnt_min} :: '{tok_min}', "
-                     f"{cnt_max} :: '{tok_max}']")
+        logging.info(f"{vocab.__class__.__name__} '{name}' has {tok_cnt} token(s) => "
+                     f"{occ_avg:.1f} occurrence(s)/token ["
+                     f"{occ_min} :: '{tok_min}', "
+                     f"{occ_max} :: '{tok_max}']")
 
         return vocab
 
@@ -75,9 +76,11 @@ class LoadVectors(Proc):
     def __call__(self, vocab: Vocab, name: str, **kwargs) -> Vocab:
         assert vocab is not None, f"did you forget '{BuildVocab.__name__}' before '{LoadVectors.__name__}'?"
 
-        hit = vocab.load_vectors(self.vectors) / max(1, len(vocab)) * 100
+        tok, occ = vocab.load_vectors(self.vectors)
+        tok = tok / max(1, len(vocab.freq.values())) * 100
+        occ = occ / max(1, sum(vocab.freq.values())) * 100
         logging.info(f"{Vectors.__name__} '{self.vectors.__class__.__name__}' "
-                     f"hits {hit:.1f}% tokens of {Vocab.__name__} '{name}'")
+                     f"hits {tok:.1f}% tokens and {occ:.1f}% occurrences of {Vocab.__name__} '{name}'")
         return vocab
 
 

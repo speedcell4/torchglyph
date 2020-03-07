@@ -127,18 +127,19 @@ class Vocab(object):
             return 0
         return self.vectors.size(1)
 
-    def load_vectors(self, vectors: 'Vectors') -> int:
+    def load_vectors(self, vectors: 'Vectors') -> Union[int, int]:
         self.vectors = torch.empty((len(self), vectors.vec_dim), dtype=torch.float32)
 
-        hit = 0
+        tok, occ = 0, 0
         for token, index in self.stoi.items():
             if vectors.query_(token, self.vectors[index]):
-                hit += 1
+                tok += 1
+                occ += self.freq[token]
 
         if self.pad_token is not None:
             init.zeros_(self.vectors[self.stoi[self.pad_token]])
 
-        return hit
+        return tok, occ
 
 
 class Vectors(Vocab):
