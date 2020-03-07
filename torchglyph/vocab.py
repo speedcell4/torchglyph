@@ -1,4 +1,3 @@
-import logging
 from collections import Counter
 from collections import defaultdict
 from pathlib import Path
@@ -20,7 +19,7 @@ class Vocab(object):
                  max_size: Optional[int] = None, min_freq: int = 1) -> None:
         super(Vocab, self).__init__()
 
-        self.counter = counter
+        self.freq = counter
         self.unk_token = unk_token
         self.pad_token = pad_token
         self.special_tokens = special_tokens
@@ -40,7 +39,7 @@ class Vocab(object):
             if token is not None:
                 self.add_token_(token)
 
-        for token, freq in counter.most_common(n=max_size):
+        for token, freq in self.freq.most_common(n=max_size):
             if freq < min_freq:
                 break
             self.add_token_(token)
@@ -76,14 +75,13 @@ class Vocab(object):
 
     def __and__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
         if isinstance(rhs, Vocab):
-            rhs = rhs.counter
-        counter = Counter({
-            token: freq
-            for token, freq in self.counter.items()
-            if token in rhs
-        })
+            rhs = rhs.freq
         return Vocab(
-            counter=counter,
+            counter=Counter({
+                token: freq
+                for token, freq in self.freq.items()
+                if token in rhs
+            }),
             unk_token=self.unk_token,
             pad_token=self.pad_token,
             special_tokens=self.special_tokens,
@@ -92,13 +90,12 @@ class Vocab(object):
 
     def __add__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
         if isinstance(rhs, Vocab):
-            rhs = rhs.counter
-        counter = Counter({
-            token: self.counter[token] + rhs[token]
-            for token in {*self.counter.keys(), *rhs.keys()}
-        })
+            rhs = rhs.freq
         return Vocab(
-            counter=counter,
+            counter=Counter({
+                token: self.freq[token] + rhs[token]
+                for token in {*self.freq.keys(), *rhs.keys()}
+            }),
             unk_token=self.unk_token,
             pad_token=self.pad_token,
             special_tokens=self.special_tokens,
@@ -107,14 +104,13 @@ class Vocab(object):
 
     def __sub__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
         if isinstance(rhs, Vocab):
-            rhs = rhs.counter
-        counter = Counter({
-            token: freq
-            for token, freq in self.counter.items()
-            if token not in rhs
-        })
+            rhs = rhs.freq
         return Vocab(
-            counter=counter,
+            counter=Counter({
+                token: freq
+                for token, freq in self.freq.items()
+                if token not in rhs
+            }),
             unk_token=self.unk_token,
             pad_token=self.pad_token,
             special_tokens=self.special_tokens,
