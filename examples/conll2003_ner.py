@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.io import conllx_iter
-from torchglyph.pipe import PackedSeqPipe, PackedSubPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, RawStrPipe
+from torchglyph.pipe import PackedSeqPipe, PackedSubPipe, PackedSeqIndicesPipe, PaddedSeqPipe, SeqLengthPipe, RawStrPipe
 from torchglyph.proc import LoadGlove, ReplaceDigits, ToLower, StatsVocab
 
 
@@ -19,7 +19,7 @@ class CoNLL2003(Dataset):
 
     @classmethod
     def loader_iter(cls, *paths: Path, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
-        word = PaddedSeqPipe(pad_token='<pad>', device=device).with_(
+        word = PackedSeqPipe(device=device).with_(
             pre=ToLower() + ReplaceDigits('<digits>') + ...,
             vocab=... + LoadGlove(name='6B', dim=50) + StatsVocab(),
         )
@@ -27,7 +27,7 @@ class CoNLL2003(Dataset):
         char = PackedSubPipe(device=device).with_(
             vocab=... + StatsVocab(),
         )
-        wrng = PackedSeqRangePipe(device=device)
+        widx = PackedSeqIndicesPipe(device=device)
         pos = PackedSeqPipe(device=device).with_(
             vocab=... + StatsVocab(),
         )
@@ -38,12 +38,12 @@ class CoNLL2003(Dataset):
         print(f'word => {word}')
         print(f'wsln => {wsln}')
         print(f'char => {char}')
-        print(f'wrng => {wrng}')
+        print(f'widx => {widx}')
         print(f'pos => {pos}')
         print(f'ner => {ner}')
 
         train, dev, test = tuple(cls(path=path, pipes=[
-            dict(word=word, wsln=wsln, char=char, wrng=wrng, raw_word=RawStrPipe()),
+            dict(word=word, wsln=wsln, char=char, widx=widx, raw_word=RawStrPipe()),
             dict(pos=pos, raw_pos=RawStrPipe()),
             dict(),
             dict(),
@@ -76,7 +76,7 @@ if __name__ == '__main__':
         print(f'batch.word => {batch.word}')
         print(f'batch.wsln => {batch.wsln}')
         print(f'batch.char => {batch.char}')
-        print(f'batch.wrng => {batch.wrng}')
+        print(f'batch.widx => {batch.widx}')
         print(f'batch.pos => {batch.pos}')
         print(f'batch.ner => {batch.ner}')
         break

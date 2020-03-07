@@ -25,7 +25,7 @@ class RawPaddedTensorPipe(Pipe):
             pre=None,
             vocab=None,
             post=ToTensor(dtype=dtype),
-            batch=PadSeq(pad_token, batch_first) + ToDevice(device=device),
+            batch=PadSeq(pad_token=pad_token, batch_first=batch_first) + ToDevice(device=device),
         )
 
 
@@ -46,7 +46,7 @@ class PaddedSeqPipe(Pipe):
             pre=UpdateCounter(),
             vocab=BuildVocab(special_tokens=(pad_token,)),
             post=Numbering() + ToTensor(),
-            batch=PadSeq(pad_token, batch_first) + ToDevice(device=device),
+            batch=PadSeq(pad_token=pad_token, batch_first=batch_first) + ToDevice(device=device),
         )
 
 
@@ -60,11 +60,11 @@ class PackedSeqPipe(Pipe):
         )
 
 
-class PackedSeqRangePipe(Pipe):
+class PackedSeqIndicesPipe(Pipe):
     def __init__(self, device: Union[int, torch.device]) -> None:
-        super(PackedSeqRangePipe, self).__init__(
+        super(PackedSeqIndicesPipe, self).__init__(
             pre=None,
             vocab=None,
             post=GetRange() + ToTensor(),
-            batch=ScanL(cum_index, 0) + PackSeq() + ToDevice(device=device),
+            batch=ScanL(fn=cum_index, init=0) + PackSeq() + ToDevice(device=device),
         )
