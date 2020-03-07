@@ -24,10 +24,10 @@ class CoNLL2003(Dataset):
             yield [word, pos, chunk, ner]
 
     @classmethod
-    def new(cls, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
+    def new(cls, batch_size: int, word_dim: int, device: int = -1) -> Tuple[DataLoader, ...]:
         word = PackedSeqPipe(device=device).with_(
             pre=ToLower() + ReplaceDigits('<digits>') + ...,
-            vocab=... + LoadGlove(name='6B', dim=50),
+            vocab=... + LoadGlove(name='6B', dim=word_dim),
         )
         wsln = SeqLengthPipe(device=device)
         char = PackedSubPipe(device=device)
@@ -43,13 +43,13 @@ class CoNLL2003(Dataset):
             dict(ner=ner, raw_ner=RawStrPipe()),
         ]
 
-        print(f'word => {word}')
-        print(f'wsln => {wsln}')
-        print(f'char => {char}')
-        print(f'widx => {widx}')
-        print(f'pos => {pos}')
-        print(f'chunk => {chunk}')
-        print(f'ner => {ner}')
+        logging.info(f'word => {word}')
+        logging.info(f'wsln => {wsln}')
+        logging.info(f'char => {char}')
+        logging.info(f'widx => {widx}')
+        logging.info(f'pos => {pos}')
+        logging.info(f'chunk => {chunk}')
+        logging.info(f'ner => {ner}')
 
         train, dev, test = cls.paths()
         train = cls(path=train, pipes=pipes)
@@ -71,17 +71,17 @@ class CoNLL2003(Dataset):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
-    train, dev, test = CoNLL2003.new(batch_size=10)
-    print(f'len(train.dataset) => {len(train.dataset)}')
-    print(f'len(dev.dataset) => {len(dev.dataset)}')
-    print(f'len(test.dataset) => {len(test.dataset)}')
+    train, dev, test = CoNLL2003.new(batch_size=10, word_dim=50)
+    logging.info(f'len(train.dataset) => {len(train.dataset)}')
+    logging.info(f'len(dev.dataset) => {len(dev.dataset)}')
+    logging.info(f'len(test.dataset) => {len(test.dataset)}')
 
     for batch in train:
-        print(f'batch.word => {batch.word}')
-        print(f'batch.wsln => {batch.wsln}')
-        print(f'batch.char => {batch.char}')
-        print(f'batch.widx => {batch.widx}')
-        print(f'batch.pos => {batch.pos}')
-        print(f'batch.chunk => {batch.chunk}')
-        print(f'batch.ner => {batch.ner}')
+        logging.info(f'batch.word => {batch.word}')
+        logging.info(f'batch.wsln => {batch.wsln}')
+        logging.info(f'batch.char => {batch.char}')
+        logging.info(f'batch.widx => {batch.widx}')
+        logging.info(f'batch.pos => {batch.pos}')
+        logging.info(f'batch.chunk => {batch.chunk}')
+        logging.info(f'batch.ner => {batch.ner}')
         break

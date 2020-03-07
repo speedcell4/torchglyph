@@ -64,7 +64,7 @@ class StatsVocab(Proc):
                      f"{occ_min} :: '{tok_min}', "
                      f"{occ_max} :: '{tok_max}']")
         if tok_cnt <= self.threshold:
-            logging.info(f'{name} => [{", ".join(vocab.freq.keys())}]')
+            logging.info(f'{name} => [{", ".join(vocab.itos)}]')
 
         return vocab
 
