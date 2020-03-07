@@ -79,12 +79,12 @@ if __name__ == '__main__':
         logging.info(f'{name} => {vocab}')
 
     for batch in train:
-        logging.info(f'batch.word => {batch.word}')
-        logging.info(f'batch.wsln => {batch.wsln}')
-        logging.info(f'batch.char => {batch.char}')
-        logging.info(f'batch.widx => {batch.widx}')
-        logging.info(f'batch.pos => {batch.pos}')
-        logging.info(f'batch.chunk => {batch.chunk}')
-        logging.info(f'batch.ner => {batch.ner}')
-        logging.info(f'batch.mask => {batch.mask}')
+        logging.info(f'batch.word => {batch.word.size()}')
+        logging.info(f'batch.wsln => {batch.wsln.size()}')
+        logging.info(f'batch.char => {batch.char.size()}')
+        logging.info(f'batch.widx => {batch.widx.size()}')
+        logging.info(f'batch.pos => {batch.pos.size()}')
+        logging.info(f'batch.chunk => {batch.chunk.size()}')
+        logging.info(f'batch.ner => {batch.ner.size()}')
+        logging.info(f'batch.mask => {batch.mask.size()}')
         break
