@@ -79,8 +79,7 @@ class LoadVectors(Proc):
         tok, occ = vocab.load_vectors(self.vectors)
         tok = tok / max(1, len(vocab.freq.values())) * 100
         occ = occ / max(1, sum(vocab.freq.values())) * 100
-        logging.info(f"{Vectors.__name__} '{self.vectors.__class__.__name__}' "
-                     f"hits {tok:.1f}% tokens and {occ:.1f}% occurrences of {Vocab.__name__} '{name}'")
+        logging.info(f"{self.vectors} hits {tok:.1f}% tokens and {occ:.1f}% occurrences of {Vocab.__name__} '{name}'")
         return vocab
 
 

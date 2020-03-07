@@ -42,8 +42,6 @@ class Dataset(data.Dataset):
     def __len__(self) -> int:
         return self._len
 
-
-
     def collate_fn(self, batch: List[NamedTuple]) -> NamedTuple:
         batch = self.Batch(*zip(*batch))
         return self.Batch(*[
@@ -59,13 +57,13 @@ class Dataset(data.Dataset):
         raise NotImplementedError
 
     @classmethod
-    def dataloaders(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
+    def loader_iter(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
         raise NotImplementedError
 
 
 class DataLoader(data.DataLoader):
     @classmethod
-    def dataloaders(cls, datasets: Tuple[Dataset, ...],
+    def loader_iter(cls, datasets: Tuple[Dataset, ...],
                     batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
                     num_workers: int = 1, pin_memory: bool = False,
                     drop_last: bool = False) -> Tuple['DataLoader', ...]:

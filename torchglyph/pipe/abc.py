@@ -16,7 +16,7 @@ class Pipe(object):
         self._post_proc = Proc.from_list(compress(procs=post))
         self._batch_proc = Proc.from_list(compress(procs=batch))
 
-    def new_(self, pre: PaLP = ..., vocab: PaLP = ..., post: PaLP = ..., batch: PaLP = ...) -> 'Pipe':
+    def with_(self, pre: PaLP = ..., vocab: PaLP = ..., post: PaLP = ..., batch: PaLP = ...) -> 'Pipe':
         self._pre_proc = Proc.from_list(subs(procs=pre, repl=self._pre_proc))
         self._vocab_proc = Proc.from_list(subs(procs=vocab, repl=self._vocab_proc))
         self._post_proc = Proc.from_list(subs(procs=post, repl=self._post_proc))
