@@ -25,6 +25,12 @@ class BuildVocab(Proc):
         self.max_size = max_size
         self.min_freq = min_freq
 
+    def extra_repr(self) -> str:
+        return f', '.join([
+            f'max_size={self.max_size if self.max_size is not None else "inf"}',
+            f'min_freq={self.min_freq}',
+        ])
+
     def __call__(self, vocab: Counter, **kwargs) -> Vocab:
         return Vocab(
             counter=vocab,
@@ -44,6 +50,9 @@ class LoadVectors(Proc):
     def __init__(self, vectors: Vectors) -> None:
         super(LoadVectors, self).__init__()
         self.vectors = vectors
+
+    def extra_repr(self) -> str:
+        return f'{self.vectors.extra_repr()}'
 
     def __call__(self, vocab: Vocab, **kwargs) -> Vocab:
         assert vocab is not None, f"did you forget '{BuildVocab.__name__}' before '{LoadVectors.__name__}'?"

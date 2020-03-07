@@ -57,14 +57,16 @@ class Vocab(object):
 
         return self.stoi[token]
 
-    def __repr__(self) -> str:
-        args = ', '.join([a for a in [
+    def extra_repr(self) -> str:
+        return ', '.join([a for a in [
             f"tok={self.__len__()}",
             None if self.vectors is None else f"dim={self.vec_dim}",
             None if self.unk_token is None else f"unk_token='{self.unk_token}'",
             None if self.pad_token is None else f"pad_token='{self.pad_token}'",
         ] if a is not None])
-        return f'{self.__class__.__name__}({args})'
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.extra_repr()})'
 
     def __len__(self) -> int:
         return len(self.stoi)
@@ -167,10 +169,10 @@ class Vectors(Vocab):
                     self.vectors.append(torch.tensor([float(v) for v in vs], dtype=torch.float32))
 
             self.vectors = torch.stack(self.vectors, 0)
-            logging.info(f'saving vectors to {pt_path}')
+            print(f'saving vectors to {pt_path}')
             torch.save((self.itos, self.stoi, self.vectors), pt_path)
         else:
-            logging.info(f'loading vectors from {pt_path}')
+            print(f'loading vectors from {pt_path}')
             self.itos, self.stoi, self.vectors = torch.load(pt_path)
 
     @torch.no_grad()

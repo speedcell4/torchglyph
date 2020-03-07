@@ -3,7 +3,8 @@ from typing import Union
 import torch
 
 from torchglyph.pipe import Pipe
-from torchglyph.proc import GetRange, ToDevice, Numbering, UpdateCounter, BuildVocab, LoadGlove
+from torchglyph.pipe.utilities import cum_index
+from torchglyph.proc import GetRange, ToDevice, Numbering, UpdateCounter, BuildVocab
 from torchglyph.proc import ScanL, ToTensor, PadSeq, PackSeq
 
 
@@ -65,5 +66,5 @@ class PackedSeqRangePipe(Pipe):
             pre=None,
             vocab=None,
             post=GetRange() + ToTensor(),
-            batch=ScanL(lambda t, a: (t + a, t.size(0) + a), 0) + PackSeq() + ToDevice(device=device),
+            batch=ScanL(cum_index, 0) + PackSeq() + ToDevice(device=device),
         )

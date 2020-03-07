@@ -22,6 +22,9 @@ class ToDevice(Proc):
                 device = torch.device(f'cuda:{device}')
         self.device = device
 
+    def extra_repr(self) -> str:
+        return f'{self.device}'
+
     def __call__(self, batch: Batch, vocab: Vocab, **kwargs) -> Batch:
         if isinstance(batch, (PackedSequence, Tensor)):
             return batch.to(self.device)
@@ -32,6 +35,9 @@ class ToTensor(Proc):
     def __init__(self, dtype: torch.dtype = torch.long) -> None:
         super(ToTensor, self).__init__()
         self.dtype = dtype
+
+    def extra_repr(self) -> str:
+        return f'{self.dtype}'
 
     def __call__(self, ins: Any, **kwargs) -> Tensor:
         try:
@@ -48,6 +54,12 @@ class PadSeq(Proc):
         self.pad_token = pad_token
         self.batch_first = batch_first
 
+    def extra_repr(self) -> str:
+        return f', '.join([
+            f"'{self.pad_token}'",
+            'batch_first' if self.batch_first else 'batch_second',
+        ])
+
     def __call__(self, batch: List[Tensor], vocab: Vocab, **kwargs) -> Tensor:
         return pad_sequence(
             batch, batch_first=self.batch_first,
@@ -60,6 +72,9 @@ class PackSeq(Proc):
         super(PackSeq, self).__init__()
         self.enforce_sorted = enforce_sorted
 
+    def extra_repr(self) -> str:
+        return f'sorted={self.enforce_sorted}'
+
     def __call__(self, data: List[Tensor], **kwargs) -> PackedSequence:
         return pack_sequence(data, enforce_sorted=self.enforce_sorted)
 
@@ -68,6 +83,9 @@ class PadSub(Proc):
     def __init__(self, pad_token: str) -> None:
         super(PadSub, self).__init__()
         self.pad_token = pad_token
+
+    def extra_repr(self) -> str:
+        return f"'{self.pad_token}'"
 
     def __call__(self, data: List[Tensor], vocab: Vocab, **kwargs) -> Tensor:
         dim1, dim2 = zip(*[d.size() for d in data])
@@ -90,6 +108,9 @@ class PackSub(Proc):
     def __init__(self, enforce_sorted: bool = False) -> None:
         super(PackSub, self).__init__()
         self.enforce_sorted = enforce_sorted
+
+    def extra_repr(self) -> str:
+        return f'sorted={self.enforce_sorted}'
 
     def __call__(self, data: List[List[Tensor]], **kwargs) -> PackedSequence:
         char = [torch.cat(words, dim=0) for words in data]

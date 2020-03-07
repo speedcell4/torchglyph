@@ -5,7 +5,8 @@ from torchglyph.vocab import Vocab
 PaLP = Union[Optional['Proc'], List[Optional['Proc']]]
 
 
-def compress(procs: PaLP, allow_ellipsis: bool = False) -> List['Proc']:
+# TODO: is allowing ellipsis generally safe?
+def compress(procs: PaLP, allow_ellipsis: bool = True) -> List['Proc']:
     if procs is None or isinstance(procs, Identity):
         return []
     if procs is ...:
@@ -33,6 +34,12 @@ class Proc(object):
             return procs[0]
         return Chain(procs)
 
+    def extra_repr(self) -> str:
+        return f''
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.extra_repr()})'
+
     def __add__(self, rhs: PaLP) -> 'Proc':
         return self.from_list([self] + compress(rhs))
 
@@ -44,6 +51,9 @@ class Proc(object):
 
 
 class Identity(Proc):
+    def __repr__(self) -> str:
+        return f'{None}'
+
     def __call__(self, x: Any, *args, **kwargs) -> Any:
         return x
 
@@ -52,6 +62,12 @@ class Chain(Proc):
     def __init__(self, procs: PaLP) -> None:
         super(Chain, self).__init__()
         self.procs = compress(procs)
+
+    def extra_repr(self) -> str:
+        return ' + '.join([str(proc) for proc in self.procs])
+
+    def __repr__(self) -> str:
+        return f'{self.extra_repr()}'
 
     def __add__(self, rhs: PaLP) -> 'Proc':
         return self.from_list(self.procs + compress(rhs))
@@ -69,6 +85,9 @@ class Lift(Proc):
     def __init__(self, proc: Proc) -> None:
         super(Lift, self).__init__()
         self.proc = proc
+
+    def __repr__(self) -> str:
+        return f'[{self.proc.__repr__()}]'
 
     def __call__(self, data: Any, *args, **kwargs) -> Any:
         return type(data)([self.proc(datum, *args, **kwargs) for datum in data])
@@ -90,6 +109,9 @@ class ScanL(Proc):
         self.fn = fn
         self.init = init
 
+    def extra_repr(self) -> str:
+        return f'fn={self.fn.__name__}, init={self.init}'
+
     def __call__(self, xs: List[Any], vocab: Vocab = None) -> List[Any]:
         z = self.init
 
@@ -105,6 +127,9 @@ class ScanR(Proc):
         super(ScanR, self).__init__()
         self.fn = fn
         self.init = init
+
+    def extra_repr(self) -> str:
+        return f'init={self.init}, fn={self.fn.__name__}'
 
     def __call__(self, xs: List[Any], vocab: Vocab = None) -> List[Any]:
         z = self.init

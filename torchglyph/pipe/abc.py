@@ -11,18 +11,28 @@ class Pipe(object):
 
         self.vocab: Optional[Union[Vocab]] = None
 
-        self._pre_processing = Proc.from_list(compress(pre))
-        self._vocab_processing = Proc.from_list(compress(vocab))
-        self._post_processing = Proc.from_list(compress(post))
-        self._batch_processing = Proc.from_list(compress(batch))
+        self.pre = Proc.from_list(compress(pre))
+        self.vocab = Proc.from_list(compress(vocab))
+        self.post = Proc.from_list(compress(post))
+        self.batch = Proc.from_list(compress(batch))
 
-    def new(self, pre: PaLP = None, vocab: PaLP = None, post: PaLP = None, batch: PaLP = None) -> 'Pipe':
-        return Pipe(
-            pre=subs(procs=pre, repl=self._pre_processing),
-            vocab=subs(procs=vocab, repl=self._vocab_processing),
-            post=subs(procs=post, repl=self._post_processing),
-            batch=subs(procs=batch, repl=self._batch_processing),
-        )
+    def new_(self, pre: PaLP = ..., vocab: PaLP = ..., post: PaLP = ..., batch: PaLP = ...) -> 'Pipe':
+        self.pre = Proc.from_list(subs(procs=pre, repl=self.pre))
+        self.vocab = Proc.from_list(subs(procs=vocab, repl=self.vocab))
+        self.post = Proc.from_list(subs(procs=post, repl=self.post))
+        self.batch = Proc.from_list(subs(procs=batch, repl=self.batch))
+        return self
+
+    def extra_repr(self):
+        return ',\n  '.join([
+            f'pre={self.pre}',
+            f'vocab={self.vocab}',
+            f'post={self.post}',
+            f'batch={self.batch}',
+        ])
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}(\n  {self.extra_repr()}\n)'
 
     def preprocess(self, *datasets) -> Counter:
         counter = Counter()
@@ -31,7 +41,7 @@ class Pipe(object):
                 flag = f'@{key}_{self.preprocess.__name__}_done'
                 if pipe is self and not getattr(dataset, flag, False):
                     dataset.data[key] = [
-                        self._pre_processing(ins, counter=counter)
+                        self.pre(ins, counter=counter)
                         for ins in dataset.data[key]
                     ]
                     setattr(dataset, flag, True)
@@ -45,7 +55,7 @@ class Pipe(object):
                 flag = f'@{name}_{self.postprocess.__name__}_done'
                 if pipe is self and not getattr(dataset, flag, False):
                     dataset.data[name] = [
-                        self._post_processing(ins, vocab=self.vocab)
+                        self.post(ins, vocab=self.vocab)
                         for ins in dataset.data[name]
                     ]
                     setattr(dataset, flag, True)
@@ -54,7 +64,7 @@ class Pipe(object):
 
     def build_vocab(self, *datasets) -> 'Pipe':
         counter = self.preprocess(*datasets)
-        vocab = self._vocab_processing(counter)
+        vocab = self.vocab(counter)
         if isinstance(vocab, Vocab):
             self.vocab = vocab
         else:
@@ -63,4 +73,4 @@ class Pipe(object):
         return self
 
     def collate_fn(self, collected_ins: List[Any]) -> Any:
-        return self._batch_processing(collected_ins, vocab=self.vocab)
+        return self.batch(collected_ins, vocab=self.vocab)

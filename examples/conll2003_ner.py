@@ -8,7 +8,7 @@ from torchglyph.io import conllx_iter
 from torchglyph.pipe import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PaddedSubPipe, RawStrPipe, \
     RawPackedTensorPipe
 from torchglyph.pipe import PackedSubPipe, RawPaddedTensorPipe
-from torchglyph.proc import LoadGlove
+from torchglyph.proc import LoadGlove, ReplaceDigits, ToLower
 
 
 class CoNLL2003(Dataset):
@@ -20,13 +20,24 @@ class CoNLL2003(Dataset):
 
     @classmethod
     def dataloaders(cls, *paths: Path, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
-        WORD = PaddedSeqPipe(pad_token='<pad>', device=device).new(vocab=[..., LoadGlove(name='6B', dim=50)])
+        WORD = PaddedSeqPipe(pad_token='<pad>', device=device).new_(
+            pre=ToLower() + ReplaceDigits('<digits>') + ...,
+            vocab=... + LoadGlove(name='6B', dim=50),
+        )
         WLEN = SeqLengthPipe(device=device)
         CHAR1 = PaddedSubPipe(device=device)
         CHAR2 = PackedSubPipe(device=device)
         WRNG = PackedSeqRangePipe(device=device)
         XPOS = PackedSeqPipe(device=device)
         TRGT = PackedSeqPipe(device=device)
+
+        print(f'WORD => {WORD}')
+        print(f'WLEN => {WLEN}')
+        print(f'CHAR1 => {CHAR1}')
+        print(f'CHAR2 => {CHAR2}')
+        print(f'WRNG => {WRNG}')
+        print(f'XPOS => {XPOS}')
+        print(f'TRGT => {TRGT}')
 
         train, dev, test = tuple(cls(path=path, pipes=[
             dict(word=WORD, wlen=WLEN, char1=CHAR1, char2=CHAR2, wrng=WRNG, raw_word=RawStrPipe()),

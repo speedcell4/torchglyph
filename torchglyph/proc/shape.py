@@ -19,11 +19,14 @@ class GetRange(Proc):
 class GetMask(Proc):
     def __init__(self, mask_token: Union[str, int]) -> None:
         super(GetMask, self).__init__()
-        self.mask_token = mask_token
+        self.token = mask_token
+
+    def extra_repr(self) -> str:
+        return f"'{self.token}'"
 
     def __call__(self, ins: List[Any], vocab: Vocab, **kwargs) -> List[int]:
-        mask_idx = stoi(token=self.mask_token, vocab=vocab)
-        return [mask_idx for _ in ins]
+        idx = stoi(token=self.token, vocab=vocab)
+        return [idx for _ in ins]
 
 
 class ToSub(Recur):
@@ -37,6 +40,11 @@ class Prepend(Proc):
         self.token = token
         self.num_repeats = num_repeats
 
+    def extra_repr(self) -> str:
+        return f', '.join([
+            f"'{self.token}'x{self.num_repeats}",
+        ])
+
     def __call__(self, data: List[Any], counter: Counter) -> List[Any]:
         return [self.token for _ in range(self.num_repeats)] + list(data)
 
@@ -46,6 +54,11 @@ class Append(Proc):
         super(Append, self).__init__()
         self.token = token
         self.num_repeats = num_repeats
+
+    def extra_repr(self) -> str:
+        return f', '.join([
+            f"'{self.token}'x{self.num_repeats}",
+        ])
 
     def __call__(self, data: List[Any], counter: Counter) -> List[Any]:
         return list(data) + [self.token for _ in range(self.num_repeats)]
