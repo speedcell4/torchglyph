@@ -127,7 +127,7 @@ class Vocab(object):
             return 0
         return self.vectors.size(1)
 
-    def load_vectors(self, vectors: 'Vectors') -> Union[int, int]:
+    def load_vectors(self, vectors: 'Vectors') -> Tuple[int, int]:
         self.vectors = torch.empty((len(self), vectors.vec_dim), dtype=torch.float32)
 
         tok, occ = 0, 0
