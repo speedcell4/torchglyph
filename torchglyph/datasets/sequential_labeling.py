@@ -27,15 +27,15 @@ class CoNLL2000Chunking(Dataset):
             pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
             vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
         )
-        wsln = SeqLengthPipe(device=device)
+        length = SeqLengthPipe(device=device)
         char = PackedSubPipe(device=device)
-        widx = PackedSeqIndicesPipe(device=device)
+        word_indices = PackedSeqIndicesPipe(device=device)
         mask = PaddedSeqMaskPipe(device=device, filling_mask=True)
         pos = PackedSeqPipe(device=device)
         chunk = PaddedSeqPipe(pad_token='<pad>', device=device)
 
         pipes = [
-            dict(word=word, wsln=wsln, char=char, widx=widx, mask=mask, raw_word=RawStrPipe()),
+            dict(word=word, length=length, char=char, word_indices=word_indices, mask=mask, raw_word=RawStrPipe()),
             dict(pos=pos, raw_pos=RawStrPipe()),
             dict(chunk=chunk, raw_chunk=RawStrPipe()),
         ]
@@ -77,16 +77,16 @@ class CoNLL2003NER(Dataset):
             pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
             vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
         )
-        wsln = SeqLengthPipe(device=device)
+        length = SeqLengthPipe(device=device)
         char = PackedSubPipe(device=device)
-        widx = PackedSeqIndicesPipe(device=device)
+        word_indices = PackedSeqIndicesPipe(device=device)
         mask = PaddedSeqMaskPipe(device=device, filling_mask=True)
         pos = PackedSeqPipe(device=device)
         chunk = PackedSeqPipe(device=device)
         ner = PaddedSeqPipe(pad_token='<pad>', device=device)
 
         pipes = [
-            dict(word=word, wsln=wsln, char=char, widx=widx, mask=mask, raw_word=RawStrPipe()),
+            dict(word=word, length=length, char=char, word_indices=word_indices, mask=mask, raw_word=RawStrPipe()),
             dict(pos=pos, raw_pos=RawStrPipe()),
             dict(chunk=chunk, raw_chunk=RawStrPipe()),
             dict(ner=ner, raw_ner=RawStrPipe()),

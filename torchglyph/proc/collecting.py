@@ -66,6 +66,11 @@ class StackTensors(Proc):
         return torch.stack(data, dim=self.dim)
 
 
+class CatList(Proc):
+    def __call__(self, data: List[List[Tensor]], **kwargs) -> List[Tensor]:
+        return [d for datum in data for d in datum]
+
+
 class PadSeq(Proc):
     def __init__(self, pad_token: Union[int, str], batch_first: bool = True) -> None:
         super(PadSeq, self).__init__()
@@ -125,6 +130,6 @@ class PadSub(Proc):
 class PackSub(Chain):
     def __init__(self, enforce_sorted: bool = False) -> None:
         super(PackSub, self).__init__([
-            Lift(CatTensors()),
+            CatList(),
             PackSeq(enforce_sorted=enforce_sorted),
         ])
