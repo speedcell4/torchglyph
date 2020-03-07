@@ -141,6 +141,14 @@ class Vocab(object):
 
         return tok, occ
 
+    def save(self, path: Path) -> None:
+        logging.info(f'saving {self.__class__.__name__} to {path}')
+        torch.save((self.stoi, self.itos, self.vectors), path)
+
+    def load(self, path: Path) -> None:
+        logging.info(f'loading {self.__class__.__name__} from {path}')
+        self.stoi, self.itos, self.vectors = torch.load(path)
+
 
 class Vectors(Vocab):
     def __init__(self, urls_dest: List[Tuple[str, Path]], path: Path,
@@ -175,11 +183,9 @@ class Vectors(Vocab):
                     self.vectors.append(torch.tensor([float(v) for v in vs], dtype=torch.float32))
 
             self.vectors = torch.stack(self.vectors, 0)
-            logging.info(f'saving vectors to {pt_path}')
-            torch.save((self.itos, self.stoi, self.vectors), pt_path)
+            self.save(pt_path)
         else:
-            logging.info(f'loading vectors from {pt_path}')
-            self.itos, self.stoi, self.vectors = torch.load(pt_path)
+            self.load(pt_path)
 
     @torch.no_grad()
     def query_(self, token: str, vector: Tensor) -> bool:
