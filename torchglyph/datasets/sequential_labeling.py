@@ -9,7 +9,56 @@ from torchglyph import Dataset, DataLoader, PackedSeqPipe, ToLower, ReplaceDigit
 from torchglyph.io import conllx_iter
 
 
-class CoNLL2003(Dataset):
+class CoNLL2000Chunking(Dataset):
+    urls = [
+        ('https://www.clips.uantwerpen.be/conll2000/chunking/train.txt.gz', 'train.txt.gz', 'train.txt'),
+        ('https://www.clips.uantwerpen.be/conll2000/chunking/test.txt.gz', 'test.txt.gz', 'test.txt'),
+    ]
+
+    @classmethod
+    def iter(cls, path: Path) -> Iterable[List[Any]]:
+        for sent in tqdm(conllx_iter(path, sep=' '), desc=f'reading {path}', unit=' sents'):
+            word, pos, chunk = list(zip(*sent))
+            yield [word, pos, chunk]
+
+    @classmethod
+    def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
+        word = PackedSeqPipe(device=device).with_(
+            pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
+            vocab=... + Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim),
+        )
+        wsln = SeqLengthPipe(device=device)
+        char = PackedSubPipe(device=device)
+        widx = PackedSeqIndicesPipe(device=device)
+        mask = PaddedSeqMaskPipe(device=device, filling_mask=True)
+        pos = PackedSeqPipe(device=device)
+        chunk = PaddedSeqPipe(pad_token='<pad>', device=device)
+
+        pipes = [
+            dict(word=word, wsln=wsln, char=char, widx=widx, mask=mask, raw_word=RawStrPipe()),
+            dict(pos=pos, raw_pos=RawStrPipe()),
+            dict(chunk=chunk, raw_chunk=RawStrPipe()),
+        ]
+
+        train, test = cls.paths()
+        train = cls(path=train, pipes=pipes)
+        test = cls(path=test, pipes=pipes)
+
+        for name, pipe in train.pipes.items():
+            logging.info(f'{name} => {pipe}')
+
+        word.build_vocab(train, test, name='word')
+        char.build_vocab(train, test, name='char')
+        pos.build_vocab(train, name='pos')
+        chunk.build_vocab(train, name='chunk')
+
+        return DataLoader.new(
+            (train, test),
+            batch_size=batch_size, shuffle=True,
+        )
+
+
+class CoNLL2003NER(Dataset):
     urls = [
         ('https://github.com/glample/tagger/raw/master/dataset/eng.train', 'train.eng'),
         ('https://github.com/glample/tagger/raw/master/dataset/eng.testa', 'dev.eng'),

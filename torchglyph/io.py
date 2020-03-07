@@ -1,5 +1,7 @@
+import gzip
 import logging
 import os
+import shutil
 import tarfile
 import zipfile
 from pathlib import Path
@@ -44,12 +46,16 @@ def download_and_unzip(url: str, dest: Path) -> None:
 
     if dest.suffix == '.zip':
         logging.info(f'extracting {dest}')
-        with zipfile.ZipFile(dest, "r") as zf:
-            zf.extractall(path=dest.parent)
+        with zipfile.ZipFile(dest, "r") as fp:
+            fp.extractall(path=dest.parent)
     elif dest.suffixes[:-2] == ['.tar', '.gz']:
         logging.info(f'extracting {dest}')
-        with tarfile.open(dest, 'r:gz') as tar:
-            tar.extractall(path=dest.parent)
+        with tarfile.open(dest, 'r:gz') as fp:
+            fp.extractall(path=dest.parent)
+    elif dest.suffix == '.gz':
+        with gzip.open(dest, mode='rb') as fsrc:
+            with dest.with_suffix('').open(mode='wb') as fdst:
+                shutil.copyfileobj(fsrc, fdst)
 
 
 def conllx_iter(path: Path, sep: str = '\t', encoding: str = 'utf-8'):
