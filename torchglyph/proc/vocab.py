@@ -1,3 +1,4 @@
+import logging
 from collections import Counter
 from typing import Tuple, List, Union
 
@@ -39,6 +40,23 @@ class BuildVocab(Proc):
             special_tokens=self.special_tokens,
             max_size=self.max_size, min_freq=self.min_freq,
         )
+
+
+class StatsVocab(Proc):
+    def __call__(self, vocab: Vocab, name: str, **kwargs) -> Vocab:
+        assert vocab is not None
+        assert name is not None
+
+        min_tok, cnt_min = min(vocab.freq.items(), key=lambda x: x[1])
+        max_tok, cnt_max = max(vocab.freq.items(), key=lambda x: x[1])
+        tok_cnt = len(vocab.freq.values())
+        freq_mean = sum(vocab.freq.values()) / max(1, tok_cnt)
+
+        logging.info(f"{Vocab.__name__} of '{name}' has {tok_cnt} tok(s) => {freq_mean:.1f} time(s)/tok ["
+                     f"{cnt_min} :: {min_tok}, "
+                     f"{cnt_max} :: {max_tok}]")
+
+        return vocab
 
 
 class Numbering(Recur):

@@ -1,3 +1,4 @@
+import logging
 from collections import Counter
 from collections import defaultdict
 from pathlib import Path
@@ -18,6 +19,9 @@ class Vocab(object):
                  special_tokens: Tuple[Optional[str], ...] = (),
                  max_size: Optional[int] = None, min_freq: int = 1) -> None:
         super(Vocab, self).__init__()
+
+        if max_size is not None:
+            counter = Counter(counter.most_common(n=max_size))
 
         self.freq = counter
         self.unk_token = unk_token
@@ -165,10 +169,10 @@ class Vectors(Vocab):
                     self.vectors.append(torch.tensor([float(v) for v in vs], dtype=torch.float32))
 
             self.vectors = torch.stack(self.vectors, 0)
-            print(f'saving vectors to {pt_path}')
+            logging.info(f'saving vectors to {pt_path}')
             torch.save((self.itos, self.stoi, self.vectors), pt_path)
         else:
-            print(f'loading vectors from {pt_path}')
+            logging.info(f'loading vectors from {pt_path}')
             self.itos, self.stoi, self.vectors = torch.load(pt_path)
 
     @torch.no_grad()

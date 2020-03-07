@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import List, Tuple, Iterable, Any
 
@@ -8,7 +9,7 @@ from torchglyph.io import conllx_iter
 from torchglyph.pipe import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PaddedSubPipe, RawStrPipe, \
     RawPackedTensorPipe
 from torchglyph.pipe import PackedSubPipe, RawPaddedTensorPipe
-from torchglyph.proc import LoadGlove, ReplaceDigits, ToLower
+from torchglyph.proc import LoadGlove, ReplaceDigits, ToLower, StatsVocab
 
 
 class CoNLL2003(Dataset):
@@ -22,7 +23,7 @@ class CoNLL2003(Dataset):
     def dataloaders(cls, *paths: Path, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
         WORD = PaddedSeqPipe(pad_token='<pad>', device=device).new_(
             pre=ToLower() + ReplaceDigits('<digits>') + ...,
-            vocab=... + LoadGlove(name='6B', dim=50),
+            vocab=... + LoadGlove(name='6B', dim=50) + StatsVocab(),
         )
         WLEN = SeqLengthPipe(device=device)
         CHAR1 = PaddedSubPipe(device=device)
@@ -48,7 +49,7 @@ class CoNLL2003(Dataset):
             dict(target=TRGT),
         ]) for path in paths)
 
-        WORD.build_vocab(train, dev, test)
+        WORD.build_vocab(train, dev, test, name='word')
         CHAR1.build_vocab(train, dev, test)
         CHAR2.build_vocab(train, dev, test)
         XPOS.build_vocab(train)
@@ -61,6 +62,8 @@ class CoNLL2003(Dataset):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+
     root = Path('~/data/conll2003').expanduser().absolute()
     train, dev, test = root / 'train.stanford', root / 'dev.stanford', root / 'test.stanford'
 
