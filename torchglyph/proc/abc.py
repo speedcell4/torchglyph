@@ -20,6 +20,10 @@ def compress(procs: PaLP, allow_ellipsis: bool = False) -> List['Proc']:
     return [x for proc in procs for x in compress(proc, allow_ellipsis=allow_ellipsis)]
 
 
+def subs(procs: PaLP, repl: 'Proc') -> PaLP:
+    return [repl if proc is ... else proc for proc in compress(procs, allow_ellipsis=True)]
+
+
 class Proc(object):
     @classmethod
     def from_list(cls, procs: List['Proc']) -> 'Proc':

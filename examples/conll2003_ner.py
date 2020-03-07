@@ -8,6 +8,7 @@ from torchglyph.io import conllx_iter
 from torchglyph.pipe import PackedSeqPipe, PackedSeqRangePipe, PaddedSeqPipe, SeqLengthPipe, PaddedSubPipe, RawStrPipe, \
     RawPackedTensorPipe
 from torchglyph.pipe import PackedSubPipe, RawPaddedTensorPipe
+from torchglyph.proc import LoadGlove
 
 
 class CoNLL2003(Dataset):
@@ -19,7 +20,7 @@ class CoNLL2003(Dataset):
 
     @classmethod
     def dataloaders(cls, *paths: Path, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
-        WORD = PaddedSeqPipe(pad_token='<pad>', dim=50, device=device)
+        WORD = PaddedSeqPipe(pad_token='<pad>', device=device).new(vocab=[..., LoadGlove(name='6B', dim=50)])
         WLEN = SeqLengthPipe(device=device)
         CHAR1 = PaddedSubPipe(device=device)
         CHAR2 = PackedSubPipe(device=device)
