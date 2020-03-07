@@ -80,6 +80,13 @@ class Dataset(data.Dataset):
 
 
 class DataLoader(data.DataLoader):
+    @property
+    def vocabs(self) -> NamedTuple:
+        return self.dataset.Batch(**{
+            key: pipe.vocab
+            for key, pipe in self.dataset.pipes.items()
+        })
+
     @classmethod
     def new(cls, datasets: Tuple[Dataset, ...],
             batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
