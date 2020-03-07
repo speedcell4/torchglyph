@@ -48,18 +48,18 @@ class ToTensor(Proc):
             raise err
 
 
-class CatSeq(Proc):
+class CatTensors(Proc):
     def __init__(self, dim: int = 0) -> None:
-        super(CatSeq, self).__init__()
+        super(CatTensors, self).__init__()
         self.dim = dim
 
     def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
         return torch.cat(data, dim=self.dim)
 
 
-class StackSeq(Proc):
+class StackTensors(Proc):
     def __init__(self, dim: int = 0) -> None:
-        super(StackSeq, self).__init__()
+        super(StackTensors, self).__init__()
         self.dim = dim
 
     def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
@@ -125,7 +125,6 @@ class PadSub(Proc):
 class PackSub(Chain):
     def __init__(self, enforce_sorted: bool = False) -> None:
         super(PackSub, self).__init__([
-            Lift(CatSeq()),
+            Lift(CatTensors()),
             PackSeq(enforce_sorted=enforce_sorted),
         ])
-        self.enforce_sorted = enforce_sorted
