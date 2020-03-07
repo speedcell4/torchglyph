@@ -127,13 +127,18 @@ class Vocab(object):
             return 0
         return self.vectors.size(1)
 
-    def load_vectors(self, vectors: 'Vectors') -> None:
+    def load_vectors(self, vectors: 'Vectors') -> int:
         self.vectors = torch.empty((len(self), vectors.vec_dim), dtype=torch.float32)
+
+        hit = 0
         for token, index in self.stoi.items():
-            vectors.update_(token, self.vectors[index])
+            if vectors.query_(token, self.vectors[index]):
+                hit += 1
 
         if self.pad_token is not None:
             init.zeros_(self.vectors[self.stoi[self.pad_token]])
+
+        return hit
 
 
 class Vectors(Vocab):
@@ -176,11 +181,13 @@ class Vectors(Vocab):
             self.itos, self.stoi, self.vectors = torch.load(pt_path)
 
     @torch.no_grad()
-    def update_(self, token: str, vector: Tensor) -> None:
+    def query_(self, token: str, vector: Tensor) -> bool:
         if token in self:
             vector[:] = self.vectors[self.stoi[token]]
+            return True
         else:
             self.unk_init_(vector)
+            return False
 
 
 class Glove(Vectors):

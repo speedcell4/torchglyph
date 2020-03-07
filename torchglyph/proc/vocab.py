@@ -72,10 +72,11 @@ class LoadVectors(Proc):
     def extra_repr(self) -> str:
         return f'{self.vectors.extra_repr()}'
 
-    def __call__(self, vocab: Vocab, **kwargs) -> Vocab:
+    def __call__(self, vocab: Vocab, name: str, **kwargs) -> Vocab:
         assert vocab is not None, f"did you forget '{BuildVocab.__name__}' before '{LoadVectors.__name__}'?"
 
-        vocab.load_vectors(self.vectors)
+        hit = vocab.load_vectors(self.vectors) / max(1, len(vocab)) * 100
+        logging.info(f"'{self.vectors.__class__.__name__}' hits {hit:.1f}% tokens of {Vocab.__name__} '{name}'")
         return vocab
 
 
