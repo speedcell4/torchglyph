@@ -1,36 +1,21 @@
 from collections import Counter
 from typing import Optional, Union, List, Any
 
-from torchglyph.proc import Chain, Proc
+from torchglyph.proc import Proc, PaLP, compress
 from torchglyph.vocab import Vocab
 
 
 class Pipe(object):
-    def __init__(self,
-                 pre_procs: Optional[Union[Chain, Proc]],
-                 vocab_procs: Optional[Union[Chain, Proc]],
-                 post_procs: Optional[Union[Chain, Proc]],
-                 batch_procs: Optional[Union[Chain, Proc]]) -> None:
+    def __init__(self, pre_procs: PaLP = None, vocab_procs: PaLP = None,
+                 post_procs: PaLP = None, batch_procs: PaLP = None) -> None:
         super(Pipe, self).__init__()
 
         self.vocab: Optional[Union[Vocab]] = None
 
-        self._pre_processing = Chain(pre_procs)
-        self._vocab_processing = Chain(vocab_procs)
-        self._post_processing = Chain(post_procs)
-        self._batch_processing = Chain(batch_procs)
-
-    def replace(self,
-                pre_procs: Optional[Union[Chain, Proc]] = None,
-                vocab_procs: Optional[Union[Chain, Proc]] = None,
-                post_procs: Optional[Union[Chain, Proc]] = None,
-                batch_procs: Optional[Union[Chain, Proc]] = None) -> 'Pipe':
-        return Pipe(
-            pre_procs=self._pre_processing if pre_procs is None else pre_procs,
-            vocab_procs=self._vocab_processing if vocab_procs is None else vocab_procs,
-            post_procs=self._post_processing if post_procs is None else post_procs,
-            batch_procs=self._batch_processing if batch_procs is None else batch_procs,
-        )
+        self._pre_processing = Proc.from_list(compress(pre_procs))
+        self._vocab_processing = Proc.from_list(compress(vocab_procs))
+        self._post_processing = Proc.from_list(compress(post_procs))
+        self._batch_processing = Proc.from_list(compress(batch_procs))
 
     def preprocess(self, *datasets) -> Counter:
         counter = Counter()

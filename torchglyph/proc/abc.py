@@ -2,17 +2,33 @@ from typing import Optional, Union, Any, List, Callable, Tuple
 
 from torchglyph.vocab import Vocab
 
+PaLP = Union[Optional['Proc'], List[Optional['Proc']]]
+
+
+def compress(procs: PaLP) -> List['Proc']:
+    if procs is None or isinstance(procs, Identity):
+        return []
+    if isinstance(procs, Chain):
+        return procs.procs
+    if isinstance(procs, Proc):
+        return [procs]
+    return [x for proc in procs for x in compress(proc)]
+
 
 class Proc(object):
-    def __add__(self, rhs: Optional[Union['Proc', 'Chain']]) -> Union['Proc', 'Chain']:
-        if rhs is None:
-            return self
-        return Chain(self, rhs)
+    @classmethod
+    def from_list(cls, procs: List['Proc']) -> 'Proc':
+        if len(procs) == 0:
+            return Identity()
+        if len(procs) == 1:
+            return procs[0]
+        return Chain(procs)
 
-    def __radd__(self, lhs: Optional[Union['Proc', 'Chain']]) -> Union['Proc', 'Chain']:
-        if lhs is None:
-            return self
-        return Chain(lhs, self)
+    def __add__(self, rhs: PaLP) -> 'Proc':
+        return self.from_list([self] + compress(rhs))
+
+    def __radd__(self, lhs: PaLP) -> 'Proc':
+        return self.from_list(compress(lhs) + [self])
 
     def __call__(self, x: Any, *args, **kwargs) -> Any:
         raise NotImplementedError
@@ -20,6 +36,23 @@ class Proc(object):
 
 class Identity(Proc):
     def __call__(self, x: Any, *args, **kwargs) -> Any:
+        return x
+
+
+class Chain(Proc):
+    def __init__(self, procs: PaLP) -> None:
+        super(Chain, self).__init__()
+        self.procs = compress(procs)
+
+    def __add__(self, rhs: PaLP) -> 'Proc':
+        return self.from_list(self.procs + compress(rhs))
+
+    def __radd__(self, lhs: PaLP) -> 'Proc':
+        return self.from_list(compress(lhs) + self.procs)
+
+    def __call__(self, x: Any, *args, **kwargs) -> Any:
+        for process in self.procs:
+            x = process(x, *args, **kwargs)
         return x
 
 
@@ -72,29 +105,3 @@ class ScanR(Proc):
             z, y = self.fn(z, x)
             ys.append(y)
         return type(xs)(ys)
-
-
-class Chain(Proc):
-    def __init__(self, *procs: Optional[Union['Proc', 'Chain']]) -> None:
-        super(Chain, self).__init__()
-        self.procs = []
-        for proc in procs:
-            if proc is None:
-                pass
-            elif isinstance(proc, Proc):
-                self.procs.append(proc)
-            elif isinstance(proc, Chain):
-                self.procs.extend(proc.procs)
-            else:
-                raise NotImplementedError(f'unsupported type :: {type(proc).__name__}')
-
-    def __add__(self, rhs: Optional[Union['Proc', 'Chain']]) -> 'Chain':
-        return Chain(*self.procs, rhs)
-
-    def __radd__(self, lhs: Optional[Union['Proc', 'Chain']]) -> 'Chain':
-        return Chain(lhs, *self.procs)
-
-    def __call__(self, x: Any, *args, **kwargs) -> Any:
-        for process in self.procs:
-            x = process(x, *args, **kwargs)
-        return x
