@@ -42,9 +42,9 @@ class Recur(Proc):
         return type(data)([self(datum, *args, **kwargs) for datum in data])
 
 
-class Scan(Proc):
+class ScanL(Proc):
     def __init__(self, fn: Callable[[Any, Any], Tuple[Any, Any]], init: Any) -> None:
-        super(Scan, self).__init__()
+        super(ScanL, self).__init__()
         self.fn = fn
         self.init = init
 
@@ -55,7 +55,23 @@ class Scan(Proc):
         for x in xs:
             y, z = self.fn(x, z)
             ys.append(y)
-        return ys
+        return type(xs)(ys)
+
+
+class ScanR(Proc):
+    def __init__(self, fn: Callable[[Any, Any], Tuple[Any, Any]], init: Any) -> None:
+        super(ScanR, self).__init__()
+        self.fn = fn
+        self.init = init
+
+    def __call__(self, xs: List[Any], vocab: Vocab = None) -> List[Any]:
+        z = self.init
+
+        ys = []
+        for x in xs:
+            z, y = self.fn(z, x)
+            ys.append(y)
+        return type(xs)(ys)
 
 
 class Chain(Proc):

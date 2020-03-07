@@ -4,7 +4,7 @@ import torch
 
 from torchglyph.pipe import Pipe
 from torchglyph.proc import GetRange, ToDevice, Numbering, UpdateCounter, BuildVocab, LoadGlove
-from torchglyph.proc import Scan, ToTensor, PadSeq, PackSeq
+from torchglyph.proc import ScanL, ToTensor, PadSeq, PackSeq
 
 
 class RawStrPipe(Pipe):
@@ -66,5 +66,5 @@ class PackedSeqRangePipe(Pipe):
             pre_procs=None,
             vocab_procs=None,
             post_procs=GetRange() + ToTensor(),
-            batch_procs=Scan(lambda t, a: (t + a, t.size(0) + a), 0) + PackSeq() + ToDevice(device=device),
+            batch_procs=ScanL(lambda t, a: (t + a, t.size(0) + a), 0) + PackSeq() + ToDevice(device=device),
         )
