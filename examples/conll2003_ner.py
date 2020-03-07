@@ -4,9 +4,11 @@ from typing import List, Tuple, Iterable, Any
 
 from tqdm import tqdm
 
+from torchglyph import PaddedSeqMaskPipe
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.io import conllx_iter
-from torchglyph.pipe import PackedSeqPipe, PackedSubPipe, PackedSeqIndicesPipe, PaddedSeqPipe, SeqLengthPipe, RawStrPipe
+from torchglyph.pipe import PackedSeqPipe, PackedSubPipe, PackedSeqIndicesPipe
+from torchglyph.pipe import PaddedSeqPipe, SeqLengthPipe, RawStrPipe
 from torchglyph.proc import LoadGlove, ReplaceDigits, ToLower
 
 
@@ -26,18 +28,19 @@ class CoNLL2003(Dataset):
     @classmethod
     def new(cls, batch_size: int, word_dim: int, device: int = -1) -> Tuple[DataLoader, ...]:
         word = PackedSeqPipe(device=device).with_(
-            pre=ToLower() + ReplaceDigits('<digits>') + ...,
+            pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
             vocab=... + LoadGlove(name='6B', dim=word_dim),
         )
         wsln = SeqLengthPipe(device=device)
         char = PackedSubPipe(device=device)
         widx = PackedSeqIndicesPipe(device=device)
+        mask = PaddedSeqMaskPipe(device=device, filling_mask=True)
         pos = PackedSeqPipe(device=device)
         chunk = PackedSeqPipe(device=device)
         ner = PaddedSeqPipe(pad_token='<pad>', device=device)
 
         pipes = [
-            dict(word=word, wsln=wsln, char=char, widx=widx, raw_word=RawStrPipe()),
+            dict(word=word, wsln=wsln, char=char, widx=widx, mask=mask, raw_word=RawStrPipe()),
             dict(pos=pos, raw_pos=RawStrPipe()),
             dict(chunk=chunk, raw_chunk=RawStrPipe()),
             dict(ner=ner, raw_ner=RawStrPipe()),
@@ -91,4 +94,5 @@ if __name__ == '__main__':
         logging.info(f'batch.pos => {batch.pos}')
         logging.info(f'batch.chunk => {batch.chunk}')
         logging.info(f'batch.ner => {batch.ner}')
+        logging.info(f'batch.mask => {batch.mask}')
         break

@@ -5,7 +5,7 @@ import torch
 from torchglyph.pipe import Pipe
 from torchglyph.pipe.utilities import cum_index
 from torchglyph.proc import GetRange, ToDevice, Numbering, UpdateCounter, BuildVocab
-from torchglyph.proc import ScanL, ToTensor, PadSeq, PackSeq, StatsVocab
+from torchglyph.proc import ScanL, ToTensor, PadSeq, PackSeq, StatsVocab, GetMask
 
 
 class RawStrPipe(Pipe):
@@ -57,6 +57,16 @@ class PackedSeqPipe(Pipe):
             vocab=BuildVocab() + StatsVocab(threshold=threshold),
             post=Numbering() + ToTensor(),
             batch=PackSeq() + ToDevice(device=device),
+        )
+
+
+class PaddedSeqMaskPipe(Pipe):
+    def __init__(self, device: Union[int, torch.device], filling_mask: bool) -> None:
+        super(PaddedSeqMaskPipe, self).__init__(
+            pre=None,
+            vocab=None,
+            post=GetMask(mask_token=1 if filling_mask else 0) + ToTensor(dtype=torch.bool),
+            batch=PadSeq(pad_token=0 if filling_mask else 1, batch_first=True) + ToDevice(device=device),
         )
 
 
