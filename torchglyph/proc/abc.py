@@ -5,14 +5,19 @@ from torchglyph.vocab import Vocab
 PaLP = Union[Optional['Proc'], List[Optional['Proc']]]
 
 
-def compress(procs: PaLP) -> List['Proc']:
+def compress(procs: PaLP, allow_ellipsis: bool = False) -> List['Proc']:
     if procs is None or isinstance(procs, Identity):
         return []
+    if procs is ...:
+        if allow_ellipsis:
+            return [...]
+        else:
+            raise ValueError(f'ellipsis is not allowed here')
     if isinstance(procs, Chain):
         return procs.procs
     if isinstance(procs, Proc):
         return [procs]
-    return [x for proc in procs for x in compress(proc)]
+    return [x for proc in procs for x in compress(proc, allow_ellipsis=allow_ellipsis)]
 
 
 class Proc(object):
