@@ -4,10 +4,27 @@ import os
 import shutil
 import tarfile
 import zipfile
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Union, TextIO
 from urllib.request import urlretrieve
 
 from tqdm import tqdm
+
+IO = Union[str, Path, TextIO]
+
+
+@contextmanager
+def open_io(f: IO, mode: str, encoding: str):
+    if isinstance(f, (str, Path)):
+        fp = open(f, mode=mode, encoding=encoding)
+    else:
+        fp = f
+    try:
+        yield fp
+    finally:
+        if isinstance(f, Path):
+            fp.close()
 
 
 # copied and modified from https://github.com/pytorch/text
@@ -56,18 +73,3 @@ def download_and_unzip(url: str, dest: Path) -> None:
         with gzip.open(dest, mode='rb') as fsrc:
             with dest.with_suffix('').open(mode='wb') as fdst:
                 shutil.copyfileobj(fsrc, fdst)
-
-
-def conllx_iter(path: Path, sep: str = '\t', encoding: str = 'utf-8'):
-    sentence = []
-    with path.open(mode='r', encoding=encoding) as fp:
-        for row in fp:
-            row = row.strip()
-            if len(row) != 0:
-                sentence.append(row.split(sep))
-            elif len(sentence) != 0:
-                yield sentence
-                sentence = []
-
-    if len(sentence) != 0:
-        yield sentence

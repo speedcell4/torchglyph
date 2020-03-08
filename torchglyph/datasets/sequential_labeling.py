@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from torchglyph import Dataset, DataLoader, PackedSeqPipe, ToLower, ReplaceDigits, LoadGlove, SeqLengthPipe, \
     PackedSubPipe, PackedSeqIndicesPipe, PaddedSeqMaskPipe, PaddedSeqPipe, RawStrPipe, Identity
-from torchglyph.io import conllx_iter
+from torchglyph.formats import conllx
 
 
 class CoNLL2000Chunking(Dataset):
@@ -17,7 +17,7 @@ class CoNLL2000Chunking(Dataset):
 
     @classmethod
     def iter(cls, path: Path) -> Iterable[List[Any]]:
-        for sent in tqdm(conllx_iter(path, sep=' '), desc=f'reading {path}', unit=' sents'):
+        for sent in tqdm(conllx.load(path, sep=' '), desc=f'reading {path}', unit=' sents'):
             word, pos, chunk = list(zip(*sent))
             yield [word, pos, chunk]
 
@@ -67,7 +67,7 @@ class CoNLL2003NER(Dataset):
 
     @classmethod
     def iter(cls, path: Path) -> Iterable[List[Any]]:
-        for sent in tqdm(conllx_iter(path, sep=' '), desc=f'reading {path}', unit=' sents'):
+        for sent in tqdm(conllx.load(path, sep=' '), desc=f'reading {path}', unit=' sents'):
             word, pos, chunk, ner = list(zip(*sent))
             yield [word, pos, chunk, ner]
 
