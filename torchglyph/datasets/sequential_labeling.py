@@ -16,7 +16,7 @@ class CoNLL2000Chunking(Dataset):
     ]
 
     @classmethod
-    def iter(cls, path: Path) -> Iterable[List[Any]]:
+    def load(cls, path: Path) -> Iterable[List[Any]]:
         for sent in tqdm(conllx.load(path, sep=' '), desc=f'reading {path}', unit=' sents'):
             word, pos, chunk = list(zip(*sent))
             yield [word, pos, chunk]
@@ -39,7 +39,7 @@ class CoNLL2000Chunking(Dataset):
         word_indices = PackedSeqIndicesPipe(device=device)
         mask = PaddedSeqMaskPipe(device=device, filling_mask=True)
         pos = PackedSeqPipe(device=device, unk_token='<unk>')
-        chunk = PaddedSeqPipe(unk_token='<O>', pad_token='O', device=device)
+        chunk = PaddedSeqPipe(unk_token='O', pad_token='O', device=device)
 
         pipes = [
             dict(word=word, length=length, char=char, word_indices=word_indices, mask=mask, raw_word=RawStrPipe()),
@@ -73,7 +73,7 @@ class CoNLL2003NER(Dataset):
     ]
 
     @classmethod
-    def iter(cls, path: Path) -> Iterable[List[Any]]:
+    def load(cls, path: Path) -> Iterable[List[Any]]:
         for sent in tqdm(conllx.load(path, sep=' '), desc=f'reading {path}', unit=' sents'):
             word, pos, chunk, ner = list(zip(*sent))
             yield [word, pos, chunk, ner]

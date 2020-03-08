@@ -29,7 +29,7 @@ class Dataset(data.Dataset):
             globals()[self.Batch.__name__] = self.Batch
 
         self.data: Dict[str, List[Any]] = {}
-        for ins, pipes in zip(zip(*self.iter(**kwargs)), pipes):
+        for ins, pipes in zip(zip(*self.load(**kwargs)), pipes):
             for key, pipe in pipes.items():
                 self.data.setdefault(key, []).extend(ins)
 
@@ -75,10 +75,10 @@ class Dataset(data.Dataset):
         return tuple(ans)
 
     @classmethod
-    def iter(cls, **kwargs) -> Iterable[List[Any]]:
+    def load(cls, path: Path, **kwargs) -> Iterable[Any]:
         raise NotImplementedError
 
-    def dump(self, fp: TextIO, batch: NamedTuple, prediction, *args, **kwargs) -> None:
+    def dump(self, fp: TextIO, batch: NamedTuple, prediction: List[Any], *args, **kwargs) -> None:
         raise NotImplementedError
 
     @classmethod
