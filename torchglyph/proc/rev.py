@@ -1,6 +1,6 @@
 from typing import List
 
-from torchglyph.pipe import Proc
+from torchglyph.proc.abc import Proc
 from torchglyph.vocab import Vocab
 
 
