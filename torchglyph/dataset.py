@@ -2,7 +2,7 @@ import itertools
 import uuid
 from collections import namedtuple
 from pathlib import Path
-from typing import Iterable, Any
+from typing import Iterable, Any, TextIO
 from typing import Union, List, Type, Tuple, NamedTuple, Dict
 
 from torch.utils import data
@@ -78,7 +78,7 @@ class Dataset(data.Dataset):
     def iter(cls, **kwargs) -> Iterable[List[Any]]:
         raise NotImplementedError
 
-    def dump(self, fp, batch: NamedTuple, *args, **kwargs) -> None:
+    def dump(self, fp: TextIO, batch: NamedTuple, prediction, *args, **kwargs) -> None:
         raise NotImplementedError
 
     @classmethod

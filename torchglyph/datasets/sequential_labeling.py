@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Iterable, List, Any, Tuple, Optional
+from typing import Iterable, List, Any, Tuple, Optional, NamedTuple, TextIO
 
 from tqdm import tqdm
 
@@ -20,6 +20,13 @@ class CoNLL2000Chunking(Dataset):
         for sent in tqdm(conllx.load(path, sep=' '), desc=f'reading {path}', unit=' sents'):
             word, pos, chunk = list(zip(*sent))
             yield [word, pos, chunk]
+
+    def dump(self, fp: TextIO, batch: NamedTuple, prediction: List[List[int]], *args, **kwargs) -> None:
+        chunk_vocab = self.pipes['chunk'].vocab.stoi
+        for raw_word, raw_pos, raw_chunk, pred in \
+                zip(batch.raw_word, batch.raw_pos, batch.raw_chunk, prediction):
+            pred_chunk = [chunk_vocab[p] for p in pred]
+            conllx.dump(zip(raw_word, raw_pos, raw_chunk, pred_chunk), fp, sep=' ')
 
     @classmethod
     def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
@@ -70,6 +77,13 @@ class CoNLL2003NER(Dataset):
         for sent in tqdm(conllx.load(path, sep=' '), desc=f'reading {path}', unit=' sents'):
             word, pos, chunk, ner = list(zip(*sent))
             yield [word, pos, chunk, ner]
+
+    def dump(self, fp: TextIO, batch: NamedTuple, prediction: List[List[int]], *args, **kwargs) -> None:
+        ner_vocab = self.pipes['ner'].vocab.stoi
+        for raw_word, raw_pos, raw_chunk, raw_ner, pred in \
+                zip(batch.raw_word, batch.raw_pos, batch.raw_chunk, batch.raw_ner, prediction):
+            pred_ner = [ner_vocab[p] for p in pred]
+            conllx.dump(zip(raw_word, raw_pos, raw_chunk, raw_ner, pred_ner), fp, sep=' ')
 
     @classmethod
     def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:

@@ -1,8 +1,8 @@
-from typing import Iterable, List, Any, Tuple
+from typing import Iterable, Any, Tuple
 
 from torchglyph.io import IO, open_io
 
-Sentence = List[Tuple[Any]]
+Sentence = Iterable[Tuple[Any, ...]]
 
 
 def load(f: IO, *, sep: str = '\t', mode: str = 'r', encoding: str = 'utf-8') -> Iterable[Sentence]:
