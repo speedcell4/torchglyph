@@ -4,3 +4,4 @@ from torchglyph.proc.misc import *
 from torchglyph.proc.shape import *
 from torchglyph.proc.utilities import *
 from torchglyph.proc.vocab import *
+from torchglyph.proc.rev import *
