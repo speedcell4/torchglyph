@@ -33,19 +33,17 @@ class Dataset(data.Dataset):
             for key, pipe in pipes.items():
                 self.data.setdefault(key, []).extend(ins)
 
-        self._len = 0  # cache the number of instances
-        for datum in self.data.values():
-            self._len = len(datum)
-            break
+    def _transpose(self) -> None:
+        keys, values = zip(*self.data.items())
+        keys = list(keys)
+        values = zip(*values)
+        self.data = [self.Batch(**dict(zip(keys, ins))) for ins in values]
 
     def __getitem__(self, index: int) -> NamedTuple:
-        return self.Batch(*[
-            self.data[key][index]
-            for key in self.Batch._fields
-        ])
+        return self.data[index]
 
     def __len__(self) -> int:
-        return self._len
+        return len(self.data)
 
     @property
     def vocabs(self) -> NamedTuple:
@@ -104,6 +102,7 @@ class DataLoader(data.DataLoader):
         for dataset in datasets:
             for pipe in dataset.pipes.values():
                 pipe.postprocess(dataset)
+            dataset._transpose()
 
         return tuple(
             DataLoader(
