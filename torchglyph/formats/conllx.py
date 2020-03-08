@@ -31,4 +31,4 @@ def dump(sentence: Sentence, f: IO, *, sep: str = '\t', mode: str = 'w', encodin
     with open_io(f, mode=mode, encoding=encoding) as fp:
         for raw in dumps(sentence, sep=sep):
             print(raw, file=fp)
-        print(raw, file=fp)
+        print('', file=fp)
