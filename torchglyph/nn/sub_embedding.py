@@ -9,13 +9,12 @@ from torchglyph.vocab import Vocab
 
 
 class SubLstmEmbedding(nn.Module):
-    def __init__(self, vocab: Vocab, embedding_dim: int, hidden_dim: int, num_layers: int = 1,
+    def __init__(self, vocab: Vocab, dim: int, hidden_dim: int, num_layers: int = 1,
                  bias: bool = True, batch_first: bool = True, bidirectional: bool = True) -> None:
         super(SubLstmEmbedding, self).__init__()
 
         self.embedding = nn.Embedding(
-            num_embeddings=len(vocab),
-            embedding_dim=embedding_dim,
+            num_embeddings=len(vocab), embedding_dim=dim,
             padding_idx=vocab.stoi.get('<pad>', None),
         )
         self.rnn = nn.LSTM(
