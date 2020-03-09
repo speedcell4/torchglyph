@@ -1,6 +1,4 @@
-from pathlib import Path
-from typing import Iterable, Any
-from typing import Union, Optional, List, Tuple
+from typing import Union
 
 import torch
 from einops import rearrange
@@ -9,56 +7,8 @@ from torch import Tensor
 from torch import nn
 from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence
 
-from torchglyph.dataset import Dataset, DataLoader
-from torchglyph.formats import conllx
-from torchglyph.pipe import PackedTokIndicesPipe, PaddedTokLengthPipe, SeqLengthPipe
-from torchglyph.pipe import PaddedSubPipe, PackedSubPipe
+from tests.test_pipe.corpora import SubTokenCorpus, SENTENCES
 from torchglyph.vocab import Vocab
-
-
-class CoNLL2000Chunking(Dataset):
-    urls = [
-        ('https://www.clips.uantwerpen.be/conll2000/chunking/test.txt.gz', 'test.txt.gz', 'test.txt'),
-    ]
-
-    @classmethod
-    def load(cls, path: Path) -> Iterable[List[Any]]:
-        cnt = 0
-        for sent in conllx.load(path, sep=' '):
-            word, _, _ = list(zip(*sent))
-            yield [word]
-            cnt += 1
-            if cnt > 10:
-                break
-
-    @classmethod
-    def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
-        pad = PaddedSubPipe(device=device, unk_token='<unk>', pad_token='<pad>')
-        word_lengths = PaddedTokLengthPipe(device=device, batch_first=True)
-
-        pack = PackedSubPipe(device=device, unk_token='<unk>')
-        word_indices = PackedTokIndicesPipe(device=device)
-
-        seq_length = SeqLengthPipe(device=device)
-
-        pipes = [
-            dict(
-                pad=pad, word_lengths=word_lengths,
-                pack=pack, word_indices=word_indices,
-                seq_length=seq_length,
-            ),
-        ]
-
-        data, = cls.paths()
-        data = cls(path=data, pipes=pipes)
-
-        pad.build_vocab(data, name='data')
-        data.pipes['pack'].vocab = data.pipes['pad'].vocab
-
-        return DataLoader.new(
-            (data,),
-            batch_size=batch_size, shuffle=True,
-        )
 
 
 class SubLstmEmbedding(nn.Module):
@@ -108,10 +58,11 @@ class SubLstmEmbedding(nn.Module):
     batch_size=st.integers(1, 12),
     char_dim=st.integers(1, 12),
     hidden_dim=st.integers(1, 12),
+    sentences=SENTENCES,
 )
-def test_sub_pad_pack(batch_size, char_dim, hidden_dim):
-    loader, = CoNLL2000Chunking.new(batch_size=batch_size, word_dim=None)
-    layer = SubLstmEmbedding(loader.vocabs.pad, embedding_dim=char_dim, hidden_dim=hidden_dim)
+def test_sub_pad_pack(batch_size, char_dim, hidden_dim, sentences):
+    loader, = SubTokenCorpus.new(sentences=sentences, batch_size=batch_size, word_dim=None)
+    layer = SubLstmEmbedding(vocab=loader.vocabs.pad, embedding_dim=char_dim, hidden_dim=hidden_dim)
 
     for batch in loader:
         pad_encoding = layer(batch.pad, batch.word_lengths)
