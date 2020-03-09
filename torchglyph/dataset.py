@@ -15,7 +15,7 @@ from torchglyph.pipe import Pipe
 class Dataset(data.Dataset):
     urls: List[Union[Tuple[str, ...]]]
 
-    def __init__(self, pipes: List[Dict[str, Pipe]], **kwargs) -> None:
+    def __init__(self, pipes: List[Dict[str, Pipe]], **load_kwargs) -> None:
         super(Dataset, self).__init__()
 
         self.pipes: Dict[str, Pipe] = {
@@ -29,7 +29,7 @@ class Dataset(data.Dataset):
             globals()[self.Batch.__name__] = self.Batch
 
         self.data: Dict[str, List[Any]] = {}
-        for ins, pipes in zip(zip(*self.load(**kwargs)), pipes):
+        for ins, pipes in zip(zip(*self.load(**load_kwargs)), pipes):
             for key, pipe in pipes.items():
                 self.data.setdefault(key, []).extend(ins)
 
@@ -73,7 +73,7 @@ class Dataset(data.Dataset):
         return tuple(ans)
 
     @classmethod
-    def load(cls, path: Path, **kwargs) -> Iterable[Any]:
+    def load(cls, **kwargs) -> Iterable[Any]:
         raise NotImplementedError
 
     def dump(self, fp: TextIO, batch: NamedTuple, prediction: List[Any], *args, **kwargs) -> None:
