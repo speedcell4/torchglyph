@@ -14,7 +14,7 @@ class SubTokenCorpus(Dataset):
 
     @classmethod
     def new(cls, sentences, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
-        pad = PaddedSubPipe(device=device, unk_token='<unk>', pad_token='<pad>')
+        pad = PaddedSubPipe(device=device, unk_token='<unk>', pad_token='<pad>', batch_first=True)
         word_lengths = PaddedTokLengthPipe(device=device, batch_first=True)
 
         pack = PackedSubPipe(device=device, unk_token='<unk>')

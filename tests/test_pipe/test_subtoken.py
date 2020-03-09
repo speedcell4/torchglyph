@@ -13,7 +13,7 @@ from torchglyph.vocab import Vocab
 
 class SubLstmEmbedding(nn.Module):
     def __init__(self, vocab: Vocab, embedding_dim: int, hidden_dim: int, num_layers: int = 1,
-                 bias: bool = True, bidirectional: bool = True) -> None:
+                 bias: bool = True, batch_first: bool = True, bidirectional: bool = True) -> None:
         super(SubLstmEmbedding, self).__init__()
 
         self.embedding = nn.Embedding(
@@ -24,7 +24,7 @@ class SubLstmEmbedding(nn.Module):
         self.rnn = nn.LSTM(
             input_size=self.embedding.embedding_dim,
             hidden_size=hidden_dim, num_layers=num_layers, bias=bias,
-            batch_first=True, bidirectional=bidirectional,
+            batch_first=batch_first, bidirectional=bidirectional,
         )
 
         self.embedding_dim = self.rnn.hidden_size * (2 if self.rnn.bidirectional else 1)
@@ -33,7 +33,7 @@ class SubLstmEmbedding(nn.Module):
         pack = pack_padded_sequence(
             rearrange(sub, 'a b x -> (a b) x'),
             rearrange(tok_lengths.clamp_min(1), 'a b -> (a b)'),
-            batch_first=True, enforce_sorted=False,
+            batch_first=self.rnn.batch_first, enforce_sorted=False,
         )
         embedding = pack._replace(data=self.embedding(pack.data))
 

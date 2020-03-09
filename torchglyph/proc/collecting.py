@@ -103,12 +103,16 @@ class PackSeq(Proc):
 
 
 class PadSub(Proc):
-    def __init__(self, pad_token: Union[str, int]) -> None:
+    def __init__(self, pad_token: Union[str, int], batch_first: bool) -> None:
         super(PadSub, self).__init__()
         self.pad_token = pad_token
+        self.batch_first = batch_first
 
     def extra_repr(self) -> str:
-        return f"'{self.pad_token}'"
+        return f', '.join([
+            f"'{self.pad_token}'",
+            f'batch_first={self.batch_first}',
+        ])
 
     def __call__(self, data: List[Tensor], vocab: Vocab, **kwargs) -> Tensor:
         dim1, dim2 = zip(*[d.size() for d in data])
@@ -124,6 +128,8 @@ class PadSub(Proc):
             dim1, dim2 = d.size()
             tensor[index, :dim1, :dim2] = d
 
+        if not self.batch_first:
+            tensor = tensor.transpose(0, 1)
         return tensor.detach()
 
 
