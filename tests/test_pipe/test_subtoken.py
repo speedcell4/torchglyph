@@ -61,43 +61,47 @@ class CoNLL2000Chunking(Dataset):
         )
 
 
-class CharLstmEncoder(nn.Module):
-    def __init__(self, vocab: Vocab, char_dim: int, hidden_dim: int):
-        super(CharLstmEncoder, self).__init__()
+class SubLstmEmbedding(nn.Module):
+    def __init__(self, vocab: Vocab, embedding_dim: int, hidden_dim: int, num_layers: int = 1,
+                 bias: bool = True, bidirectional: bool = True) -> None:
+        super(SubLstmEmbedding, self).__init__()
 
         self.embedding = nn.Embedding(
             num_embeddings=len(vocab),
-            embedding_dim=char_dim,
+            embedding_dim=embedding_dim,
             padding_idx=vocab.stoi.get('<pad>', None),
         )
         self.rnn = nn.LSTM(
             input_size=self.embedding.embedding_dim,
-            hidden_size=hidden_dim, num_layers=1, bias=True,
-            batch_first=True, bidirectional=True,
+            hidden_size=hidden_dim, num_layers=num_layers, bias=bias,
+            batch_first=True, bidirectional=bidirectional,
         )
 
-    def _pad_forward(self, char: Tensor, word_lengths: Tensor) -> Tensor:
+        self.embedding_dim = self.rnn.hidden_size * (2 if self.rnn.bidirectional else 1)
+
+    def _padded_forward(self, sub: Tensor, tok_lengths: Tensor) -> Tensor:
         pack = pack_padded_sequence(
-            rearrange(char, 'b s x -> (b s) x'),
-            rearrange(word_lengths.clamp_min(1), 'b s -> (b s)'),
+            rearrange(sub, 'a b x -> (a b) x'),
+            rearrange(tok_lengths.clamp_min(1), 'a b -> (a b)'),
             batch_first=True, enforce_sorted=False,
         )
         embedding = pack._replace(data=self.embedding(pack.data))
 
         _, (encoding, _) = self.rnn.forward(embedding)
-        return rearrange(encoding, '(l d) (b s) h -> l b s (d h)', b=char.size(0), l=self.rnn.num_layers)[-1]
+        return rearrange(encoding, '(l d) (a b) h -> l a b (d h)', a=sub.size(0), l=self.rnn.num_layers)[-1]
 
-    def _pack_forward(self, char: PackedSequence, word_indices: PackedSequence):
-        embedding = char._replace(data=self.embedding(char.data))
+    def _packed_forward(self, sub: PackedSequence, tok_indices: PackedSequence) -> PackedSequence:
+        embedding = sub._replace(data=self.embedding(sub.data))
 
         _, (encoding, _) = self.rnn(embedding)
-        encoding = rearrange(encoding, '(l d) b h -> l b (d h)', l=self.rnn.num_layers)
-        return word_indices._replace(data=encoding[-1, word_indices.data])
+        encoding = rearrange(encoding, '(l d) a h -> l a (d h)', l=self.rnn.num_layers)
+        return tok_indices._replace(data=encoding[-1, tok_indices.data])
 
-    def forward(self, char: Union[PackedSequence, Tensor], *args) -> Union[PackedSequence, Tensor]:
-        if isinstance(char, Tensor):
-            return self._pad_forward(char, *args)
-        return self._pack_forward(char, *args)
+    def forward(self, sub: Union[Tensor, PackedSequence], *args) -> Union[Tensor, PackedSequence]:
+        if torch.is_tensor(sub):
+            return self._padded_forward(sub, *args)
+        else:
+            return self._packed_forward(sub, *args)
 
 
 @given(
@@ -107,7 +111,7 @@ class CharLstmEncoder(nn.Module):
 )
 def test_sub_pad_pack(batch_size, char_dim, hidden_dim):
     loader, = CoNLL2000Chunking.new(batch_size=batch_size, word_dim=None)
-    layer = CharLstmEncoder(loader.vocabs.pad, char_dim=char_dim, hidden_dim=hidden_dim)
+    layer = SubLstmEmbedding(loader.vocabs.pad, embedding_dim=char_dim, hidden_dim=hidden_dim)
 
     for batch in loader:
         pad_encoding = layer(batch.pad, batch.word_lengths)
