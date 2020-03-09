@@ -4,7 +4,7 @@ import torch
 from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence
 
-from torchglyph.proc.abc import Proc, Chain, Lift
+from torchglyph.proc.abc import Proc, Chain
 from torchglyph.proc.utilities import stoi
 from torchglyph.proc.vocab import Numbering
 from torchglyph.vocab import Vocab
@@ -103,7 +103,7 @@ class PackSeq(Proc):
 
 
 class PadSub(Proc):
-    def __init__(self, pad_token: str) -> None:
+    def __init__(self, pad_token: Union[str, int]) -> None:
         super(PadSub, self).__init__()
         self.pad_token = pad_token
 

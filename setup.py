@@ -21,6 +21,7 @@ setup(
         'dev': [
             'pytest',
             'hypothesis',
+            'einops',
         ],
     }
 )

@@ -4,9 +4,11 @@ from typing import Iterable, List, Any, Tuple, Optional, NamedTuple, TextIO
 
 from tqdm import tqdm
 
-from torchglyph import Dataset, DataLoader, PackedSeqPipe, ToLower, ReplaceDigits, LoadGlove, SeqLengthPipe, \
-    PackedSubPipe, PackedSeqIndicesPipe, PaddedSeqMaskPipe, PaddedSeqPipe, RawStrPipe, Identity
+from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.formats import conllx
+from torchglyph.pipe import PackedSeqPipe, RawStrPipe, SeqLengthPipe
+from torchglyph.pipe import PaddedSeqPipe, PaddedSeqMaskPipe, PackedTokIndicesPipe, PackedSubPipe
+from torchglyph.proc import ToLower, ReplaceDigits, Identity, LoadGlove
 
 
 class CoNLL2000Chunking(Dataset):
@@ -36,7 +38,7 @@ class CoNLL2000Chunking(Dataset):
         )
         length = SeqLengthPipe(device=device)
         char = PackedSubPipe(device=device, unk_token='<unk>')
-        word_indices = PackedSeqIndicesPipe(device=device)
+        word_indices = PackedTokIndicesPipe(device=device)
         mask = PaddedSeqMaskPipe(device=device, filling_mask=True)
         pos = PackedSeqPipe(device=device, unk_token='<unk>')
         chunk = PaddedSeqPipe(unk_token='O', pad_token='O', device=device)
@@ -93,7 +95,7 @@ class CoNLL2003NER(Dataset):
         )
         length = SeqLengthPipe(device=device)
         char = PackedSubPipe(device=device, unk_token='<unk>')
-        word_indices = PackedSeqIndicesPipe(device=device)
+        word_indices = PackedTokIndicesPipe(device=device)
         mask = PaddedSeqMaskPipe(device=device, filling_mask=True)
         pos = PackedSeqPipe(device=device, unk_token='<unk>')
         chunk = PackedSeqPipe(device=device, unk_token='<unk>')

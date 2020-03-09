@@ -3,9 +3,9 @@ from typing import Union
 import torch
 
 from torchglyph.pipe import Pipe
-from torchglyph.pipe.utilities import cum_index
-from torchglyph.proc import GetRange, ToDevice, Numbering, UpdateCounter, BuildVocab
-from torchglyph.proc import ScanL, ToTensor, PadSeq, PackSeq, StatsVocab, GetMask, RevVocab
+from torchglyph.proc import GetLength
+from torchglyph.proc import ToDevice, Numbering, UpdateCounter, BuildVocab
+from torchglyph.proc import ToTensor, PadSeq, PackSeq, StatsVocab, GetMask, RevVocab
 
 
 class RawStrPipe(Pipe):
@@ -18,10 +18,10 @@ class RawStrPipe(Pipe):
         )
 
 
-class RawPaddedTensorPipe(Pipe):
+class PaddedRawTensorPipe(Pipe):
     def __init__(self, device: Union[int, torch.device], pad_token: Union[str, int],
                  dtype: torch.dtype = torch.long, batch_first: bool = True) -> None:
-        super(RawPaddedTensorPipe, self).__init__(
+        super(PaddedRawTensorPipe, self).__init__(
             pre=None,
             vocab=None,
             post=ToTensor(dtype=dtype),
@@ -29,9 +29,9 @@ class RawPaddedTensorPipe(Pipe):
         )
 
 
-class RawPackedTensorPipe(Pipe):
+class PackedRawTensorPipe(Pipe):
     def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
-        super(RawPackedTensorPipe, self).__init__(
+        super(PackedRawTensorPipe, self).__init__(
             pre=None,
             vocab=None,
             post=ToTensor(dtype=dtype),
@@ -71,13 +71,13 @@ class PaddedSeqMaskPipe(Pipe):
         )
 
 
-class PackedSeqIndicesPipe(Pipe):
+class SeqLengthPipe(Pipe):
     def __init__(self, device: Union[int, torch.device]) -> None:
-        super(PackedSeqIndicesPipe, self).__init__(
+        super(SeqLengthPipe, self).__init__(
             pre=None,
             vocab=None,
-            post=GetRange() + ToTensor(),
-            batch=ScanL(fn=cum_index, init=0) + PackSeq() + ToDevice(device=device),
+            post=GetLength(),
+            batch=ToTensor() + ToDevice(device=device),
         )
 
 
