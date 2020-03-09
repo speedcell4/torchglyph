@@ -13,9 +13,10 @@ class SubTokenCorpus(Dataset):
         yield from sentences
 
     @classmethod
-    def new(cls, sentences, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
-        pad = PaddedSubPipe(device=device, unk_token='<unk>', pad_token='<pad>', batch_first=True)
-        word_lengths = PaddedTokLengthPipe(device=device, batch_first=True)
+    def new(cls, sentences, batch_first: bool, batch_size: int,
+            word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
+        pad = PaddedSubPipe(device=device, unk_token='<unk>', pad_token='<pad>', batch_first=batch_first)
+        word_lengths = PaddedTokLengthPipe(device=device, batch_first=batch_first)
 
         pack = PackedSubPipe(device=device, unk_token='<unk>')
         word_indices = PackedTokIndicesPipe(device=device)
