@@ -22,7 +22,7 @@ class PackedSubPipe(Pipe):
     def __init__(self, device: Union[int, torch.device], unk_token: Union[str, int], threshold: int = 10) -> None:
         super(PackedSubPipe, self).__init__(
             pre=ToSub() + Lift(UpdateCounter()),
-            vocab=BuildVocab(unk_token=unk_token, ) + StatsVocab(threshold=threshold),
+            vocab=BuildVocab(unk_token=unk_token, pad_token=None) + StatsVocab(threshold=threshold),
             post=Numbering() + Lift(ToTensor()),
             batch=PackSub() + ToDevice(device=device),
         )

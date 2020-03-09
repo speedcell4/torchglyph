@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import Iterable, Any, Union
-from typing import Optional, List, Tuple
+from typing import Iterable, Any
+from typing import Union, Optional, List, Tuple
 
+import torch
 from einops import rearrange
 from hypothesis import given, strategies as st
 from torch import Tensor
@@ -10,7 +11,6 @@ from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence
 
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.formats import conllx
-from torchglyph.pipe import torch
 from torchglyph.pipe import PackedTokIndicesPipe, PaddedTokLengthPipe, SeqLengthPipe
 from torchglyph.pipe import PaddedSubPipe, PackedSubPipe
 from torchglyph.vocab import Vocab

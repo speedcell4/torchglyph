@@ -2,10 +2,10 @@ from typing import Union
 
 import torch
 
-from torchglyph.proc import GetRange, ScanL, PackSeq, ToSub, Lift, PadSeq
 from torchglyph.pipe import Pipe
 from torchglyph.pipe.utilities import cum_index
 from torchglyph.proc import GetLength, ToDevice, Numbering, UpdateCounter, BuildVocab
+from torchglyph.proc import GetRange, ScanL, PackSeq, ToSub, Lift, PadSeq
 from torchglyph.proc import ToTensor, StatsVocab
 
 
