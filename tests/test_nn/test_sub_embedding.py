@@ -15,7 +15,7 @@ from torchglyph.nn import SubLstmEmbedding
 )
 def test_sub_lstm_embedding(batch_first, batch_size, char_dim, hidden_dim, sentences):
     loader, = SubTokenCorpus.new(sentences=sentences, batch_size=batch_size, word_dim=None, batch_first=batch_first)
-    layer = SubLstmEmbedding(vocab=loader.vocabs.pad, dim=char_dim, hidden_dim=hidden_dim)
+    layer = SubLstmEmbedding(vocab=loader.vocabs.pad, dim=char_dim, hidden_dim=hidden_dim, dropout=0)
 
     for batch in loader:
         pad_encoding = layer(batch.pad, batch.word_lengths)

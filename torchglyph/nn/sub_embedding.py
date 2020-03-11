@@ -9,7 +9,7 @@ from torchglyph.vocab import Vocab
 
 
 class SubLstmEmbedding(nn.Module):
-    def __init__(self, vocab: Vocab, dim: int, hidden_dim: int, num_layers: int = 1,
+    def __init__(self, vocab: Vocab, dim: int, hidden_dim: int, dropout: float, num_layers: int = 1,
                  bias: bool = True, batch_first: bool = True, bidirectional: bool = True) -> None:
         super(SubLstmEmbedding, self).__init__()
 
@@ -17,6 +17,7 @@ class SubLstmEmbedding(nn.Module):
             num_embeddings=len(vocab), embedding_dim=dim,
             padding_idx=vocab.stoi.get('<pad>', None),
         )
+        self.dropout = nn.Dropout(dropout)
         self.rnn = nn.LSTM(
             input_size=self.embedding.embedding_dim,
             hidden_size=hidden_dim, num_layers=num_layers, bias=bias,
@@ -31,13 +32,13 @@ class SubLstmEmbedding(nn.Module):
             rearrange(tok_lengths.clamp_min(1), 'a b -> (a b)'),
             batch_first=self.rnn.batch_first, enforce_sorted=False,
         )
-        embedding = pack._replace(data=self.embedding(pack.data))
+        embedding = pack._replace(data=self.dropout(self.embedding(pack.data)))
 
         _, (encoding, _) = self.rnn.forward(embedding)
         return rearrange(encoding, '(l d) (a b) h -> l a b (d h)', a=sub.size(0), l=self.rnn.num_layers)[-1]
 
     def _packed_forward(self, sub: PackedSequence, tok_indices: PackedSequence) -> PackedSequence:
-        embedding = sub._replace(data=self.embedding(sub.data))
+        embedding = sub._replace(data=self.dropout(self.embedding(sub.data)))
 
         _, (encoding, _) = self.rnn(embedding)
         encoding = rearrange(encoding, '(l d) a h -> l a (d h)', l=self.rnn.num_layers)
