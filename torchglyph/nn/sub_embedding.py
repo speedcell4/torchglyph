@@ -5,17 +5,18 @@ from einops import rearrange
 from torch import nn, Tensor
 from torch.nn.utils.rnn import pack_padded_sequence, PackedSequence
 
-from torchglyph.vocab import Vocab
-
 
 class SubLstmEmbedding(nn.Module):
-    def __init__(self, vocab: Vocab, dim: int, hidden_dim: int, dropout: float, num_layers: int = 1,
-                 bias: bool = True, batch_first: bool = True, bidirectional: bool = True) -> None:
+    def __init__(self, num_embeddings: int, embedding_dim: int,
+                 hidden_dim: int, dropout: float, num_layers: int = 1,
+                 bias: bool = True, batch_first: bool = True,
+                 bidirectional: bool = True, padding_idx: int = None) -> None:
         super(SubLstmEmbedding, self).__init__()
 
         self.embedding = nn.Embedding(
-            num_embeddings=len(vocab), embedding_dim=dim,
-            padding_idx=vocab.stoi.get('<pad>', None),
+            num_embeddings=num_embeddings,
+            embedding_dim=embedding_dim,
+            padding_idx=padding_idx,
         )
         self.dropout = nn.Dropout(dropout)
         self.rnn = nn.LSTM(
