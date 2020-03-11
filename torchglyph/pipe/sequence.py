@@ -81,9 +81,9 @@ class SeqLengthPipe(Pipe):
         )
 
 
-class RevSeqPipe(Pipe):
+class RevVocabSeqPipe(Pipe):
     def __init__(self, unk_token: Union[str, int]) -> None:
-        super(RevSeqPipe, self).__init__(
+        super(RevVocabSeqPipe, self).__init__(
             pre=UpdateCounter(),
             vocab=BuildVocab(unk_token=unk_token, pad_token=None),
             post=Numbering() + RevVocab(),

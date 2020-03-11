@@ -12,8 +12,15 @@ class GetLength(Proc):
 
 
 class GetRange(Proc):
+    def __init__(self, reverse: bool) -> None:
+        super(GetRange, self).__init__()
+        self.reverse = reverse
+
     def __call__(self, ins: List[Any], **kwargs) -> List[int]:
-        return [idx for idx in range(len(ins))]
+        indices = range(len(ins))
+        if self.reverse:
+            indices = reversed(indices)
+        return list(indices)
 
 
 class GetMask(Proc):

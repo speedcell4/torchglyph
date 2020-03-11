@@ -30,10 +30,10 @@ class PaddedTokLengthPipe(Pipe):
 
 
 class PackedTokIndicesPipe(Pipe):
-    def __init__(self, device: Union[int, torch.device]) -> None:
+    def __init__(self, device: Union[int, torch.device], reverse: bool) -> None:
         super(PackedTokIndicesPipe, self).__init__(
             pre=None,
             vocab=None,
-            post=GetRange() + ToTensor(),
+            post=GetRange(reverse=reverse) + ToTensor(),
             batch=ScanL(fn=cum_index, init=0) + PackSeq() + ToDevice(device=device),
         )

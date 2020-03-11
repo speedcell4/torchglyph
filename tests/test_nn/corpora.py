@@ -19,7 +19,7 @@ class SubTokenCorpus(Dataset):
         word_lengths = PaddedTokLengthPipe(device=device, batch_first=batch_first)
 
         pack = PackedSubPipe(device=device, unk_token='<unk>')
-        word_indices = PackedTokIndicesPipe(device=device)
+        word_indices = PackedTokIndicesPipe(device=device, reverse=False)
 
         seq_length = SeqLengthPipe(device=device)
 
