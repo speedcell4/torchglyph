@@ -1,1 +1,1 @@
-from torchglyph.nn.sub_embedding import *
+from torchglyph.nn.embedding import *

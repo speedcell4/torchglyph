@@ -5,6 +5,12 @@ from einops import rearrange
 from torch import nn, Tensor
 from torch.nn.utils.rnn import pack_padded_sequence, PackedSequence
 
+from torchglyph.functional import SupportPack
+
+
+class TokEmbedding(nn.Embedding, metaclass=SupportPack):
+    pass
+
 
 class SubLstmEmbedding(nn.Module):
     def __init__(self, num_embeddings: int, embedding_dim: int,
