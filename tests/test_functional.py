@@ -3,7 +3,7 @@ from hypothesis import given, strategies as st
 from torch import nn
 from torch.nn.utils.rnn import pack_sequence
 
-from torchglyph.functional import packing
+from torchglyph.functional import support_pack
 
 
 @given(
@@ -12,7 +12,7 @@ from torchglyph.functional import packing
     output_dim=st.integers(1, 20),
 )
 def test_packing(batch_sizes, input_dim, output_dim):
-    layer = packing(nn.Linear(input_dim, output_dim))
+    layer = support_pack(nn.Linear(input_dim, output_dim))
 
     x1 = torch.rand(*batch_sizes, input_dim)
     y1 = layer(x1)
