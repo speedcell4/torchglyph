@@ -9,7 +9,7 @@ from tqdm import tqdm
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.formats import csv
 from torchglyph.io import open_io
-from torchglyph.pipe import PackedSeqPipe, PaddedTokPipe, RawStrPipe
+from torchglyph.pipe import PackedSeqPipe, TokTensorPipe, RawStrPipe
 from torchglyph.proc import Identity, LoadGlove
 
 
@@ -43,7 +43,7 @@ class AgNews(Dataset):
         word = PackedSeqPipe(device=device, unk_token='<unk>').with_(
             vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
         )
-        target = PaddedTokPipe(device=device, unk_token=None)
+        target = TokTensorPipe(device=device, unk_token=None)
 
         pipes = [
             dict(target=target, raw_target=RawStrPipe()),

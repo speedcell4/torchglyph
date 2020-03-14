@@ -8,9 +8,9 @@ from torchglyph.proc import GetLength, ToDevice, Numbering, UpdateCounter, Build
 from torchglyph.proc import ToTensor, StatsVocab
 
 
-class PaddedRawTokPipe(Pipe):
+class RawTokTensorPipe(Pipe):
     def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
-        super(PaddedRawTokPipe, self).__init__(
+        super(RawTokTensorPipe, self).__init__(
             pre=None,
             vocab=None,
             post=None,
@@ -18,11 +18,11 @@ class PaddedRawTokPipe(Pipe):
         )
 
 
-class PaddedTokPipe(PaddedRawTokPipe):
+class TokTensorPipe(RawTokTensorPipe):
     def __init__(self, device: Union[int, torch.device], unk_token: Optional[str],
                  special_tokens: Tuple[Optional[str], ...] = (),
                  threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
-        super(PaddedTokPipe, self).__init__(device=device, dtype=dtype)
+        super(TokTensorPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=UpdateCounter(),
             vocab=[
@@ -33,9 +33,9 @@ class PaddedTokPipe(PaddedRawTokPipe):
         )
 
 
-class SeqLengthPipe(PaddedRawTokPipe):
+class SeqLengthTensorPipe(RawTokTensorPipe):
     def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
-        super(SeqLengthPipe, self).__init__(device=device, dtype=dtype)
+        super(SeqLengthTensorPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             post=GetLength(),
         )

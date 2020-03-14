@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.formats import conllx
-from torchglyph.pipe import PackedSeqPipe, SeqLengthPipe, RawStrPipe, PackedTokIndicesPipe
+from torchglyph.pipe import PackedSeqPipe, SeqLengthTensorPipe, RawStrPipe, PackedTokIndicesPipe
 from torchglyph.pipe import PaddedSeqPipe, PaddedMaskedSeqPipe, PackedSubPipe
 from torchglyph.proc import ToLower, ReplaceDigits, Identity, LoadGlove
 
@@ -36,7 +36,7 @@ class CoNLL2000Chunking(Dataset):
             pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
             vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
         )
-        length = SeqLengthPipe(device=device)
+        length = SeqLengthTensorPipe(device=device)
         char = PackedSubPipe(device=device, unk_token='<unk>')
         word_indices = PackedTokIndicesPipe(device=device, reverse=False)
         mask = PaddedMaskedSeqPipe(device=device, filling_mask=True)
@@ -93,7 +93,7 @@ class CoNLL2003NER(Dataset):
             pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
             vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
         )
-        length = SeqLengthPipe(device=device)
+        length = SeqLengthTensorPipe(device=device)
         char = PackedSubPipe(device=device, unk_token='<unk>')
         word_indices = PackedTokIndicesPipe(device=device, reverse=False)
         mask = PaddedMaskedSeqPipe(device=device, filling_mask=True)
