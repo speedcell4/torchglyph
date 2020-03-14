@@ -3,7 +3,7 @@ from collections import Counter
 from typing import Tuple, List, Union, Optional
 
 from torchglyph.proc.abc import Proc
-from torchglyph.vocab import Vocab, Vectors, Glove
+from torchglyph.vocab import Vocab, Vectors, Glove, FastTest
 
 
 class UpdateCounter(Proc):
@@ -97,4 +97,11 @@ class LoadGlove(LoadVectors):
     def __init__(self, name: str, dim: int) -> None:
         super(LoadGlove, self).__init__(
             vectors=Glove(name=name, dim=dim),
+        )
+
+
+class LoadFastText(LoadVectors):
+    def __init__(self, lang: str) -> None:
+        super(LoadFastText, self).__init__(
+            vectors=FastTest(lang=lang),
         )

@@ -200,8 +200,20 @@ class Vectors(Vocab):
 class Glove(Vectors):
     def __init__(self, name: str, dim: int) -> None:
         super(Glove, self).__init__(
-            urls_dest=[
-                (f'http://nlp.stanford.edu/data/glove.{name}.zip', data_path / f'glove.{name}' / f'glove.{name}.zip'),
-            ],
+            urls_dest=[(
+                f'http://nlp.stanford.edu/data/glove.{name}.zip',
+                data_path / f'glove.{name}' / f'glove.{name}.zip'
+            )],
             path=data_path / f'glove.{name}' / f'glove.{name}.{dim}d.txt',
+        )
+
+
+class FastTest(Vectors):
+    def __init__(self, lang: str) -> None:
+        super(FastTest, self).__init__(
+            urls_dest=[(
+                f'https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.{lang}.vec',
+                data_path / 'fasttext' / f'wiki.{lang}.vec',
+            )],
+            path=data_path / 'fasttext' / f'wiki.{lang}.vec',
         )
