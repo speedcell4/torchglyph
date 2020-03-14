@@ -1,33 +1,61 @@
 from string import ascii_letters
-from typing import Iterable, List, Any, Optional, Tuple
+from typing import Iterable, List, Any, Tuple
 
 from hypothesis import strategies as st
 
 from torchglyph.dataset import Dataset, DataLoader
-from torchglyph.pipe import PaddedSubPipe, PaddedTokLengthPipe, PackedSubPipe, PackedTokIndicesPipe, SeqLengthPipe
+from torchglyph.pipe import PackedTokIndicesPipe, SeqLengthPipe, RawStrPipe, PackedSeqPipe, PaddedSeqPipe
+from torchglyph.pipe import PaddedSubPipe, PaddedTokLengthPipe, PackedSubPipe
 
 
-class SubTokenCorpus(Dataset):
+class HypothesisCorpus(Dataset):
     @classmethod
     def load(cls, sentences) -> Iterable[List[Any]]:
-        yield from sentences
+        for sentence in sentences:
+            yield [sentence]
 
+
+class SeqCorpus(HypothesisCorpus):
     @classmethod
-    def new(cls, sentences, batch_first: bool, batch_size: int,
-            word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
-        pad = PaddedSubPipe(device=device, unk_token='<unk>', pad_token='<pad>', batch_first=batch_first)
-        word_lengths = PaddedTokLengthPipe(device=device, batch_first=batch_first)
-
-        pack = PackedSubPipe(device=device, unk_token='<unk>')
-        word_indices = PackedTokIndicesPipe(device=device, reverse=False)
-
+    def new(cls, sentences, batch_first: bool, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
+        pad = PaddedSeqPipe(device=device, unk_token='<unk>', pad_token='<pad>', batch_first=batch_first)
+        pack = PackedSeqPipe(device=device, unk_token='<unk>')
         seq_length = SeqLengthPipe(device=device)
 
         pipes = [
             dict(
-                pad=pad, word_lengths=word_lengths,
-                pack=pack, word_indices=word_indices,
+                pad=pad, pack=pack,
                 seq_length=seq_length,
+                raw=RawStrPipe(),
+            ),
+        ]
+
+        data = cls(sentences=sentences, pipes=pipes)
+
+        pad.build_vocab(data, name='data')
+        data.pipes['pack'].vocab = data.pipes['pad'].vocab
+
+        return DataLoader.new(
+            (data,),
+            batch_size=batch_size, shuffle=True,
+        )
+
+
+class SubCorpus(HypothesisCorpus):
+    @classmethod
+    def new(cls, sentences, batch_first: bool, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
+        pad = PaddedSubPipe(device=device, unk_token='<unk>', pad_token='<pad>', batch_first=batch_first)
+        tok_indices = PackedTokIndicesPipe(device=device)
+        pack = PackedSubPipe(device=device, unk_token='<unk>')
+        tok_length = PaddedTokLengthPipe(device=device, batch_first=batch_first)
+        seq_length = SeqLengthPipe(device=device)
+
+        pipes = [
+            dict(
+                pad=pad, tok_length=tok_length,
+                pack=pack, tok_indices=tok_indices,
+                seq_length=seq_length,
+                raw=RawStrPipe(),
             ),
         ]
 
