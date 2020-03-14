@@ -94,7 +94,7 @@ class Lift(Proc):
 
 
 class Recur(Proc):
-    def process(self, datum: str, *args, **kwargs) -> Any:
+    def process(self, data: str, *args, **kwargs) -> Any:
         raise NotImplementedError
 
     def __call__(self, data: Any, *args, **kwargs) -> Any:

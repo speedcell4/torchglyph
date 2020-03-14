@@ -4,8 +4,8 @@ import torch
 
 from torchglyph.pipe import Pipe
 from torchglyph.pipe.utilities import cum_index
-from torchglyph.proc import GetLength, ToDevice, Numbering, UpdateCounter, BuildVocab
-from torchglyph.proc import GetRange, ScanL, PackSeq, ToSub, Lift, PadSeq
+from torchglyph.proc import GetLength, ToDevice, Numbering, UpdateCounter, BuildVocab, ToSubList
+from torchglyph.proc import GetRange, ScanL, PackSeq, Lift, PadSeq
 from torchglyph.proc import ToTensor, StatsVocab
 
 
@@ -22,7 +22,7 @@ class PaddedTokPipe(Pipe):
 class PaddedTokLengthPipe(Pipe):
     def __init__(self, device: Union[int, torch.device], batch_first: bool = True) -> None:
         super(PaddedTokLengthPipe, self).__init__(
-            pre=ToSub() + Lift(GetLength()),
+            pre=ToSubList() + Lift(GetLength()),
             vocab=None,
             post=ToTensor(),
             batch=PadSeq(pad_token=0, batch_first=batch_first) + ToDevice(device=device),
