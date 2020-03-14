@@ -1,7 +1,9 @@
 import re
 from typing import Pattern, List
 
+from torchglyph.proc import Recur
 from torchglyph.proc.abc import Recur
+from torchglyph.vocab import Vocab
 
 
 class ToInt(Recur):
@@ -51,3 +53,8 @@ class ReplaceDigits(ReplacePattern):
             pattern=re.compile(r'\d+'),
             repl_token=repl_token,
         )
+
+
+class Numbering(Recur):
+    def process(self, datum: str, vocab: Vocab, **kwargs) -> int:
+        return vocab.stoi[datum]

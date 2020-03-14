@@ -6,7 +6,7 @@ from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence
 
 from torchglyph.proc.abc import Proc, Chain
 from torchglyph.proc.utilities import stoi
-from torchglyph.proc.vocab import Numbering
+from torchglyph.proc import Numbering
 from torchglyph.vocab import Vocab
 
 

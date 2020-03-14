@@ -2,7 +2,7 @@ import logging
 from collections import Counter
 from typing import Tuple, List, Union, Optional
 
-from torchglyph.proc.abc import Recur, Proc
+from torchglyph.proc.abc import Proc
 from torchglyph.vocab import Vocab, Vectors, Glove
 
 
@@ -43,7 +43,7 @@ class BuildVocab(Proc):
 
 
 class StatsVocab(Proc):
-    def __init__(self, threshold: int = 10) -> None:
+    def __init__(self, threshold: int) -> None:
         super(StatsVocab, self).__init__()
         self.threshold = threshold
 
@@ -66,13 +66,12 @@ class StatsVocab(Proc):
                      f"{occ_max} :: '{tok_max}']")
         if tok_cnt <= self.threshold:
             logging.info(f'{name} => [{", ".join(vocab.itos)}]')
+        else:
+            logging.info(f'{name} => ['
+                         f'{", ".join(vocab.itos[:self.threshold // 2])}, ..., '
+                         f'{", ".join(vocab.itos[:-self.threshold // 2])}]')
 
         return vocab
-
-
-class Numbering(Recur):
-    def process(self, datum: str, vocab: Vocab, **kwargs) -> int:
-        return vocab.stoi[datum]
 
 
 class LoadVectors(Proc):
