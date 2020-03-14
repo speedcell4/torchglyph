@@ -41,7 +41,7 @@ class CoNLL2000Chunking(Dataset):
         word_indices = PackedTokIndicesPipe(device=device, reverse=False)
         mask = PaddedMaskedSeqPipe(device=device, filling_mask=True)
         pos = PackedSeqPipe(device=device, unk_token='<unk>')
-        chunk = PaddedSeqPipe(unk_token='O', pad_token='O', device=device)
+        chunk = PaddedSeqPipe(device=device, unk_token='O', pad_token='O')
 
         pipes = [
             dict(word=word, length=length, char=char, word_indices=word_indices, mask=mask, raw_word=RawStrPipe()),
@@ -99,7 +99,7 @@ class CoNLL2003NER(Dataset):
         mask = PaddedMaskedSeqPipe(device=device, filling_mask=True)
         pos = PackedSeqPipe(device=device, unk_token='<unk>')
         chunk = PackedSeqPipe(device=device, unk_token='<unk>')
-        ner = PaddedSeqPipe(unk_token='O', pad_token='O', device=device)
+        ner = PaddedSeqPipe(device=device, unk_token='O', pad_token='O')
 
         pipes = [
             dict(word=word, length=length, char=char, word_indices=word_indices, mask=mask, raw_word=RawStrPipe()),

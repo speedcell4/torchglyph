@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Iterable, Optional
 from typing import List, Tuple, NamedTuple
@@ -53,6 +54,9 @@ class AgNews(Dataset):
         train, test, target_vocab = cls.paths()
         train = cls(path=train, target_vocab=target_vocab, pipes=pipes)
         test = cls(path=test, target_vocab=target_vocab, pipes=pipes)
+
+        for name, pipe in train.pipes.items():
+            logging.info(f'{name} => {pipe}')
 
         word.build_vocab(train, test, name='word')
         target.build_vocab(train, test, name='target')
