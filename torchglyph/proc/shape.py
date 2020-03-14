@@ -53,7 +53,7 @@ class Prepend(Proc):
             f"'{self.token}'x{self.num_repeats}",
         ])
 
-    def __call__(self, data: List[Any], counter: Counter) -> List[Any]:
+    def __call__(self, data: List[Any], counter: Counter, **kwargs) -> List[Any]:
         return [self.token for _ in range(self.num_repeats)] + list(data)
 
 
@@ -68,5 +68,5 @@ class Append(Proc):
             f"'{self.token}'x{self.num_repeats}",
         ])
 
-    def __call__(self, data: List[Any], counter: Counter) -> List[Any]:
+    def __call__(self, data: List[Any], counter: Counter, **kwargs) -> List[Any]:
         return list(data) + [self.token for _ in range(self.num_repeats)]

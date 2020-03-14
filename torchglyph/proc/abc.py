@@ -112,7 +112,7 @@ class ScanL(Proc):
     def extra_repr(self) -> str:
         return f'fn={self.fn.__name__}, init={self.init}'
 
-    def __call__(self, xs: List[Any], vocab: Vocab = None) -> List[Any]:
+    def __call__(self, xs: List[Any], vocab: Vocab = None, **kwargs) -> List[Any]:
         z = self.init
 
         ys = []
@@ -131,7 +131,7 @@ class ScanR(Proc):
     def extra_repr(self) -> str:
         return f'init={self.init}, fn={self.fn.__name__}'
 
-    def __call__(self, xs: List[Any], vocab: Vocab = None) -> List[Any]:
+    def __call__(self, xs: List[Any], vocab: Vocab = None, **kwargs) -> List[Any]:
         z = self.init
 
         ys = []
