@@ -6,6 +6,7 @@ from typing import Iterable, Any, TextIO
 from typing import Union, List, Type, Tuple, NamedTuple, Dict
 
 from torch.utils import data
+from tqdm import tqdm
 
 from torchglyph import data_path
 from torchglyph.io import download_and_unzip
@@ -94,15 +95,26 @@ class DataLoader(data.DataLoader):
             batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
             num_workers: int = 0, pin_memory: bool = False,
             drop_last: bool = False) -> Tuple['DataLoader', ...]:
+        assert len(datasets) > 0
+
         if isinstance(batch_size, int):
             batch_sizes = itertools.repeat(batch_size)
         else:
             batch_sizes = batch_size
 
+        iteration = tqdm(
+            desc='post-processing datasets',
+            total=len(datasets) * (len(datasets[0].pipes) + 1),
+        )
         for dataset in datasets:
-            for pipe in dataset.pipes.values():
+            for key, pipe in dataset.pipes.items():
                 pipe.postprocess(dataset)
+                iteration.update(1)
+                iteration.set_postfix_str(f'{key}')
             dataset._transpose()
+            iteration.update(1)
+            iteration.set_postfix_str('transpose')
+        iteration.close()
 
         return tuple(
             DataLoader(
