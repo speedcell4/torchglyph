@@ -2,7 +2,7 @@ import logging
 from collections import Counter
 from typing import Tuple, List, Union, Optional
 
-from torchglyph.proc.abc import Proc
+from torchglyph.proc import Proc
 from torchglyph.vocab import Vocab, Vectors, Glove, FastTest
 
 
