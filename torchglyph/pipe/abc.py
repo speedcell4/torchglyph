@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Optional, Union, List, Any
+from typing import Optional, Union, List, Any, Tuple
 
 from torchglyph.proc import Proc, PaLP, compress, subs
 from torchglyph.vocab import Vocab
@@ -62,9 +62,15 @@ class Pipe(object):
 
         return self
 
-    def build_vocab(self, *datasets, name: str = None) -> 'Pipe':
+    def build_vocab(self, *datasets, name: str = None,
+                    special_tokens: Tuple[str, ...] = (),
+                    max_size: Optional[int] = None, min_freq: int = 1) -> 'Pipe':
         counter = self.preprocess(*datasets)
-        vocab = self._vocab_proc(counter, name=name)
+        vocab = self._vocab_proc(
+            counter, name=name,
+            special_tokens=special_tokens,
+            max_size=max_size, min_freq=min_freq,
+        )
         if isinstance(vocab, Vocab):
             self.vocab = vocab
         else:
