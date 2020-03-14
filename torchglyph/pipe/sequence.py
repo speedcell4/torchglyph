@@ -8,37 +8,6 @@ from torchglyph.proc import ToDevice, UpdateCounter, BuildVocab
 from torchglyph.proc import ToTensor, PadSeq, PackSeq, StatsVocab, GetMask, RevVocab
 
 
-class RawStrPipe(Pipe):
-    def __init__(self) -> None:
-        super(RawStrPipe, self).__init__(
-            pre=None,
-            vocab=None,
-            post=None,
-            batch=None,
-        )
-
-
-class PaddedRawTensorPipe(Pipe):
-    def __init__(self, device: Union[int, torch.device], pad_token: Union[str, int],
-                 dtype: torch.dtype = torch.long, batch_first: bool = True) -> None:
-        super(PaddedRawTensorPipe, self).__init__(
-            pre=None,
-            vocab=None,
-            post=ToTensor(dtype=dtype),
-            batch=PadSeq(pad_token=pad_token, batch_first=batch_first) + ToDevice(device=device),
-        )
-
-
-class PackedRawTensorPipe(Pipe):
-    def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
-        super(PackedRawTensorPipe, self).__init__(
-            pre=None,
-            vocab=None,
-            post=ToTensor(dtype=dtype),
-            batch=PackSeq(enforce_sorted=False) + ToDevice(device=device),
-        )
-
-
 class PaddedSeqPipe(Pipe):
     def __init__(self, device: Union[int, torch.device],
                  unk_token: Optional[str], pad_token: Optional[str],
@@ -90,9 +59,9 @@ class SeqLengthPipe(Pipe):
         )
 
 
-class RevVocabSeqPipe(Pipe):
+class RevStrPipe(Pipe):
     def __init__(self, unk_token: Optional[str], special_tokens: Tuple[Optional[str], ...] = ()) -> None:
-        super(RevVocabSeqPipe, self).__init__(
+        super(RevStrPipe, self).__init__(
             pre=UpdateCounter(),
             vocab=BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
             post=Numbering() + RevVocab(),

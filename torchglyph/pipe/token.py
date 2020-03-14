@@ -9,11 +9,11 @@ from torchglyph.proc import GetRange, ScanL, PackSeq, Lift, PadSeq
 from torchglyph.proc import ToTensor, StatsVocab
 
 
-class PaddedTokPipe(Pipe):
+class LabelPipe(Pipe):
     def __init__(self, device: Union[int, torch.device], unk_token: Optional[str],
                  special_tokens: Tuple[Optional[str], ...] = (),
                  threshold: int = 8, dtype: torch.dtype = torch.long) -> None:
-        super(PaddedTokPipe, self).__init__(
+        super(LabelPipe, self).__init__(
             pre=UpdateCounter(),
             vocab=[
                 BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
