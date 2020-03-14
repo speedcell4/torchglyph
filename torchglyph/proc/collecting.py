@@ -49,18 +49,24 @@ class ToTensor(Proc):
 
 
 class CatTensors(Proc):
-    def __init__(self, dim: int = 0) -> None:
+    def __init__(self, dim: int) -> None:
         super(CatTensors, self).__init__()
         self.dim = dim
+
+    def extra_repr(self) -> str:
+        return f'dim={self.dim}'
 
     def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
         return torch.cat(data, dim=self.dim)
 
 
 class StackTensors(Proc):
-    def __init__(self, dim: int = 0) -> None:
+    def __init__(self, dim: int) -> None:
         super(StackTensors, self).__init__()
         self.dim = dim
+
+    def extra_repr(self) -> str:
+        return f'dim={self.dim}'
 
     def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
         return torch.stack(data, dim=self.dim)
