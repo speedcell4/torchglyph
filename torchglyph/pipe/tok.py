@@ -37,5 +37,5 @@ class SeqLengthTensorPipe(RawTokTensorPipe):
     def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
         super(SeqLengthTensorPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
-            post=GetLength(),
+            pre=GetLength(),
         )
