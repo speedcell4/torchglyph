@@ -63,8 +63,8 @@ class StatsVocab(Proc):
         name = f"{vocab.__class__.__name__} '{name}'"
         logging.info(f"{name} has {tok_cnt} token(s) => "
                      f"{occ_avg:.1f} occurrence(s)/token ["
-                     f"{occ_min} :: '{tok_min}', "
-                     f"{occ_max} :: '{tok_max}']")
+                     f"{occ_max} :: '{tok_max}', "
+                     f"{occ_min} :: '{tok_min}']")
         if tok_cnt <= self.threshold:
             logging.info(f'{name} => [{", ".join(vocab.itos)}]')
         else:
