@@ -61,5 +61,3 @@ class AgNews(Dataset):
             (train, test), shuffle=False,
             batch_size=batch_size,
         )
-
-

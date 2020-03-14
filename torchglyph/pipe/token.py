@@ -24,10 +24,10 @@ class PaddedTokPipe(Pipe):
         )
 
 
-class PaddedTokLengthPipe(Pipe):
+class TokLengthPipe(Pipe):
     def __init__(self, device: Union[int, torch.device], batch_first: bool = True,
                  dtype: torch.dtype = torch.long) -> None:
-        super(PaddedTokLengthPipe, self).__init__(
+        super(TokLengthPipe, self).__init__(
             pre=ToSubList() + Lift(GetLength()),
             vocab=None,
             post=ToTensor(dtype=dtype),
