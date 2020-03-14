@@ -19,7 +19,7 @@ class CoNLL2000Chunking(Dataset):
 
     @classmethod
     def load(cls, path: Path) -> Iterable[List[Any]]:
-        for sent in tqdm(conllx.load(path, sep=' '), desc=f'reading {path}', unit=' sents'):
+        for sent in tqdm(conllx.load(path, sep=' '), desc=f'reading {path}'):
             word, pos, chunk = list(zip(*sent))
             yield [word, pos, chunk]
 

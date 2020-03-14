@@ -27,7 +27,7 @@ class AgNews(Dataset):
         with open_io(target_vocab, mode='r', encoding='utf-8') as fp:
             vocab = [token.strip() for token in fp]
 
-        for raw in tqdm(csv.load(path), desc=path.name):
+        for raw in tqdm(csv.load(path), desc=f'reading {path.name}'):
             target, title, text = raw
             yield [vocab[int(target) - 1], title.split(), text.split()]
 
