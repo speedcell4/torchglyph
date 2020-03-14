@@ -32,19 +32,19 @@ class ToDevice(Proc):
 
 
 class ToTensor(Proc):
-    def __init__(self, dtype: torch.dtype = torch.long) -> None:
+    def __init__(self, dtype: torch.dtype) -> None:
         super(ToTensor, self).__init__()
         self.dtype = dtype
 
     def extra_repr(self) -> str:
         return f'{self.dtype}'
 
-    def __call__(self, ins: Any, **kwargs) -> Tensor:
+    def __call__(self, data: Any, **kwargs) -> Tensor:
         try:
-            return torch.tensor(ins, dtype=self.dtype, requires_grad=False)
+            return torch.tensor(data, dtype=self.dtype, requires_grad=False)
         except ValueError as err:
             if err.args[0] == "too many dimensions 'str'":
-                raise ValueError(f'did you forget {Numbering.__name__} before {ToTensor.__name__}?')
+                raise ValueError(f"'{data}' can not be converted to {Tensor.__name__}")
             raise err
 
 
