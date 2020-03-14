@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional
 from typing import List, Tuple, NamedTuple
 from typing import TextIO
 
@@ -38,7 +38,7 @@ class AgNews(Dataset):
             csv.dump((' '.join(raw_title), ' '.join(raw_text), raw_target, vocab.itos[pred]), fp)
 
     @classmethod
-    def new(cls, device, batch_size, word_dim) -> Tuple['DataLoader', ...]:
+    def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple['DataLoader', ...]:
         word = PackedSeqPipe(device=device, unk_token='<unk>').with_(
             vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
         )
@@ -61,3 +61,5 @@ class AgNews(Dataset):
             (train, test), shuffle=False,
             batch_size=batch_size,
         )
+
+
