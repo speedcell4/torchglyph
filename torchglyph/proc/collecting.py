@@ -10,7 +10,7 @@ from torchglyph.vocab import Vocab
 
 
 class ToDevice(Proc):
-    Batch = Union[PackedSequence, Tensor, Tuple[Tensor, ...]]
+    Batch = Union[Tensor, PackedSequence, Tuple[Union[Tensor, PackedSequence], ...]]
 
     def __init__(self, device: Union[int, torch.device]) -> None:
         super(ToDevice, self).__init__()
