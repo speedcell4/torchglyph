@@ -3,9 +3,8 @@ from typing import Union, Optional, Tuple
 import torch
 
 from torchglyph.pipe import Pipe
-from torchglyph.pipe.utilities import cum_index
-from torchglyph.proc import GetLength, ToDevice, Numbering, UpdateCounter, BuildVocab, ToSubList
-from torchglyph.proc import GetRange, ScanL, PackSeq, Lift, PadSeq
+from torchglyph.pipe.utilities import THRESHOLD
+from torchglyph.proc import GetLength, ToDevice, Numbering, UpdateCounter, BuildVocab
 from torchglyph.proc import ToTensor, StatsVocab
 
 
@@ -22,7 +21,7 @@ class PaddedRawTokPipe(Pipe):
 class PaddedTokPipe(PaddedRawTokPipe):
     def __init__(self, device: Union[int, torch.device], unk_token: Optional[str],
                  special_tokens: Tuple[Optional[str], ...] = (),
-                 threshold: int = 8, dtype: torch.dtype = torch.long) -> None:
+                 threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
         super(PaddedTokPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=UpdateCounter(),
@@ -34,23 +33,9 @@ class PaddedTokPipe(PaddedRawTokPipe):
         )
 
 
-class TokLengthPipe(Pipe):
-    def __init__(self, device: Union[int, torch.device], batch_first: bool = True,
-                 dtype: torch.dtype = torch.long) -> None:
-        super(TokLengthPipe, self).__init__(
-            pre=ToSubList() + Lift(GetLength()),
-            vocab=None,
-            post=ToTensor(dtype=dtype),
-            batch=PadSeq(pad_token=0, batch_first=batch_first) + ToDevice(device=device),
-        )
-
-
-class PackedTokIndicesPipe(Pipe):
-    def __init__(self, device: Union[int, torch.device],
-                 reverse: bool = False, dtype: torch.dtype = torch.long) -> None:
-        super(PackedTokIndicesPipe, self).__init__(
-            pre=None,
-            vocab=None,
-            post=GetRange(reverse=reverse) + ToTensor(dtype=dtype),
-            batch=ScanL(fn=cum_index, init=0) + PackSeq(enforce_sorted=False) + ToDevice(device=device),
+class SeqLengthPipe(PaddedRawTokPipe):
+    def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
+        super(SeqLengthPipe, self).__init__(device=device, dtype=dtype)
+        self.with_(
+            post=GetLength(),
         )

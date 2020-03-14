@@ -3,7 +3,8 @@ from typing import Union, Optional, Tuple
 import torch
 
 from torchglyph.pipe import Pipe
-from torchglyph.proc import GetLength, Numbering
+from torchglyph.pipe.utilities import THRESHOLD, cum_index
+from torchglyph.proc import Numbering, ToSubList, Lift, GetLength, GetRange, ScanL
 from torchglyph.proc import ToDevice, UpdateCounter, BuildVocab
 from torchglyph.proc import ToTensor, PadSeq, PackSeq, StatsVocab, GetMask
 
@@ -23,7 +24,7 @@ class PaddedSeqPipe(PaddedRawSeqPipe):
     def __init__(self, device: Union[int, torch.device],
                  unk_token: Optional[str], pad_token: Optional[str],
                  special_tokens: Tuple[Optional[str], ...] = (),
-                 threshold: int = 8, batch_first: bool = True, dtype: torch.dtype = torch.long) -> None:
+                 threshold: int = THRESHOLD, batch_first: bool = True, dtype: torch.dtype = torch.long) -> None:
         super(PaddedSeqPipe, self).__init__(
             device=device, pad_token=pad_token,
             dtype=dtype, batch_first=batch_first,
@@ -51,6 +52,18 @@ class PaddedMaskedSeqPipe(PaddedRawSeqPipe):
         )
 
 
+class PaddedTokLengthPipe(PaddedRawSeqPipe):
+    def __init__(self, device: Union[int, torch.device],
+                 dtype: torch.dtype = torch.long, batch_first: bool = True) -> None:
+        super(PaddedTokLengthPipe, self).__init__(
+            device=device, pad_token=0,
+            dtype=dtype, batch_first=batch_first,
+        )
+        self.with_(
+            pre=ToSubList() + Lift(GetLength()),
+        )
+
+
 class PackedRawSeqPipe(Pipe):
     def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
         super(PackedRawSeqPipe, self).__init__(
@@ -64,7 +77,7 @@ class PackedRawSeqPipe(Pipe):
 class PackedSeqPipe(PackedRawSeqPipe):
     def __init__(self, device: Union[int, torch.device], unk_token: Optional[str],
                  special_tokens: Tuple[Optional[str], ...] = (),
-                 threshold: int = 8, dtype: torch.dtype = torch.long) -> None:
+                 threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
         super(PackedSeqPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=UpdateCounter(),
@@ -76,11 +89,11 @@ class PackedSeqPipe(PackedRawSeqPipe):
         )
 
 
-class SeqLengthPipe(Pipe):
-    def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
-        super(SeqLengthPipe, self).__init__(
-            pre=None,
-            vocab=None,
-            post=GetLength(),
-            batch=ToTensor(dtype=dtype) + ToDevice(device=device),
+class PackedTokIndicesPipe(PackedRawSeqPipe):
+    def __init__(self, device: Union[int, torch.device],
+                 reverse: bool = False, dtype: torch.dtype = torch.long) -> None:
+        super(PackedTokIndicesPipe, self).__init__(device=device, dtype=dtype)
+        self.with_(
+            post=GetRange(reverse=reverse) + ...,
+            batch=ScanL(fn=cum_index, init=0) + ...,
         )
