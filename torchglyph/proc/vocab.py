@@ -27,10 +27,25 @@ class BuildVocab(Proc):
         self.min_freq = min_freq
 
     def extra_repr(self) -> str:
-        return f', '.join([
+        special_tokens = ', '.join(set([
+            f"'{t}'" for t in
+            (self.unk_token, self.pad_token, *self.special_tokens)
+            if t is not None
+        ]))
+
+        args = [
             f'max_size={self.max_size if self.max_size is not None else "inf"}',
             f'min_freq={self.min_freq}',
-        ])
+        ]
+        if self.max_size is None:
+            args.append(f'max_size=inf')
+        else:
+            args.append(f'max_size={self.max_size}')
+
+        if len(special_tokens) > 0:
+            args.append(f'{special_tokens}')
+
+        return ', '.join(args)
 
     def __call__(self, vocab: Counter, **kwargs) -> Vocab:
         return Vocab(
