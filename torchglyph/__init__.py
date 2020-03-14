@@ -30,5 +30,10 @@ def packed_sequence_size(self: PackedSequence, dim: int = None) -> Union[torch.S
     return size[dim]
 
 
+def device(self: PackedSequence) -> torch.device:
+    return self.data.device
+
+
 PackedSequence.size = packed_sequence_size
-del packed_sequence_size
+PackedSequence.device = property(device)
+del packed_sequence_size, device
