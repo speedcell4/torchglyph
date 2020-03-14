@@ -1,7 +1,6 @@
 import re
 from typing import Pattern, List
 
-from torchglyph.proc import Recur
 from torchglyph.proc.abc import Recur
 from torchglyph.vocab import Vocab
 

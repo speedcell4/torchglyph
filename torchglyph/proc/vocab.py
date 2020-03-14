@@ -16,7 +16,8 @@ class UpdateCounter(Proc):
 
 
 class BuildVocab(Proc):
-    def __init__(self, unk_token: str = '<unk>', pad_token: str = None, special_tokens: Tuple[str, ...] = ()) -> None:
+    def __init__(self, unk_token: Optional[str], pad_token: Optional[str],
+                 special_tokens: Tuple[Optional[str], ...] = ()) -> None:
         super(BuildVocab, self).__init__()
         self.unk_token = unk_token
         self.pad_token = pad_token
@@ -69,7 +70,7 @@ class StatsVocab(Proc):
         else:
             logging.info(f'{name} => ['
                          f'{", ".join(vocab.itos[:self.threshold // 2])}, ..., '
-                         f'{", ".join(vocab.itos[:-self.threshold // 2])}]')
+                         f'{", ".join(vocab.itos[-self.threshold // 2:])}]')
 
         return vocab
 

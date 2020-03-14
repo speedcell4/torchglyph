@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional, Tuple
 
 import torch
 
@@ -35,29 +35,38 @@ class PackedRawTensorPipe(Pipe):
             pre=None,
             vocab=None,
             post=ToTensor(dtype=dtype),
-            batch=PackSeq() + ToDevice(device=device),
+            batch=PackSeq(enforce_sorted=False) + ToDevice(device=device),
         )
 
 
 class PaddedSeqPipe(Pipe):
     def __init__(self, device: Union[int, torch.device],
-                 unk_token: Union[str, int], pad_token: Union[str, int],
-                 threshold: int = 10, batch_first: bool = True) -> None:
+                 unk_token: Optional[str], pad_token: Optional[str],
+                 special_tokens: Tuple[Optional[str], ...] = (),
+                 threshold: int = 8, batch_first: bool = True, dtype: torch.dtype = torch.long) -> None:
         super(PaddedSeqPipe, self).__init__(
             pre=UpdateCounter(),
-            vocab=BuildVocab(unk_token=unk_token, pad_token=pad_token) + StatsVocab(threshold=threshold),
-            post=Numbering() + ToTensor(),
+            vocab=[
+                BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
+                StatsVocab(threshold=threshold),
+            ],
+            post=Numbering() + ToTensor(dtype=dtype),
             batch=PadSeq(pad_token=pad_token, batch_first=batch_first) + ToDevice(device=device),
         )
 
 
 class PackedSeqPipe(Pipe):
-    def __init__(self, device: Union[int, torch.device], unk_token: Union[str, int], threshold: int = 10) -> None:
+    def __init__(self, device: Union[int, torch.device], unk_token: Optional[str],
+                 special_tokens: Tuple[Optional[str], ...] = (),
+                 threshold: int = 8, dtype: torch.dtype = torch.long) -> None:
         super(PackedSeqPipe, self).__init__(
             pre=UpdateCounter(),
-            vocab=BuildVocab(unk_token=unk_token, pad_token=None) + StatsVocab(threshold=threshold),
-            post=Numbering() + ToTensor(),
-            batch=PackSeq() + ToDevice(device=device),
+            vocab=[
+                BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
+                StatsVocab(threshold=threshold),
+            ],
+            post=Numbering() + ToTensor(dtype=dtype),
+            batch=PackSeq(enforce_sorted=False) + ToDevice(device=device),
         )
 
 
@@ -72,20 +81,20 @@ class PaddedSeqMaskPipe(Pipe):
 
 
 class SeqLengthPipe(Pipe):
-    def __init__(self, device: Union[int, torch.device]) -> None:
+    def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
         super(SeqLengthPipe, self).__init__(
             pre=None,
             vocab=None,
             post=GetLength(),
-            batch=ToTensor() + ToDevice(device=device),
+            batch=ToTensor(dtype=dtype) + ToDevice(device=device),
         )
 
 
 class RevVocabSeqPipe(Pipe):
-    def __init__(self, unk_token: Union[str, int]) -> None:
+    def __init__(self, unk_token: Optional[str], special_tokens: Tuple[Optional[str], ...] = ()) -> None:
         super(RevVocabSeqPipe, self).__init__(
             pre=UpdateCounter(),
-            vocab=BuildVocab(unk_token=unk_token, pad_token=None),
+            vocab=BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
             post=Numbering() + RevVocab(),
             batch=None,
         )
