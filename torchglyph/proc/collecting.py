@@ -78,7 +78,7 @@ class CatList(Proc):
 
 
 class PadSeq(Proc):
-    def __init__(self, pad_token: Union[int, str], batch_first: bool = True) -> None:
+    def __init__(self, pad_token: Union[int, str], batch_first: bool) -> None:
         super(PadSeq, self).__init__()
         self.pad_token = pad_token
         self.batch_first = batch_first
@@ -89,15 +89,15 @@ class PadSeq(Proc):
             'batch_first' if self.batch_first else 'batch_second',
         ])
 
-    def __call__(self, batch: List[Tensor], vocab: Vocab, **kwargs) -> Tensor:
+    def __call__(self, data: List[Tensor], vocab: Vocab, **kwargs) -> Tensor:
         return pad_sequence(
-            batch, batch_first=self.batch_first,
+            data, batch_first=self.batch_first,
             padding_value=stoi(token=self.pad_token, vocab=vocab),
         )
 
 
 class PackSeq(Proc):
-    def __init__(self, enforce_sorted: bool = False) -> None:
+    def __init__(self, enforce_sorted: bool) -> None:
         super(PackSeq, self).__init__()
         self.enforce_sorted = enforce_sorted
 
@@ -140,7 +140,7 @@ class PadSub(Proc):
 
 
 class PackSub(Chain):
-    def __init__(self, enforce_sorted: bool = False) -> None:
+    def __init__(self, enforce_sorted: bool) -> None:
         super(PackSub, self).__init__([
             CatList(),
             PackSeq(enforce_sorted=enforce_sorted),
