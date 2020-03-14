@@ -7,8 +7,8 @@ from torchglyph.vocab import Vocab
 
 
 class GetLength(Proc):
-    def __call__(self, ins: List[Any], **kwargs) -> int:
-        return len(ins)
+    def __call__(self, data: List[Any], **kwargs) -> int:
+        return len(data)
 
 
 class GetRange(Proc):
@@ -16,28 +16,34 @@ class GetRange(Proc):
         super(GetRange, self).__init__()
         self.reverse = reverse
 
-    def __call__(self, ins: List[Any], **kwargs) -> List[int]:
-        indices = range(len(ins))
+    def extra_repr(self) -> str:
+        if not self.reverse:
+            return 'ascending'
+        else:
+            return 'descending'
+
+    def __call__(self, data: List[Any], **kwargs) -> List[int]:
+        indices = range(len(data))
         if self.reverse:
             indices = reversed(indices)
         return list(indices)
 
 
 class GetMask(Proc):
-    def __init__(self, mask_token: Union[str, int]) -> None:
+    def __init__(self, token: Union[str, int]) -> None:
         super(GetMask, self).__init__()
-        self.token = mask_token
+        self.token = token
 
     def extra_repr(self) -> str:
         return f"'{self.token}'"
 
-    def __call__(self, ins: List[Any], vocab: Vocab, **kwargs) -> List[int]:
-        idx = stoi(token=self.token, vocab=vocab)
-        return [idx for _ in ins]
+    def __call__(self, data: List[Any], vocab: Vocab, **kwargs) -> List[int]:
+        token = stoi(token=self.token, vocab=vocab)
+        return [token for _ in data]
 
 
 class Prepend(Proc):
-    def __init__(self, token: Any, num_repeats: int = 1) -> None:
+    def __init__(self, token: Any, num_repeats: int) -> None:
         super(Prepend, self).__init__()
         self.token = token
         self.num_repeats = num_repeats
@@ -52,7 +58,7 @@ class Prepend(Proc):
 
 
 class Append(Proc):
-    def __init__(self, token: Any, num_repeats: int = 1) -> None:
+    def __init__(self, token: Any, num_repeats: int) -> None:
         super(Append, self).__init__()
         self.token = token
         self.num_repeats = num_repeats
