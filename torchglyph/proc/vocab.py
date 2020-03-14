@@ -9,8 +9,9 @@ from torchglyph.vocab import Vocab, Vectors, Glove
 class UpdateCounter(Proc):
     def __call__(self, data: Union[str, List[str]], counter: Counter, **kwargs) -> Union[str, List[str]]:
         if isinstance(data, str):
-            data = (data,)
-        counter.update(data)
+            counter[data] += 1
+        else:
+            counter.update(data)
         return data
 
 
