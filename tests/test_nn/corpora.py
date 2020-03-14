@@ -4,8 +4,7 @@ from typing import Iterable, List, Any, Tuple
 from hypothesis import strategies as st
 
 from torchglyph.dataset import Dataset, DataLoader
-from torchglyph.pipe import PackedTokIndicesPipe, SeqLengthPipe, PackedSeqPipe, PaddedSeqPipe
-from torchglyph.pipe.raw import RawStrPipe
+from torchglyph.pipe import PackedTokIndicesPipe, SeqLengthPipe, PackedSeqPipe, PaddedSeqPipe, RawStrPipe
 from torchglyph.pipe import PaddedSubPipe, TokLengthPipe, PackedSubPipe
 
 

@@ -8,8 +8,7 @@ from tqdm import tqdm
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.formats import csv
 from torchglyph.io import open_io
-from torchglyph.pipe import PackedSeqPipe, LabelPipe
-from torchglyph.pipe.raw import RawStrPipe
+from torchglyph.pipe import PackedSeqPipe, LabelPipe, RawStrPipe
 from torchglyph.proc import Identity, LoadGlove
 
 

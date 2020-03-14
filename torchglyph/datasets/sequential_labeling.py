@@ -6,8 +6,7 @@ from tqdm import tqdm
 
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.formats import conllx
-from torchglyph.pipe import PackedSeqPipe, SeqLengthPipe
-from torchglyph.pipe.raw import RawStrPipe
+from torchglyph.pipe import PackedSeqPipe, SeqLengthPipe, RawStrPipe
 from torchglyph.pipe import PaddedSeqPipe, PaddedMaskedSeqPipe, PackedTokIndicesPipe, PackedSubPipe
 from torchglyph.proc import ToLower, ReplaceDigits, Identity, LoadGlove
 

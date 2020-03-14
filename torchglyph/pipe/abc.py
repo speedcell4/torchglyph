@@ -80,3 +80,13 @@ class Pipe(object):
 
     def collate_fn(self, collected_ins: List[Any]) -> Any:
         return self._batch_proc(collected_ins, vocab=self.vocab)
+
+
+class RawStrPipe(Pipe):
+    def __init__(self) -> None:
+        super(RawStrPipe, self).__init__(
+            pre=None,
+            vocab=None,
+            post=None,
+            batch=None,
+        )
