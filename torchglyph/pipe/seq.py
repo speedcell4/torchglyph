@@ -52,6 +52,18 @@ class PaddedMaskedSeqPipe(PaddedRawSeqPipe):
         )
 
 
+class PaddedTokIndicesPipe(PaddedRawSeqPipe):
+    def __init__(self, device: Union[int, torch.device], reverse: bool = False,
+                 dtype: torch.dtype = torch.long, batch_first: bool = True) -> None:
+        super(PaddedTokIndicesPipe, self).__init__(
+            device=device, pad_token=0,
+            dtype=dtype, batch_first=batch_first,
+        )
+        self.with_(
+            post=GetRange(reverse=reverse) + ...,
+        )
+
+
 class PaddedTokLengthPipe(PaddedRawSeqPipe):
     def __init__(self, device: Union[int, torch.device],
                  dtype: torch.dtype = torch.long, batch_first: bool = True) -> None:
