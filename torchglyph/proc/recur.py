@@ -6,32 +6,32 @@ from torchglyph.vocab import Vocab
 
 
 class Numbering(RecurStr):
-    def process(self, data: str, vocab: Vocab, *args, **kwargs) -> int:
+    def process(self, data: str, vocab: Vocab, **kwargs) -> int:
         return vocab.stoi[data]
 
 
 class ToInt(RecurStr):
-    def process(self, data: str, *args, **kwargs) -> int:
+    def process(self, data: str, **kwargs) -> int:
         return int(data)
 
 
 class ToUpper(RecurStr):
-    def process(self, data: str, *args, **kwargs) -> str:
+    def process(self, data: str, **kwargs) -> str:
         return data.upper()
 
 
 class ToLower(RecurStr):
-    def process(self, data: str, *args, **kwargs) -> str:
+    def process(self, data: str, **kwargs) -> str:
         return data.lower()
 
 
 class ToCapitalized(RecurStr):
-    def process(self, data: str, *args, **kwargs) -> str:
+    def process(self, data: str, **kwargs) -> str:
         return data.capitalize()
 
 
 class ToSubList(RecurStr):
-    def process(self, data: str, *args, **kwargs) -> List[str]:
+    def process(self, data: str, **kwargs) -> List[str]:
         return [sub for sub in data]
 
 
@@ -47,7 +47,7 @@ class ReplacePattern(RecurStr):
             f"repl='{self.repl_token}'",
         ])
 
-    def process(self, data: str, *args, **kwargs) -> str:
+    def process(self, data: str, **kwargs) -> str:
         return re.sub(self.pattern, self.repl_token, data)
 
 

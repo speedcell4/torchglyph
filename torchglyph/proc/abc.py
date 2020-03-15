@@ -47,7 +47,7 @@ class Proc(object, metaclass=ABCMeta):
         return self.from_list(compress(lhs) + [self])
 
     @abstractmethod
-    def __call__(self, x: Any, *args, **kwargs) -> Any:
+    def __call__(self, x: Any, **kwargs) -> Any:
         raise NotImplementedError
 
 
@@ -55,7 +55,7 @@ class Identity(Proc):
     def __repr__(self) -> str:
         return f'{None}'
 
-    def __call__(self, x: Any, *args, **kwargs) -> Any:
+    def __call__(self, x: Any, **kwargs) -> Any:
         return x
 
 
@@ -76,9 +76,9 @@ class Chain(Proc):
     def __radd__(self, lhs: Procs) -> 'Proc':
         return self.from_list(compress(lhs) + self.procs)
 
-    def __call__(self, x: Any, *args, **kwargs) -> Any:
+    def __call__(self, x: Any, **kwargs) -> Any:
         for process in self.procs:
-            x = process(x, *args, **kwargs)
+            x = process(x, **kwargs)
         return x
 
 
@@ -90,27 +90,27 @@ class Lift(Proc):
     def __repr__(self) -> str:
         return f'[{self.proc.__repr__()}]'
 
-    def __call__(self, data: Any, *args, **kwargs) -> Any:
-        return type(data)([self.proc(datum, *args, **kwargs) for datum in data])
+    def __call__(self, data: Any, **kwargs) -> Any:
+        return type(data)([self.proc(datum, **kwargs) for datum in data])
 
 
 class Recur(Proc, metaclass=ABCMeta):
     @abstractmethod
-    def is_target(self, data: Any, *args, **kwargs) -> bool:
+    def is_target(self, data: Any, **kwargs) -> bool:
         raise NotImplementedError
 
     @abstractmethod
-    def process(self, data: str, *args, **kwargs) -> Any:
+    def process(self, data: str, **kwargs) -> Any:
         raise NotImplementedError
 
-    def __call__(self, data: Any, *args, **kwargs) -> Any:
-        if self.is_target(data, *args, **kwargs):
-            return self.process(data, *args, **kwargs)
-        return type(data)([self(datum, *args, **kwargs) for datum in data])
+    def __call__(self, data: Any, **kwargs) -> Any:
+        if self.is_target(data, **kwargs):
+            return self.process(data, **kwargs)
+        return type(data)([self(datum, **kwargs) for datum in data])
 
 
 class RecurStr(Recur, metaclass=ABCMeta):
-    def is_target(self, data: str, *args, **kwargs) -> bool:
+    def is_target(self, data: str, **kwargs) -> bool:
         return isinstance(data, str)
 
 
