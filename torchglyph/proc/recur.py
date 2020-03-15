@@ -5,6 +5,11 @@ from torchglyph.proc import RecurStr
 from torchglyph.vocab import Vocab
 
 
+class Numbering(RecurStr):
+    def process(self, data: str, vocab: Vocab, *args, **kwargs) -> int:
+        return vocab.stoi[data]
+
+
 class ToInt(RecurStr):
     def process(self, data: str, *args, **kwargs) -> int:
         return int(data)
@@ -52,8 +57,3 @@ class ReplaceDigits(ReplacePattern):
             pattern=re.compile(r'\d+'),
             repl_token=repl_token,
         )
-
-
-class Numbering(RecurStr):
-    def process(self, datum: str, vocab: Vocab, **kwargs) -> int:
-        return vocab.stoi[datum]
