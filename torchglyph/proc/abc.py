@@ -1,3 +1,4 @@
+from abc import ABCMeta, abstractmethod
 from typing import Optional, Union, Any, List, Callable, Tuple
 
 from torchglyph.vocab import Vocab
@@ -25,7 +26,7 @@ def subs(procs: PaLP, repl: 'Proc') -> PaLP:
     return [repl if proc is ... else proc for proc in compress(procs, allow_ellipsis=True)]
 
 
-class Proc(object):
+class Proc(object, metaclass=ABCMeta):
     @classmethod
     def from_list(cls, procs: List['Proc']) -> 'Proc':
         if len(procs) == 0:
@@ -46,6 +47,7 @@ class Proc(object):
     def __radd__(self, lhs: PaLP) -> 'Proc':
         return self.from_list(compress(lhs) + [self])
 
+    @abstractmethod
     def __call__(self, x: Any, *args, **kwargs) -> Any:
         raise NotImplementedError
 
@@ -93,19 +95,29 @@ class Lift(Proc):
         return type(data)([self.proc(datum, *args, **kwargs) for datum in data])
 
 
-class Recur(Proc):
+class Recur(Proc, metaclass=ABCMeta):
+    @abstractmethod
+    def is_target(self, data: Any, *args, **kwargs) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
     def process(self, data: str, *args, **kwargs) -> Any:
         raise NotImplementedError
 
     def __call__(self, data: Any, *args, **kwargs) -> Any:
-        if isinstance(data, str):
+        if self.is_target(data, *args, **kwargs):
             return self.process(data, *args, **kwargs)
         return type(data)([self(datum, *args, **kwargs) for datum in data])
 
 
-class ScanL(Proc):
+class RecurStr(Recur, metaclass=ABCMeta):
+    def is_target(self, data: str, *args, **kwargs) -> bool:
+        return isinstance(data, str)
+
+
+class Scan(Proc):
     def __init__(self, fn: Callable[[Any, Any], Tuple[Any, Any]], init: Any) -> None:
-        super(ScanL, self).__init__()
+        super(Scan, self).__init__()
         self.fn = fn
         self.init = init
 
@@ -118,24 +130,5 @@ class ScanL(Proc):
         ys = []
         for x in xs:
             y, z = self.fn(x, z)
-            ys.append(y)
-        return type(xs)(ys)
-
-
-class ScanR(Proc):
-    def __init__(self, fn: Callable[[Any, Any], Tuple[Any, Any]], init: Any) -> None:
-        super(ScanR, self).__init__()
-        self.fn = fn
-        self.init = init
-
-    def extra_repr(self) -> str:
-        return f'init={self.init}, fn={self.fn.__name__}'
-
-    def __call__(self, xs: List[Any], vocab: Vocab = None, **kwargs) -> List[Any]:
-        z = self.init
-
-        ys = []
-        for x in xs:
-            z, y = self.fn(z, x)
             ys.append(y)
         return type(xs)(ys)

@@ -1,36 +1,36 @@
 import re
 from typing import Pattern, List
 
-from torchglyph.proc import Recur
+from torchglyph.proc import RecurStr
 from torchglyph.vocab import Vocab
 
 
-class ToInt(Recur):
+class ToInt(RecurStr):
     def process(self, data: str, *args, **kwargs) -> int:
         return int(data)
 
 
-class ToUpper(Recur):
+class ToUpper(RecurStr):
     def process(self, data: str, *args, **kwargs) -> str:
         return data.upper()
 
 
-class ToLower(Recur):
+class ToLower(RecurStr):
     def process(self, data: str, *args, **kwargs) -> str:
         return data.lower()
 
 
-class ToCapitalized(Recur):
+class ToCapitalized(RecurStr):
     def process(self, data: str, *args, **kwargs) -> str:
         return data.capitalize()
 
 
-class ToSubList(Recur):
+class ToSubList(RecurStr):
     def process(self, data: str, *args, **kwargs) -> List[str]:
         return [sub for sub in data]
 
 
-class ReplacePattern(Recur):
+class ReplacePattern(RecurStr):
     def __init__(self, pattern: Pattern, repl_token: str) -> None:
         super(ReplacePattern, self).__init__()
         self.pattern = pattern
@@ -54,6 +54,6 @@ class ReplaceDigits(ReplacePattern):
         )
 
 
-class Numbering(Recur):
+class Numbering(RecurStr):
     def process(self, datum: str, vocab: Vocab, **kwargs) -> int:
         return vocab.stoi[datum]
