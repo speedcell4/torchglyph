@@ -39,15 +39,16 @@ class SubLstmEmbedding(nn.Module):
             rearrange(tok_lengths.clamp_min(1), 'a b -> (a b)'),
             batch_first=self.rnn.batch_first, enforce_sorted=False,
         )
+        
         embedding = pack._replace(data=self.dropout(self.embedding(pack.data)))
+        _, (encoding, _) = self.rnn(embedding)
 
-        _, (encoding, _) = self.rnn.forward(embedding)
-        return rearrange(encoding, '(l d) (a b) h -> l a b (d h)', a=sub.size(0), l=self.rnn.num_layers)[-1]
+        return rearrange(encoding, '(l d) (a b) h -> l a b (d h)', l=self.rnn.num_layers, a=sub.size(0))[-1]
 
     def _packed_forward(self, sub: PackedSequence, tok_indices: PackedSequence) -> PackedSequence:
         embedding = sub._replace(data=self.dropout(self.embedding(sub.data)))
-
         _, (encoding, _) = self.rnn(embedding)
+
         encoding = rearrange(encoding, '(l d) a h -> l a (d h)', l=self.rnn.num_layers)
         return tok_indices._replace(data=encoding[-1, tok_indices.data])
 

@@ -22,10 +22,10 @@ class SupportPack(type):
         forward_fn = bases[0].forward
 
         @functools.wraps(forward_fn)
-        def wrap(self, x: Union[Tensor, PackedSequence], *args, **kwargs) -> Union[Tensor, PackedSequence]:
+        def forward(self, x: Union[Tensor, PackedSequence], *args, **kwargs) -> Union[Tensor, PackedSequence]:
             if torch.is_tensor(x):
                 return forward_fn(self, x, *args, **kwargs)
             else:
                 return x._replace(data=forward_fn(self, x.data, *args, **kwargs))
 
-        return type(name, bases, {**attrs, 'forward': wrap})
+        return type(name, bases, {**attrs, 'forward': forward})
