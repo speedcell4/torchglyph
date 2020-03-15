@@ -3,26 +3,25 @@ from typing import Optional, Union, Any, List, Callable, Tuple
 
 from torchglyph.vocab import Vocab
 
-PaLP = Union[Optional['Proc'], List[Optional['Proc']]]
+Procs = Union[Optional['Proc'], List[Optional['Proc']]]
 
 
-# TODO: is allowing ellipsis generally safe?
-def compress(procs: PaLP, allow_ellipsis: bool = True) -> List['Proc']:
+def compress(procs: Procs, allow_ellipsis: bool = True) -> List['Proc']:
     if procs is None or isinstance(procs, Identity):
         return []
     if procs is ...:
         if allow_ellipsis:
             return [...]
         else:
-            raise ValueError(f'ellipsis is not allowed here')
+            raise ValueError(f'ellipsis is not allowed here, {procs}')
     if isinstance(procs, Chain):
         return procs.procs
     if isinstance(procs, Proc):
         return [procs]
-    return [x for proc in procs for x in compress(proc, allow_ellipsis=allow_ellipsis)]
+    return [p for proc in procs for p in compress(proc, allow_ellipsis=allow_ellipsis)]
 
 
-def subs(procs: PaLP, repl: 'Proc') -> PaLP:
+def subs(procs: Procs, repl: Procs) -> Procs:
     return [repl if proc is ... else proc for proc in compress(procs, allow_ellipsis=True)]
 
 
@@ -41,10 +40,10 @@ class Proc(object, metaclass=ABCMeta):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.extra_repr()})'
 
-    def __add__(self, rhs: PaLP) -> 'Proc':
+    def __add__(self, rhs: Procs) -> 'Proc':
         return self.from_list([self] + compress(rhs))
 
-    def __radd__(self, lhs: PaLP) -> 'Proc':
+    def __radd__(self, lhs: Procs) -> 'Proc':
         return self.from_list(compress(lhs) + [self])
 
     @abstractmethod
@@ -61,7 +60,7 @@ class Identity(Proc):
 
 
 class Chain(Proc):
-    def __init__(self, procs: PaLP) -> None:
+    def __init__(self, procs: Procs) -> None:
         super(Chain, self).__init__()
         self.procs = compress(procs)
 
@@ -71,10 +70,10 @@ class Chain(Proc):
     def __repr__(self) -> str:
         return f'{self.extra_repr()}'
 
-    def __add__(self, rhs: PaLP) -> 'Proc':
+    def __add__(self, rhs: Procs) -> 'Proc':
         return self.from_list(self.procs + compress(rhs))
 
-    def __radd__(self, lhs: PaLP) -> 'Proc':
+    def __radd__(self, lhs: Procs) -> 'Proc':
         return self.from_list(compress(lhs) + self.procs)
 
     def __call__(self, x: Any, *args, **kwargs) -> Any:

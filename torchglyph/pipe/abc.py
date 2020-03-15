@@ -1,12 +1,12 @@
 from collections import Counter
 from typing import Optional, Union, List, Any, Tuple
 
-from torchglyph.proc import Proc, PaLP, compress, subs
+from torchglyph.proc import Proc, Procs, compress, subs
 from torchglyph.vocab import Vocab
 
 
 class Pipe(object):
-    def __init__(self, pre: PaLP = None, vocab: PaLP = None, post: PaLP = None, batch: PaLP = None) -> None:
+    def __init__(self, pre: Procs = None, vocab: Procs = None, post: Procs = None, batch: Procs = None) -> None:
         super(Pipe, self).__init__()
 
         self.vocab: Optional[Union[Vocab]] = None
@@ -16,7 +16,7 @@ class Pipe(object):
         self._post_proc = Proc.from_list(compress(procs=post))
         self._batch_proc = Proc.from_list(compress(procs=batch))
 
-    def with_(self, pre: PaLP = ..., vocab: PaLP = ..., post: PaLP = ..., batch: PaLP = ...) -> 'Pipe':
+    def with_(self, pre: Procs = ..., vocab: Procs = ..., post: Procs = ..., batch: Procs = ...) -> 'Pipe':
         self._pre_proc = Proc.from_list(subs(procs=pre, repl=self._pre_proc))
         self._vocab_proc = Proc.from_list(subs(procs=vocab, repl=self._vocab_proc))
         self._post_proc = Proc.from_list(subs(procs=post, repl=self._post_proc))
