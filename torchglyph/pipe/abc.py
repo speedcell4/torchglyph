@@ -1,11 +1,12 @@
+from abc import ABCMeta
 from collections import Counter
 from typing import Optional, Union, List, Any, Tuple
 
-from torchglyph.proc import Proc, Procs, compress, subs
+from torchglyph.proc import Proc, Procs, compress, subs, Identity
 from torchglyph.vocab import Vocab
 
 
-class Pipe(object):
+class Pipe(object, metaclass=ABCMeta):
     def __init__(self, pre: Procs = None, vocab: Procs = None, post: Procs = None, batch: Procs = None) -> None:
         super(Pipe, self).__init__()
 
@@ -40,10 +41,11 @@ class Pipe(object):
             for name, pipe in dataset.pipes.items():
                 flag = f'@{name}_{self.preprocess.__name__}_done'
                 if pipe is self and not getattr(dataset, flag, False):
-                    dataset.data[name] = [
-                        self._pre_proc(ins, counter=counter, name=name)
-                        for ins in dataset.data[name]
-                    ]
+                    if not isinstance(pipe, Identity):
+                        dataset.data[name] = [
+                            self._pre_proc(ins, counter=counter, name=name)
+                            for ins in dataset.data[name]
+                        ]
                     setattr(dataset, flag, True)
 
         return counter
@@ -54,10 +56,11 @@ class Pipe(object):
             for name, pipe in dataset.pipes.items():
                 flag = f'@{name}_{self.postprocess.__name__}_done'
                 if pipe is self and not getattr(dataset, flag, False):
-                    dataset.data[name] = [
-                        self._post_proc(ins, vocab=self.vocab, name=name)
-                        for ins in dataset.data[name]
-                    ]
+                    if not isinstance(pipe, Identity):
+                        dataset.data[name] = [
+                            self._post_proc(ins, vocab=self.vocab, name=name)
+                            for ins in dataset.data[name]
+                        ]
                     setattr(dataset, flag, True)
 
         return self
