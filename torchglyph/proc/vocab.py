@@ -7,7 +7,7 @@ from torchglyph.vocab import Vocab, Vectors, Glove, FastTest
 
 
 class UpdateCounter(Proc):
-    def __call__(self, data: Union[str, List[str]], counter: Counter, **kwargs) -> Union[str, List[str]]:
+    def __call__(self, data: Union[str, List[str]], counter: Counter, *args, **kwargs) -> Union[str, List[str]]:
         if isinstance(data, str):
             counter[data] += 1
         else:
@@ -32,7 +32,7 @@ class BuildVocab(Proc):
             return ''
         return f'with={args}'
 
-    def __call__(self, vocab: Counter, *, special_tokens: Tuple[str, ...],
+    def __call__(self, vocab: Counter, *args, special_tokens: Tuple[str, ...],
                  max_size: Optional[int], min_freq: int, **kwargs) -> Vocab:
         return Vocab(
             counter=vocab,
@@ -51,7 +51,7 @@ class StatsVocab(Proc):
     def extra_repr(self) -> str:
         return f'{self.threshold}'
 
-    def __call__(self, vocab: Vocab, name: str, **kwargs) -> Vocab:
+    def __call__(self, vocab: Vocab, name: str, *args, **kwargs) -> Vocab:
         assert vocab is not None
         assert name is not None
 
@@ -83,7 +83,7 @@ class LoadVectors(Proc):
     def extra_repr(self) -> str:
         return f'{self.vectors.extra_repr()}'
 
-    def __call__(self, vocab: Vocab, name: str, **kwargs) -> Vocab:
+    def __call__(self, vocab: Vocab, name: str, *args, **kwargs) -> Vocab:
         assert vocab is not None, f"did you forget '{BuildVocab.__name__}' before '{LoadVectors.__name__}'?"
 
         tok, occ = vocab.load_vectors(self.vectors)

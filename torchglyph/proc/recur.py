@@ -42,7 +42,7 @@ class ReplacePattern(RecurStr):
         self.repl_token = repl_token
 
     def extra_repr(self) -> str:
-        return f', '.join([
+        return ', '.join([
             f'{self.pattern.pattern}',
             f"repl='{self.repl_token}'",
         ])

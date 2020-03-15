@@ -7,7 +7,7 @@ from torchglyph.vocab import Vocab
 
 
 class GetLength(Proc):
-    def __call__(self, data: List[Any], **kwargs) -> int:
+    def __call__(self, data: List[Any], *args, **kwargs) -> int:
         return len(data)
 
 
@@ -22,7 +22,7 @@ class GetRange(Proc):
         else:
             return 'descending'
 
-    def __call__(self, data: List[Any], **kwargs) -> List[int]:
+    def __call__(self, data: List[Any], *args, **kwargs) -> List[int]:
         indices = range(len(data))
         if self.reverse:
             indices = reversed(indices)
@@ -37,7 +37,7 @@ class GetMask(Proc):
     def extra_repr(self) -> str:
         return f"'{self.token}'"
 
-    def __call__(self, data: List[Any], vocab: Vocab, **kwargs) -> List[int]:
+    def __call__(self, data: List[Any], vocab: Vocab, *args, **kwargs) -> List[int]:
         token = stoi(token=self.token, vocab=vocab)
         return [token for _ in data]
 
@@ -49,11 +49,11 @@ class Prepend(Proc):
         self.num_repeats = num_repeats
 
     def extra_repr(self) -> str:
-        return f', '.join([
+        return ', '.join([
             f"'{self.token}'x{self.num_repeats}",
         ])
 
-    def __call__(self, data: List[Any], counter: Counter, **kwargs) -> List[Any]:
+    def __call__(self, data: List[Any], counter: Counter, *args, **kwargs) -> List[Any]:
         return [self.token for _ in range(self.num_repeats)] + list(data)
 
 
@@ -64,9 +64,9 @@ class Append(Proc):
         self.num_repeats = num_repeats
 
     def extra_repr(self) -> str:
-        return f', '.join([
+        return ', '.join([
             f"'{self.token}'x{self.num_repeats}",
         ])
 
-    def __call__(self, data: List[Any], counter: Counter, **kwargs) -> List[Any]:
+    def __call__(self, data: List[Any], counter: Counter, *args, **kwargs) -> List[Any]:
         return list(data) + [self.token for _ in range(self.num_repeats)]

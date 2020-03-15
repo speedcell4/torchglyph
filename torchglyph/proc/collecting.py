@@ -23,7 +23,7 @@ class ToDevice(Proc):
     def extra_repr(self) -> str:
         return f'{self.device}'
 
-    def __call__(self, batch: Batch, vocab: Vocab, **kwargs) -> Batch:
+    def __call__(self, batch: Batch, vocab: Vocab, *args, **kwargs) -> Batch:
         if isinstance(batch, (PackedSequence, Tensor)):
             return batch.to(self.device)
         return type(batch)([self(e, vocab=vocab) for e in batch])
@@ -37,7 +37,7 @@ class ToTensor(Proc):
     def extra_repr(self) -> str:
         return f'{self.dtype}'
 
-    def __call__(self, data: Any, **kwargs) -> Tensor:
+    def __call__(self, data: Any, *args, **kwargs) -> Tensor:
         try:
             return torch.tensor(data, dtype=self.dtype, requires_grad=False)
         except ValueError as err:
@@ -54,7 +54,7 @@ class CatTensors(Proc):
     def extra_repr(self) -> str:
         return f'dim={self.dim}'
 
-    def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
+    def __call__(self, data: List[Tensor], *args, **kwargs) -> Tensor:
         return torch.cat(data, dim=self.dim)
 
 
@@ -66,12 +66,12 @@ class StackTensors(Proc):
     def extra_repr(self) -> str:
         return f'dim={self.dim}'
 
-    def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
+    def __call__(self, data: List[Tensor], *args, **kwargs) -> Tensor:
         return torch.stack(data, dim=self.dim)
 
 
 class CatList(Proc):
-    def __call__(self, data: List[List[Tensor]], **kwargs) -> List[Tensor]:
+    def __call__(self, data: List[List[Tensor]], *args, **kwargs) -> List[Tensor]:
         return [d for datum in data for d in datum]
 
 
@@ -82,12 +82,12 @@ class PadSeq(Proc):
         self.batch_first = batch_first
 
     def extra_repr(self) -> str:
-        return f', '.join([
+        return ', '.join([
             f"'{self.pad_token}'",
-            'batch_first' if self.batch_first else 'batch_second',
+            f'batch_first={self.batch_first}',
         ])
 
-    def __call__(self, data: List[Tensor], vocab: Vocab, **kwargs) -> Tensor:
+    def __call__(self, data: List[Tensor], vocab: Vocab, *args, **kwargs) -> Tensor:
         return pad_sequence(
             data, batch_first=self.batch_first,
             padding_value=stoi(token=self.pad_token, vocab=vocab),
@@ -102,7 +102,7 @@ class PackSeq(Proc):
     def extra_repr(self) -> str:
         return f'sorted={self.enforce_sorted}'
 
-    def __call__(self, data: List[Tensor], **kwargs) -> PackedSequence:
+    def __call__(self, data: List[Tensor], *args, **kwargs) -> PackedSequence:
         return pack_sequence(data, enforce_sorted=self.enforce_sorted)
 
 
@@ -113,12 +113,12 @@ class PadSub(Proc):
         self.batch_first = batch_first
 
     def extra_repr(self) -> str:
-        return f', '.join([
+        return ', '.join([
             f"'{self.pad_token}'",
             f'batch_first={self.batch_first}',
         ])
 
-    def __call__(self, data: List[Tensor], vocab: Vocab, **kwargs) -> Tensor:
+    def __call__(self, data: List[Tensor], vocab: Vocab, *args, **kwargs) -> Tensor:
         dim1, dim2 = zip(*[d.size() for d in data])
         dim0 = len(data)
         dim1 = max(dim1)
