@@ -1,8 +1,8 @@
-import torch
 from hypothesis import given, strategies as st
 from torch.nn.utils.rnn import pack_padded_sequence
 
 from tests.test_nn.corpora import SeqCorpus, SubCorpus, SENTENCES
+from tests.utilities import assert_pack_allclose
 from torchglyph.nn import TokEmbedding, SubLstmEmbedding
 
 
@@ -27,10 +27,7 @@ def test_tok_embedding(batch_first, batch_size, char_dim, sentences):
 
         pack_encoding = layer(batch.pack)
 
-        assert torch.allclose(pad_encoding.data, pack_encoding.data, atol=1e-5)
-        assert torch.allclose(pad_encoding.batch_sizes, pack_encoding.batch_sizes)
-        assert torch.allclose(pad_encoding.sorted_indices, pack_encoding.sorted_indices)
-        assert torch.allclose(pad_encoding.unsorted_indices, pack_encoding.unsorted_indices)
+        assert_pack_allclose(pad_encoding, pack_encoding)
 
 
 @given(
@@ -56,7 +53,4 @@ def test_sub_lstm_embedding(batch_first, batch_size, char_dim, hidden_dim, sente
 
         pack_encoding = layer(batch.pack, batch.tok_indices)
 
-        assert torch.allclose(pad_encoding.data, pack_encoding.data, atol=1e-5)
-        assert torch.allclose(pad_encoding.batch_sizes, pack_encoding.batch_sizes)
-        assert torch.allclose(pad_encoding.sorted_indices, pack_encoding.sorted_indices)
-        assert torch.allclose(pad_encoding.unsorted_indices, pack_encoding.unsorted_indices)
+        assert_pack_allclose(pad_encoding, pack_encoding)
