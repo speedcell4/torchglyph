@@ -6,8 +6,8 @@ from tqdm import tqdm
 
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.formats import conllx
-from torchglyph.pipe import PackedSeqPipe, SeqLengthTensorPipe, RawStrPipe, PackedSub2TokPtrPipe
-from torchglyph.pipe import PaddedSeqPipe, PaddedMaskedSeqPipe, PackedSubPipe
+from torchglyph.pipe import PackedTokSeqPipe, SeqLengthTensorPipe, RawPipe, PackedRangeSeqPipe
+from torchglyph.pipe import PaddedTokSeqPipe, PackedTokBlockPipe
 from torchglyph.proc import ToLower, ReplaceDigits, Identity, LoadGlove
 
 
@@ -32,21 +32,20 @@ class CoNLL2000Chunking(Dataset):
 
     @classmethod
     def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
-        word = PackedSeqPipe(device=device, unk_token='<unk>').with_(
+        word = PackedTokSeqPipe(device=device, unk_token='<unk>').with_(
             pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
             vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
         )
         length = SeqLengthTensorPipe(device=device)
-        char = PackedSubPipe(device=device, unk_token='<unk>')
-        word_indices = PackedSub2TokPtrPipe(device=device, reverse=False)
-        mask = PaddedMaskedSeqPipe(device=device, filling_mask=True)
-        pos = PackedSeqPipe(device=device, unk_token='<unk>')
-        chunk = PaddedSeqPipe(device=device, unk_token='O', pad_token='O')
+        char = PackedTokBlockPipe(device=device, unk_token='<unk>')
+        word_ptr = PackedRangeSeqPipe(device=device, reverse=False)
+        pos = PackedTokSeqPipe(device=device, unk_token='<unk>')
+        chunk = PaddedTokSeqPipe(device=device, unk_token='O', pad_token='O')
 
         pipes = [
-            dict(word=word, length=length, char=char, word_indices=word_indices, mask=mask, raw_word=RawStrPipe()),
-            dict(pos=pos, raw_pos=RawStrPipe()),
-            dict(chunk=chunk, raw_chunk=RawStrPipe()),
+            dict(word=word, length=length, char=char, word_ptr=word_ptr, raw_word=RawPipe()),
+            dict(pos=pos, raw_pos=RawPipe()),
+            dict(chunk=chunk, raw_chunk=RawPipe()),
         ]
 
         train, test = cls.paths()
@@ -89,23 +88,22 @@ class CoNLL2003NER(Dataset):
 
     @classmethod
     def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
-        word = PackedSeqPipe(device=device, unk_token='<unk>').with_(
+        word = PackedTokSeqPipe(device=device, unk_token='<unk>').with_(
             pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
             vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
         )
         length = SeqLengthTensorPipe(device=device)
-        char = PackedSubPipe(device=device, unk_token='<unk>')
-        word_indices = PackedSub2TokPtrPipe(device=device, reverse=False)
-        mask = PaddedMaskedSeqPipe(device=device, filling_mask=True)
-        pos = PackedSeqPipe(device=device, unk_token='<unk>')
-        chunk = PackedSeqPipe(device=device, unk_token='<unk>')
-        ner = PaddedSeqPipe(device=device, unk_token='O', pad_token='O')
+        char = PackedTokBlockPipe(device=device, unk_token='<unk>')
+        word_ptr = PackedRangeSeqPipe(device=device, reverse=False)
+        pos = PackedTokSeqPipe(device=device, unk_token='<unk>')
+        chunk = PackedTokSeqPipe(device=device, unk_token='<unk>')
+        ner = PaddedTokSeqPipe(device=device, unk_token='O', pad_token='O')
 
         pipes = [
-            dict(word=word, length=length, char=char, word_indices=word_indices, mask=mask, raw_word=RawStrPipe()),
-            dict(pos=pos, raw_pos=RawStrPipe()),
-            dict(chunk=chunk, raw_chunk=RawStrPipe()),
-            dict(ner=ner, raw_ner=RawStrPipe()),
+            dict(word=word, length=length, char=char, word_ptr=word_ptr, raw_word=RawPipe()),
+            dict(pos=pos, raw_pos=RawPipe()),
+            dict(chunk=chunk, raw_chunk=RawPipe()),
+            dict(ner=ner, raw_ner=RawPipe()),
         ]
 
         train, dev, test = cls.paths()

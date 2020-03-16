@@ -106,9 +106,28 @@ class PackSeq(Proc):
         return pack_sequence(data, enforce_sorted=self.enforce_sorted)
 
 
-class PadSub(Proc):
+class PackPtrSeq(Proc):
+    def __init__(self, enforce_sorted: bool) -> None:
+        super(PackPtrSeq, self).__init__()
+        self.enforce_sorted = enforce_sorted
+
+    def extra_repr(self) -> str:
+        return f'enforce_sorted={self.enforce_sorted}'
+
+    def __call__(self, data: List[Tensor], **kwargs) -> PackedSequence:
+        pack = pack_sequence(data, enforce_sorted=self.enforce_sorted)
+        index = pack._replace(data=torch.arange(pack.data.size(0), device=pack.data.device))
+        index, _ = pad_packed_sequence(index, batch_first=True)
+
+        return pack_sequence([
+            index[i, datum]
+            for i, datum in enumerate(data)
+        ], enforce_sorted=self.enforce_sorted)
+
+
+class PadBlock(Proc):
     def __init__(self, pad_token: Union[str, int], batch_first: bool) -> None:
-        super(PadSub, self).__init__()
+        super(PadBlock, self).__init__()
         self.pad_token = pad_token
         self.batch_first = batch_first
 
@@ -137,28 +156,9 @@ class PadSub(Proc):
         return tensor.detach()
 
 
-class PackPtrByFlatten(Chain):
+class PackBlock(Chain):
     def __init__(self, enforce_sorted: bool) -> None:
-        super(PackPtrByFlatten, self).__init__([
+        super(PackBlock, self).__init__([
             FlattenList(),
             PackSeq(enforce_sorted=enforce_sorted),
         ])
-
-
-class PackPtrByStack(Proc):
-    def __init__(self, enforce_sorted: bool) -> None:
-        super(PackPtrByStack, self).__init__()
-        self.enforce_sorted = enforce_sorted
-
-    def extra_repr(self) -> str:
-        return f'enforce_sorted={self.enforce_sorted}'
-
-    def __call__(self, data: List[Tensor], **kwargs) -> PackedSequence:
-        pack = pack_sequence(data, enforce_sorted=self.enforce_sorted)
-        index = pack._replace(data=torch.arange(pack.data.size(0), device=pack.data.device))
-        index, _ = pad_packed_sequence(index, batch_first=True)
-
-        return pack_sequence([
-            index[i, datum]
-            for i, datum in enumerate(data)
-        ], enforce_sorted=self.enforce_sorted)

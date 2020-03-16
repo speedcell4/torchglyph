@@ -96,9 +96,9 @@ class Pipe(object, metaclass=ABCMeta):
         return self._batch_proc(collected_ins, vocab=self.vocab)
 
 
-class RawStrPipe(Pipe):
+class RawPipe(Pipe):
     def __init__(self) -> None:
-        super(RawStrPipe, self).__init__(
+        super(RawPipe, self).__init__(
             pre=None,
             vocab=None,
             post=None,

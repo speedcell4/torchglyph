@@ -9,7 +9,7 @@ from tqdm import tqdm
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.formats import csv
 from torchglyph.io import open_io
-from torchglyph.pipe import PackedSeqPipe, TokTensorPipe, RawStrPipe
+from torchglyph.pipe import PackedTokSeqPipe, TokTensorPipe, RawPipe
 from torchglyph.proc import Identity, LoadGlove
 
 
@@ -40,15 +40,15 @@ class AgNews(Dataset):
 
     @classmethod
     def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple['DataLoader', ...]:
-        word = PackedSeqPipe(device=device, unk_token='<unk>').with_(
+        word = PackedTokSeqPipe(device=device, unk_token='<unk>').with_(
             vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
         )
         target = TokTensorPipe(device=device, unk_token=None)
 
         pipes = [
-            dict(target=target, raw_target=RawStrPipe()),
-            dict(title=word, raw_title=RawStrPipe()),
-            dict(text=word, raw_text=RawStrPipe()),
+            dict(target=target, raw_target=RawPipe()),
+            dict(title=word, raw_title=RawPipe()),
+            dict(text=word, raw_text=RawPipe()),
         ]
 
         train, test, target_vocab = cls.paths()
