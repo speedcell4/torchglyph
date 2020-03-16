@@ -70,7 +70,7 @@ class StackTensors(Proc):
         return torch.stack(data, dim=self.dim)
 
 
-class CatList(Proc):
+class FlattenList(Proc):
     def __call__(self, data: List[List[Tensor]], **kwargs) -> List[Tensor]:
         return [d for datum in data for d in datum]
 
@@ -137,25 +137,21 @@ class PadSub(Proc):
         return tensor.detach()
 
 
-class PackPtrByCat(Chain):
+class PackPtrByFlatten(Chain):
     def __init__(self, enforce_sorted: bool) -> None:
-        super(PackPtrByCat, self).__init__([
-            CatList(),
+        super(PackPtrByFlatten, self).__init__([
+            FlattenList(),
             PackSeq(enforce_sorted=enforce_sorted),
         ])
 
 
 class PackPtrByStack(Proc):
-    def __init__(self, enforce_range: bool, enforce_sorted: bool) -> None:
+    def __init__(self, enforce_sorted: bool) -> None:
         super(PackPtrByStack, self).__init__()
-        self.enforce_range = enforce_range
         self.enforce_sorted = enforce_sorted
 
     def extra_repr(self) -> str:
-        return ', '.join([
-            f'enforce_range={self.enforce_range}',
-            f'enforce_sorted={self.enforce_sorted}',
-        ])
+        return f'enforce_sorted={self.enforce_sorted}'
 
     def __call__(self, data: List[Tensor], **kwargs) -> PackedSequence:
         pack = pack_sequence(data, enforce_sorted=self.enforce_sorted)

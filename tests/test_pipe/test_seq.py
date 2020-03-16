@@ -3,7 +3,7 @@ from hypothesis import given, strategies as st
 from torch.nn.utils.rnn import pack_padded_sequence
 
 from tests.utilities import assert_pack_allclose
-from torchglyph.pipe import PaddedRawPtrPipe, PackedRawPtrPipe
+from torchglyph.pipe import Padded2DPtrPipe, Packed2DPtrPipe
 
 
 @given(
@@ -21,8 +21,8 @@ def test_ptr_pipe(batch_size, vocab_size, max_seq_length):
         for l in seq_length.tolist()
     ]
 
-    p1 = PaddedRawPtrPipe(torch.device('cpu'), 0)
-    p2 = PackedRawPtrPipe(torch.device('cpu'))
+    p1 = Padded2DPtrPipe(torch.device('cpu'), 0)
+    p2 = Packed2DPtrPipe(torch.device('cpu'))
 
     y, _ = p1(x)
     y = pack_padded_sequence(padded_data.gather(dim=-1, index=y), seq_length, batch_first=True, enforce_sorted=False)

@@ -20,7 +20,7 @@ class PaddedRawSeqPipe(Pipe):
         )
 
 
-class PaddedRawPtrPipe(PaddedRawSeqPipe):
+class Padded2DPtrPipe(PaddedRawSeqPipe):
     pass
 
 
@@ -103,11 +103,11 @@ class PackedSub2TokPtrPipe(PackedRawSeqPipe):
         )
 
 
-class PackedRawPtrPipe(Pipe):
+class Packed2DPtrPipe(Pipe):
     def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
-        super(PackedRawPtrPipe, self).__init__(
+        super(Packed2DPtrPipe, self).__init__(
             pre=None,
             vocab=None,
             post=ToTensor(dtype=dtype),
-            batch=PackPtrByStack(enforce_range=False, enforce_sorted=False) + ToDevice(device=device)
+            batch=PackPtrByStack(enforce_sorted=False) + ToDevice(device=device)
         )
