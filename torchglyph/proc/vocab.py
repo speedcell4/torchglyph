@@ -76,17 +76,21 @@ class StatsVocab(Proc):
 
 
 class LoadVectors(Proc):
-    def __init__(self, vectors: Vectors) -> None:
+    def __init__(self, vectors: Vectors, *fallbacks) -> None:
         super(LoadVectors, self).__init__()
         self.vectors = vectors
+        self.fallbacks = fallbacks
 
     def extra_repr(self) -> str:
-        return f'{self.vectors.extra_repr()}'
+        return ', '.join([
+            f'{self.vectors.extra_repr()}',
+            *[f'{f.__name__}' for f in self.fallbacks],
+        ])
 
     def __call__(self, vocab: Vocab, name: str, **kwargs) -> Vocab:
         assert vocab is not None, f"did you forget '{BuildVocab.__name__}' before '{LoadVectors.__name__}'?"
 
-        tok, occ = vocab.load_vectors(self.vectors)
+        tok, occ = vocab.load_vectors(self.vectors, *self.fallbacks)
         tok = tok / max(1, len(vocab.freq.values())) * 100
         occ = occ / max(1, sum(vocab.freq.values())) * 100
         logging.info(f"{self.vectors} hits {tok:.1f}% tokens and {occ:.1f}% occurrences of {Vocab.__name__} '{name}'")
@@ -94,14 +98,16 @@ class LoadVectors(Proc):
 
 
 class LoadGlove(LoadVectors):
-    def __init__(self, name: str, dim: int) -> None:
+    def __init__(self, name: str, dim: int, *fallbacks) -> None:
         super(LoadGlove, self).__init__(
-            vectors=Glove(name=name, dim=dim),
+            Glove(name=name, dim=dim),
+            *fallbacks,
         )
 
 
 class LoadFastText(LoadVectors):
-    def __init__(self, lang: str) -> None:
+    def __init__(self, lang: str, *fallbacks) -> None:
         super(LoadFastText, self).__init__(
-            vectors=FastTest(lang=lang),
+            FastTest(lang=lang),
+            *fallbacks,
         )

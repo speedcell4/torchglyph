@@ -127,12 +127,12 @@ class Vocab(object):
             return 0
         return self.vectors.size(1)
 
-    def load_vectors(self, vectors: 'Vectors') -> Tuple[int, int]:
+    def load_vectors(self, vectors: 'Vectors', *fallbacks) -> Tuple[int, int]:
         self.vectors = torch.empty((len(self), vectors.vec_dim), dtype=torch.float32)
 
         tok, occ = 0, 0
         for token, index in self.stoi.items():
-            if vectors.query_(token, self.vectors[index]):
+            if vectors.query_(token, self.vectors[index], *fallbacks):
                 tok += 1
                 occ += self.freq[token]
 
@@ -188,13 +188,17 @@ class Vectors(Vocab):
             self.load(pt_path)
 
     @torch.no_grad()
-    def query_(self, token: str, vector: Tensor) -> bool:
+    def query_(self, token: str, vector: Tensor, *fallbacks) -> bool:
         if token in self:
             vector[:] = self.vectors[self.stoi[token]]
             return True
-        else:
-            self.unk_init_(vector)
-            return False
+        for fallback in fallbacks:
+            new_token = fallback(token)
+            if new_token in self:
+                vector[:] = self.vectors[self.stoi[new_token]]
+                return True
+        self.unk_init_(vector)
+        return False
 
 
 class Glove(Vectors):

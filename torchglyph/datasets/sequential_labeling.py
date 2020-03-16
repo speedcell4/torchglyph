@@ -34,7 +34,7 @@ class CoNLL2000Chunking(Dataset):
     def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
         word = PackedTokSeqPipe(device=device, unk_token='<unk>').with_(
             pre=ToLower() + ReplaceDigits(repl_token='<digits>') + ...,
-            vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
+            vocab=... + (Identity() if word_dim is None else LoadGlove('6B', word_dim, str.lower)),
         )
         length = SeqLengthTensorPipe(device=device)
         char = PackedTokBlockPipe(device=device, unk_token='<unk>')
