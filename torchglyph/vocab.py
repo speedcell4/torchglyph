@@ -152,7 +152,7 @@ class Vocab(object):
 
 class Vectors(Vocab):
     def __init__(self, urls_dest: List[Tuple[str, Path]], path: Path,
-                 unk_init_: Callable[[Tensor], Tensor] = init.normal_) -> None:
+                 has_head_info: bool, unk_init_: Callable[[Tensor], Tensor] = init.normal_) -> None:
         super(Vectors, self).__init__(
             counter=Counter(),
             unk_token=None, pad_token=None,
@@ -171,7 +171,12 @@ class Vectors(Vocab):
             with path.open('rb') as fp:
                 vec_dim = None
 
-                for raw in tqdm(fp, desc=f'reading {path}', unit=' tokens'):  # type:bytes
+                iteration = tqdm(fp, desc=f'reading {path}', unit=' tokens')
+                for raw in iteration:  # type:bytes
+                    if has_head_info:
+                        _, vec_dim = map(int, raw.strip().split(b' '))
+                        has_head_info = False
+                        continue
                     token, *vs = raw.rstrip().split(b' ')
 
                     if vec_dim is None:
@@ -209,6 +214,7 @@ class Glove(Vectors):
                 data_path / f'glove.{name}' / f'glove.{name}.zip'
             )],
             path=data_path / f'glove.{name}' / f'glove.{name}.{dim}d.txt',
+            has_head_info=False,
         )
 
 
@@ -220,4 +226,5 @@ class FastTest(Vectors):
                 data_path / 'fasttext' / f'wiki.{lang}.vec',
             )],
             path=data_path / 'fasttext' / f'wiki.{lang}.vec',
+            has_head_info=True,
         )
