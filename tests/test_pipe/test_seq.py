@@ -1,19 +1,9 @@
 import torch
 from hypothesis import given, strategies as st
-from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence
+from torch.nn.utils.rnn import pack_padded_sequence
 
+from tests.utilities import assert_pack_allclose
 from torchglyph.pipe import PaddedRawPtrPipe, PackedRawPtrPipe
-
-
-def assert_pack_equivalent(lhs: PackedSequence, rhs: PackedSequence, rtol: float = 1e-5, atol: float = 1e-5):
-    assert torch.allclose(lhs.data, rhs.data, rtol=rtol, atol=atol)
-    assert torch.allclose(lhs.batch_sizes, rhs.batch_sizes, rtol=rtol, atol=atol)
-
-    if lhs.sorted_indices is not None or rhs.sorted_indices is not None:
-        assert torch.allclose(lhs.sorted_indices, rhs.sorted_indices, rtol=rtol, atol=atol)
-
-    if lhs.unsorted_indices is not None or rhs.unsorted_indices is not None:
-        assert torch.allclose(lhs.unsorted_indices, rhs.unsorted_indices, rtol=rtol, atol=atol)
 
 
 @given(
@@ -40,4 +30,4 @@ def test_ptr_pipe(batch_size, vocab_size, max_seq_length):
     z, _ = p2(x)
     z = z._replace(data=packed_data.data[z.data])
 
-    assert_pack_equivalent(y, z)
+    assert_pack_allclose(y, z)
