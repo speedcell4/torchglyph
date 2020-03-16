@@ -137,9 +137,9 @@ class PadSub(Proc):
         return tensor.detach()
 
 
-class PackSub(Chain):
+class PackSubByCat(Chain):
     def __init__(self, enforce_sorted: bool) -> None:
-        super(PackSub, self).__init__([
+        super(PackSubByCat, self).__init__([
             CatList(),
             PackSeq(enforce_sorted=enforce_sorted),
         ])

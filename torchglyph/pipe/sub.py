@@ -4,7 +4,7 @@ import torch
 
 from torchglyph.pipe import Pipe, THRESHOLD
 from torchglyph.proc import Lift, ToDevice, Numbering, UpdateCounter, BuildVocab, ToSubList
-from torchglyph.proc import ToTensor, PadSeq, PadSub, PackSub, StatsVocab
+from torchglyph.proc import ToTensor, PadSeq, PadSub, PackSubByCat, StatsVocab
 
 
 class PaddedRawSubPipe(Pipe):
@@ -43,7 +43,7 @@ class PackedRawSubPipe(Pipe):
             pre=None,
             vocab=None,
             post=Lift(ToTensor(dtype=dtype)),
-            batch=PackSub(enforce_sorted=False) + ToDevice(device=device),
+            batch=PackSubByCat(enforce_sorted=False) + ToDevice(device=device),
         )
 
 
