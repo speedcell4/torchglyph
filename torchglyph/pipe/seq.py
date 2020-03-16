@@ -4,7 +4,7 @@ import torch
 
 from torchglyph.pipe import Pipe
 from torchglyph.pipe.utilities import THRESHOLD, cum_index
-from torchglyph.proc import Numbering, ToSubList, Lift, GetLength, GetRange, Scan
+from torchglyph.proc import Numbering, ToSubList, Lift, GetLength, GetRange, Scan, PackPtrByStack
 from torchglyph.proc import ToDevice, UpdateCounter, BuildVocab
 from torchglyph.proc import ToTensor, PadSeq, PackSeq, StatsVocab, GetMask
 
@@ -96,4 +96,14 @@ class PackedSub2TokPtrPipe(PackedRawSeqPipe):
         self.with_(
             post=GetRange(reverse=reverse) + ...,
             batch=Scan(fn=cum_index, init=0) + ...,
+        )
+
+
+class PackedRawTokPtrPipe(Pipe):
+    def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
+        super(PackedRawTokPtrPipe, self).__init__(
+            pre=None,
+            vocab=None,
+            post=ToTensor(dtype=dtype),
+            batch=PackPtrByStack(enforce_range=False, enforce_sorted=False) + ToDevice(device=device)
         )

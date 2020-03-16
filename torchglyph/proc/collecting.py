@@ -2,7 +2,7 @@ from typing import Any, Union, List, Tuple
 
 import torch
 from torch import Tensor
-from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence
+from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence, pad_packed_sequence
 
 from torchglyph.proc import Proc, Chain, stoi
 from torchglyph.vocab import Vocab
@@ -137,9 +137,32 @@ class PadSub(Proc):
         return tensor.detach()
 
 
-class PackSubByCat(Chain):
+class PackPtrByCat(Chain):
     def __init__(self, enforce_sorted: bool) -> None:
-        super(PackSubByCat, self).__init__([
+        super(PackPtrByCat, self).__init__([
             CatList(),
             PackSeq(enforce_sorted=enforce_sorted),
         ])
+
+
+class PackPtrByStack(Proc):
+    def __init__(self, enforce_range: bool, enforce_sorted: bool) -> None:
+        super(PackPtrByStack, self).__init__()
+        self.enforce_range = enforce_range
+        self.enforce_sorted = enforce_sorted
+
+    def extra_repr(self) -> str:
+        return ', '.join([
+            f'enforce_range={self.enforce_range}',
+            f'enforce_sorted={self.enforce_sorted}',
+        ])
+
+    def __call__(self, data: List[Tensor], **kwargs) -> PackedSequence:
+        pack = pack_sequence(data, enforce_sorted=self.enforce_sorted)
+        index = pack._replace(data=torch.arange(pack.data.size(0), device=pack.data.device))
+        index, _ = pad_packed_sequence(index, batch_first=True)
+
+        return pack_sequence([
+            index[i, datum]
+            for i, datum in enumerate(data)
+        ], enforce_sorted=self.enforce_sorted)
