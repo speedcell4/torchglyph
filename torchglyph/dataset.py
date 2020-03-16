@@ -80,6 +80,12 @@ class Dataset(data.Dataset):
     def dump(self, fp: TextIO, batch: NamedTuple, prediction: List[Any], *args, **kwargs) -> None:
         raise NotImplementedError
 
+    def eval(self, path: Path):
+        raise NotImplementedError
+
+    def viz(self, path: Path):
+        raise NotImplementedError
+
     @classmethod
     def new(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
         raise NotImplementedError
