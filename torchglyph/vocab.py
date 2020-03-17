@@ -122,6 +122,18 @@ class Vocab(object):
         )
 
     @property
+    def unk_idx(self) -> Optional[int]:
+        if self.unk_token is None:
+            return None
+        return self.stoi[self.unk_token]
+
+    @property
+    def pad_idx(self) -> Optional[int]:
+        if self.pad_token is None:
+            return None
+        return self.stoi[self.pad_token]
+
+    @property
     def vec_dim(self) -> int:
         if self.vectors is None:
             return 0
