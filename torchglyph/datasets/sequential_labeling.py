@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.formats import conllx
-from torchglyph.pipe import PackedTokSeqPipe, SeqLengthTensorPipe, RawPipe, PackedRangeSeqPipe
+from torchglyph.pipe import PackedTokSeqPipe, SeqLengthTensorPipe, RawPipe, PackedTokPtrSeqPipe
 from torchglyph.pipe import PaddedTokSeqPipe, PackedTokBlockPipe
 from torchglyph.proc import ToLower, ReplaceDigits, Identity, LoadGlove
 
@@ -38,7 +38,7 @@ class CoNLL2000Chunking(Dataset):
         )
         length = SeqLengthTensorPipe(device=device)
         char = PackedTokBlockPipe(device=device, unk_token='<unk>')
-        word_ptr = PackedRangeSeqPipe(device=device, reverse=False)
+        word_ptr = PackedTokPtrSeqPipe(device=device, reverse=False)
         pos = PackedTokSeqPipe(device=device, unk_token='<unk>')
         chunk = PaddedTokSeqPipe(device=device, unk_token='O', pad_token='O')
 
@@ -94,7 +94,7 @@ class CoNLL2003NER(Dataset):
         )
         length = SeqLengthTensorPipe(device=device)
         char = PackedTokBlockPipe(device=device, unk_token='<unk>')
-        word_ptr = PackedRangeSeqPipe(device=device, reverse=False)
+        word_ptr = PackedTokPtrSeqPipe(device=device, reverse=False)
         pos = PackedTokSeqPipe(device=device, unk_token='<unk>')
         chunk = PackedTokSeqPipe(device=device, unk_token='<unk>')
         ner = PaddedTokSeqPipe(device=device, unk_token='O', pad_token='O')

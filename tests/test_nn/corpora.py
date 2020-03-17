@@ -4,7 +4,7 @@ from typing import Iterable, List, Any, Tuple
 from hypothesis import strategies as st
 
 from torchglyph.dataset import Dataset, DataLoader
-from torchglyph.pipe import PackedRangeSeqPipe, SeqLengthTensorPipe, PackedTokSeqPipe, PaddedTokSeqPipe, RawPipe, \
+from torchglyph.pipe import PackedTokPtrSeqPipe, SeqLengthTensorPipe, PackedTokSeqPipe, PaddedTokSeqPipe, RawPipe, \
     PaddedTokLengthPipe
 from torchglyph.pipe import PaddedTokBlockPipe, PackedTokBlockPipe
 
@@ -46,7 +46,7 @@ class SubCorpus(HypothesisCorpus):
     @classmethod
     def new(cls, sentences, batch_first: bool, batch_size: int, device: int = -1) -> Tuple[DataLoader, ...]:
         pad = PaddedTokBlockPipe(device=device, unk_token='<unk>', pad_token='<pad>', batch_first=batch_first)
-        tok_indices = PackedRangeSeqPipe(device=device)
+        tok_indices = PackedTokPtrSeqPipe(device=device)
         pack = PackedTokBlockPipe(device=device, unk_token='<unk>')
         tok_length = PaddedTokLengthPipe(device=device, batch_first=batch_first)
         seq_length = SeqLengthTensorPipe(device=device)
