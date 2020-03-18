@@ -8,9 +8,9 @@ from torchglyph.proc import GetLength, ToDevice, Numbering, UpdateCounter, Build
 from torchglyph.proc import ToTensor, StatsVocab
 
 
-class RawTokTensorPipe(Pipe):
+class IdxTensorPipe(Pipe):
     def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
-        super(RawTokTensorPipe, self).__init__(
+        super(IdxTensorPipe, self).__init__(
             pre=None,
             vocab=None,
             post=None,
@@ -18,7 +18,7 @@ class RawTokTensorPipe(Pipe):
         )
 
 
-class TokTensorPipe(RawTokTensorPipe):
+class TokTensorPipe(IdxTensorPipe):
     def __init__(self, device: Union[int, torch.device], unk_token: Optional[str],
                  special_tokens: Tuple[Optional[str], ...] = (),
                  threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
@@ -33,7 +33,7 @@ class TokTensorPipe(RawTokTensorPipe):
         )
 
 
-class SeqLengthTensorPipe(RawTokTensorPipe):
+class SeqLengthTensorPipe(IdxTensorPipe):
     def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
         super(SeqLengthTensorPipe, self).__init__(device=device, dtype=dtype)
         self.with_(

@@ -45,12 +45,12 @@ class SubLstmEmbedding(nn.Module):
 
         return rearrange(encoding, '(l d) (a b) h -> l a b (d h)', l=self.rnn.num_layers, a=sub.size(0))[-1]
 
-    def _packed_forward(self, sub: PackedSequence, tok_indices: PackedSequence) -> PackedSequence:
+    def _packed_forward(self, sub: PackedSequence, tok_ptr: PackedSequence) -> PackedSequence:
         embedding = sub._replace(data=self.dropout(self.embedding(sub.data)))
         _, (encoding, _) = self.rnn(embedding)
 
         encoding = rearrange(encoding, '(l d) a h -> l a (d h)', l=self.rnn.num_layers)
-        return tok_indices._replace(data=encoding[-1, tok_indices.data])
+        return tok_ptr._replace(data=encoding[-1, tok_ptr.data])
 
     def forward(self, sub: Union[Tensor, PackedSequence], *args) -> Union[Tensor, PackedSequence]:
         if torch.is_tensor(sub):

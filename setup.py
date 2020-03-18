@@ -11,17 +11,17 @@ setup(
     license='MIT',
     author='speedcell4',
     author_email='speedcell4@gmail.com',
-    description='Data processing utilities for natural language processing',
+    description='Data Processor Combinators for Natural Language Processing',
     long_description=long_description,
     install_requires=[
         'tqdm',
         'numpy',
+        'einops',
     ],
     extras_require={
         'dev': [
             'pytest',
             'hypothesis',
-            'einops',
         ],
     }
 )

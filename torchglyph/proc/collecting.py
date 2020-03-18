@@ -2,7 +2,7 @@ from typing import Any, Union, List, Tuple
 
 import torch
 from torch import Tensor
-from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence
+from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence, pad_packed_sequence
 
 from torchglyph.proc import Proc, Chain, stoi
 from torchglyph.vocab import Vocab
@@ -23,7 +23,7 @@ class ToDevice(Proc):
     def extra_repr(self) -> str:
         return f'{self.device}'
 
-    def __call__(self, batch: Batch, vocab: Vocab, *args, **kwargs) -> Batch:
+    def __call__(self, batch: Batch, vocab: Vocab, **kwargs) -> Batch:
         if isinstance(batch, (PackedSequence, Tensor)):
             return batch.to(self.device)
         return type(batch)([self(e, vocab=vocab) for e in batch])
@@ -37,7 +37,7 @@ class ToTensor(Proc):
     def extra_repr(self) -> str:
         return f'{self.dtype}'
 
-    def __call__(self, data: Any, *args, **kwargs) -> Tensor:
+    def __call__(self, data: Any, **kwargs) -> Tensor:
         try:
             return torch.tensor(data, dtype=self.dtype, requires_grad=False)
         except ValueError as err:
@@ -54,7 +54,7 @@ class CatTensors(Proc):
     def extra_repr(self) -> str:
         return f'dim={self.dim}'
 
-    def __call__(self, data: List[Tensor], *args, **kwargs) -> Tensor:
+    def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
         return torch.cat(data, dim=self.dim)
 
 
@@ -66,12 +66,12 @@ class StackTensors(Proc):
     def extra_repr(self) -> str:
         return f'dim={self.dim}'
 
-    def __call__(self, data: List[Tensor], *args, **kwargs) -> Tensor:
+    def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
         return torch.stack(data, dim=self.dim)
 
 
-class CatList(Proc):
-    def __call__(self, data: List[List[Tensor]], *args, **kwargs) -> List[Tensor]:
+class FlattenList(Proc):
+    def __call__(self, data: List[List[Tensor]], **kwargs) -> List[Tensor]:
         return [d for datum in data for d in datum]
 
 
@@ -82,12 +82,12 @@ class PadSeq(Proc):
         self.batch_first = batch_first
 
     def extra_repr(self) -> str:
-        return ', '.join([
+        return f', '.join([
             f"'{self.pad_token}'",
-            f'batch_first={self.batch_first}',
+            'batch_first' if self.batch_first else 'batch_second',
         ])
 
-    def __call__(self, data: List[Tensor], vocab: Vocab, *args, **kwargs) -> Tensor:
+    def __call__(self, data: List[Tensor], vocab: Vocab, **kwargs) -> Tensor:
         return pad_sequence(
             data, batch_first=self.batch_first,
             padding_value=stoi(token=self.pad_token, vocab=vocab),
@@ -102,23 +102,42 @@ class PackSeq(Proc):
     def extra_repr(self) -> str:
         return f'sorted={self.enforce_sorted}'
 
-    def __call__(self, data: List[Tensor], *args, **kwargs) -> PackedSequence:
+    def __call__(self, data: List[Tensor], **kwargs) -> PackedSequence:
         return pack_sequence(data, enforce_sorted=self.enforce_sorted)
 
 
-class PadSub(Proc):
+class PackPtrSeq(Proc):
+    def __init__(self, enforce_sorted: bool) -> None:
+        super(PackPtrSeq, self).__init__()
+        self.enforce_sorted = enforce_sorted
+
+    def extra_repr(self) -> str:
+        return f'enforce_sorted={self.enforce_sorted}'
+
+    def __call__(self, data: List[Tensor], **kwargs) -> PackedSequence:
+        pack = pack_sequence(data, enforce_sorted=self.enforce_sorted)
+        index = pack._replace(data=torch.arange(pack.data.size(0), device=pack.data.device))
+        index, _ = pad_packed_sequence(index, batch_first=True)
+
+        return pack_sequence([
+            index[i, datum]
+            for i, datum in enumerate(data)
+        ], enforce_sorted=self.enforce_sorted)
+
+
+class PadBlock(Proc):
     def __init__(self, pad_token: Union[str, int], batch_first: bool) -> None:
-        super(PadSub, self).__init__()
+        super(PadBlock, self).__init__()
         self.pad_token = pad_token
         self.batch_first = batch_first
 
     def extra_repr(self) -> str:
-        return ', '.join([
+        return f', '.join([
             f"'{self.pad_token}'",
             f'batch_first={self.batch_first}',
         ])
 
-    def __call__(self, data: List[Tensor], vocab: Vocab, *args, **kwargs) -> Tensor:
+    def __call__(self, data: List[Tensor], vocab: Vocab, **kwargs) -> Tensor:
         dim1, dim2 = zip(*[d.size() for d in data])
         dim0 = len(data)
         dim1 = max(dim1)
@@ -137,9 +156,9 @@ class PadSub(Proc):
         return tensor.detach()
 
 
-class PackSub(Chain):
+class PackBlock(Chain):
     def __init__(self, enforce_sorted: bool) -> None:
-        super(PackSub, self).__init__([
-            CatList(),
+        super(PackBlock, self).__init__([
+            FlattenList(),
             PackSeq(enforce_sorted=enforce_sorted),
         ])

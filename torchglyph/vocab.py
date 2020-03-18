@@ -122,17 +122,23 @@ class Vocab(object):
         )
 
     @property
+    def pad_idx(self) -> Optional[int]:
+        if self.pad_token is None:
+            return None
+        return self.stoi[self.pad_token]
+
+    @property
     def vec_dim(self) -> int:
         if self.vectors is None:
             return 0
         return self.vectors.size(1)
 
-    def load_vectors(self, vectors: 'Vectors') -> Tuple[int, int]:
+    def load_vectors(self, vectors: 'Vectors', *fallbacks) -> Tuple[int, int]:
         self.vectors = torch.empty((len(self), vectors.vec_dim), dtype=torch.float32)
 
         tok, occ = 0, 0
         for token, index in self.stoi.items():
-            if vectors.query_(token, self.vectors[index]):
+            if vectors.query_(token, self.vectors[index], *fallbacks):
                 tok += 1
                 occ += self.freq[token]
 
@@ -152,7 +158,7 @@ class Vocab(object):
 
 class Vectors(Vocab):
     def __init__(self, urls_dest: List[Tuple[str, Path]], path: Path,
-                 unk_init_: Callable[[Tensor], Tensor] = init.normal_) -> None:
+                 has_head_info: bool, unk_init_: Callable[[Tensor], Tensor] = init.normal_) -> None:
         super(Vectors, self).__init__(
             counter=Counter(),
             unk_token=None, pad_token=None,
@@ -171,7 +177,12 @@ class Vectors(Vocab):
             with path.open('rb') as fp:
                 vec_dim = None
 
-                for raw in tqdm(fp, desc=f'reading {path}', unit=' tokens'):  # type:bytes
+                iteration = tqdm(fp, desc=f'reading {path}', unit=' tokens')
+                for raw in iteration:  # type:bytes
+                    if has_head_info:
+                        _, vec_dim = map(int, raw.strip().split(b' '))
+                        has_head_info = False
+                        continue
                     token, *vs = raw.rstrip().split(b' ')
 
                     if vec_dim is None:
@@ -188,13 +199,17 @@ class Vectors(Vocab):
             self.load(pt_path)
 
     @torch.no_grad()
-    def query_(self, token: str, vector: Tensor) -> bool:
+    def query_(self, token: str, vector: Tensor, *fallbacks) -> bool:
         if token in self:
             vector[:] = self.vectors[self.stoi[token]]
             return True
-        else:
-            self.unk_init_(vector)
-            return False
+        for fallback in fallbacks:
+            new_token = fallback(token)
+            if new_token in self:
+                vector[:] = self.vectors[self.stoi[new_token]]
+                return True
+        self.unk_init_(vector)
+        return False
 
 
 class Glove(Vectors):
@@ -205,6 +220,7 @@ class Glove(Vectors):
                 data_path / f'glove.{name}' / f'glove.{name}.zip'
             )],
             path=data_path / f'glove.{name}' / f'glove.{name}.{dim}d.txt',
+            has_head_info=False,
         )
 
 
@@ -216,4 +232,5 @@ class FastTest(Vectors):
                 data_path / 'fasttext' / f'wiki.{lang}.vec',
             )],
             path=data_path / 'fasttext' / f'wiki.{lang}.vec',
+            has_head_info=True,
         )
