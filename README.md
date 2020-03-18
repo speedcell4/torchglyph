@@ -9,4 +9,4 @@
 
 ## Installation
 
-`python3 -m pip install git+https://github.com/speedcell4/torchglyph.git`
+`python3 -m pip install torchglyph`
