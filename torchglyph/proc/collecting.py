@@ -1,6 +1,8 @@
 from typing import Any, Union, List, Tuple
 
 import torch
+from allennlp.data import Instance as AllenInstance, Vocabulary as AllenVocabulary
+from allennlp.data.dataset import Batch as AllenBatch
 from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence, pad_packed_sequence
 
@@ -92,6 +94,13 @@ class PadSeq(Proc):
             data, batch_first=self.batch_first,
             padding_value=stoi(token=self.pad_token, vocab=vocab),
         )
+
+
+class PadELMo(Proc):
+    def __call__(self, data: List[AllenInstance], *args, **kwargs) -> Tensor:
+        dataset = AllenBatch(data)
+        dataset.index_instances(AllenVocabulary())
+        return dataset.as_tensor_dict()['elmo']['character_ids']
 
 
 class PackSeq(Proc):

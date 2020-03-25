@@ -17,7 +17,7 @@ setup(
         'tqdm',
         'numpy',
         'einops',
-        'transformers',
+        'transformers', 'allennlp'
     ],
     extras_require={
         'dev': [

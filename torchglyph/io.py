@@ -50,7 +50,10 @@ def reporthook(t):
 
 
 # copied and modified from https://github.com/pytorch/text
-def download_and_unzip(url: str, dest: Path) -> None:
+def download_and_unzip(url: str, dest: Path) -> Path:
+    if dest.exists():
+        return dest
+
     if not dest.parent.exists():
         dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -73,3 +76,5 @@ def download_and_unzip(url: str, dest: Path) -> None:
         with gzip.open(dest, mode='rb') as fsrc:
             with dest.with_suffix('').open(mode='wb') as fdst:
                 shutil.copyfileobj(fsrc, fdst)
+
+    return dest

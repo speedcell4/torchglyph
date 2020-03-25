@@ -1,2 +1,3 @@
-from torchglyph.nn.embedding import *
-from torchglyph.nn.rnn import *
+from torchglyph.nn.embedding import TokEmbedding, SubLstmEmbedding
+from torchglyph.nn.rnn import ContextualLSTM
+from torchglyph.nn.contextual import ELMo

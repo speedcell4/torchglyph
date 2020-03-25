@@ -1,6 +1,9 @@
 from typing import Union, List
 
 import transformers
+from allennlp.data import Token as AllenToken, Instance as AllenInstance
+from allennlp.data.fields import TextField as AllenTextField
+from allennlp.data.token_indexers import ELMoTokenCharactersIndexer
 
 from torchglyph.pipe import Proc
 
@@ -17,6 +20,16 @@ class TokenizerProc(Proc):
         if not isinstance(data, str):
             data = ' '.join(data)
         return self.tokenizer.encode(data)
+
+
+class ELMoTokenizer(Proc):
+    def __init__(self):
+        super(ELMoTokenizer, self).__init__()
+        self.tokenizer = ELMoTokenCharactersIndexer()
+
+    def __call__(self, data: List[str], *args, **kwargs):
+        data = [AllenToken(token) for token in data]
+        return AllenInstance({"elmo": AllenTextField(data, {'character_ids': self.tokenizer})})
 
 
 class BertTokenizer(TokenizerProc):
