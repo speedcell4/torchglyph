@@ -19,11 +19,15 @@ class ELMo(AllenELMo):
         '5.5B': '2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_',
     }
 
-    def __init__(self, options_file, weight_file, *args, pack_output, **kwargs):
-        super(ELMo, self).__init__(
-            *args, options_file=options_file, weight_file=weight_file, **kwargs)
-        self.pack_output = pack_output
+    def __init__(self, *, options_file, weight_file, pack_output, **kwargs):
         logging.info(f'loading pretrained {self.__class__.__name__} from {weight_file}')
+
+        super(ELMo, self).__init__(
+            options_file=options_file, weight_file=weight_file, **kwargs,
+        )
+
+        self.pack_output = pack_output
+        self.embedding_dim = self.get_output_dim()
 
     @classmethod
     def from_pretrained(cls, weight: str, pack_output: bool = True,
@@ -43,6 +47,20 @@ class ELMo(AllenELMo):
             num_output_representations=num_output_representations,
             requires_grad=not freeze, dropout=dropout, pack_output=pack_output,
         )
+
+    def extra_repr(self) -> str:
+        args = [
+            f'{self._elmo_lstm._elmo_lstm.input_size}',
+            f'{self._elmo_lstm._elmo_lstm.hidden_size}',
+            f'num_layers={self._elmo_lstm.num_layers}',
+            f'dropout={self._dropout.p}',
+        ]
+        if not self._elmo_lstm._requires_grad:
+            args.append('frozen')
+        return ', '.join(args)
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.extra_repr()})'
 
     def forward(self, batch: AllenBatch) -> Union[Tensor, PackedSequence]:
         outputs = super(ELMo, self).forward(batch)
