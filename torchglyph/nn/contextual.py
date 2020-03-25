@@ -1,7 +1,6 @@
 import logging
 from typing import Union
 
-from allennlp.data.dataset import Batch as AllenBatch
 from allennlp.modules import Elmo as AllenELMo
 from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence
@@ -10,7 +9,7 @@ from torchglyph import data_path
 from torchglyph.io import download_and_unzip
 
 
-class ELMo(AllenELMo):
+class ELMoModel(AllenELMo):
     root = 'https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/'
     name = {
         'small': '2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_',
@@ -19,10 +18,10 @@ class ELMo(AllenELMo):
         '5.5B': '2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_',
     }
 
-    def __init__(self, *, options_file, weight_file, pack_output, **kwargs):
+    def __init__(self, *, options_file: str, weight_file: str, pack_output, **kwargs) -> None:
         logging.info(f'loading pretrained {self.__class__.__name__} from {weight_file}')
 
-        super(ELMo, self).__init__(
+        super(ELMoModel, self).__init__(
             options_file=options_file, weight_file=weight_file, **kwargs,
         )
 
@@ -32,7 +31,7 @@ class ELMo(AllenELMo):
     @classmethod
     def from_pretrained(cls, weight: str, pack_output: bool = True,
                         num_output_representations: int = 2,
-                        dropout: float = 0., freeze: bool = True) -> 'ELMo':
+                        dropout: float = 0., freeze: bool = True) -> 'ELMoModel':
         elmo_path = data_path / cls.__name__.lower()
         options_file = download_and_unzip(
             url=cls.root + (cls.name[weight] + 'options.json'),
@@ -62,8 +61,8 @@ class ELMo(AllenELMo):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.extra_repr()})'
 
-    def forward(self, batch: AllenBatch) -> Union[Tensor, PackedSequence]:
-        outputs = super(ELMo, self).forward(batch)
+    def forward(self, batch: Tensor, word_inputs: Tensor = None) -> Union[Tensor, PackedSequence]:
+        outputs = super(ELMoModel, self).forward(batch, word_inputs=word_inputs)
         elmo_representations, *_ = outputs['elmo_representations']
         if not self.pack_output:
             return elmo_representations
