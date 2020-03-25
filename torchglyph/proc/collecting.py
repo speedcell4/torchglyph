@@ -98,9 +98,9 @@ class PadSeq(Proc):
 
 class PadELMo(Proc):
     def __call__(self, data: List[AllenInstance], *args, **kwargs) -> Tensor:
-        dataset = AllenBatch(data)
-        dataset.index_instances(AllenVocabulary())
-        return dataset.as_tensor_dict()['elmo']['character_ids']
+        batch = AllenBatch(data)
+        batch.index_instances(AllenVocabulary())
+        return batch.as_tensor_dict()['elmo']['character_ids']
 
 
 class PackSeq(Proc):
