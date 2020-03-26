@@ -11,7 +11,8 @@ from torchglyph.vocab import Vocab
 
 
 class ToDevice(Proc):
-    Batch = Union[Tensor, PackedSequence, Tuple[Union[Tensor, PackedSequence], ...]]
+    Item = Union[int, float, bool, Tensor, PackedSequence]
+    Batch = Union[Item, Tuple[Item, ...]]
 
     def __init__(self, device: Union[int, torch.device]) -> None:
         super(ToDevice, self).__init__()
@@ -26,6 +27,8 @@ class ToDevice(Proc):
         return f'{self.device}'
 
     def __call__(self, batch: Batch, vocab: Vocab, **kwargs) -> Batch:
+        if isinstance(batch, (int, float, str, bool)):
+            return batch
         if isinstance(batch, (PackedSequence, Tensor)):
             return batch.to(self.device)
         return type(batch)([self(e, vocab=vocab) for e in batch])
