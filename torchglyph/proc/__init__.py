@@ -4,4 +4,3 @@ from torchglyph.proc.collecting import *
 from torchglyph.proc.recur import *
 from torchglyph.proc.shape import *
 from torchglyph.proc.vocab import *
-from torchglyph.proc.tokenizer import *
