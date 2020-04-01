@@ -35,7 +35,7 @@ class ELMoModel(AllenELMo):
         )
 
         self.pack_output = pack_output
-        self.embedding_dim = self.get_output_dim()
+        self.encoding_dim = self.get_output_dim()
 
     @classmethod
     def from_pretrained(cls, weight: str, pack_output: bool = True,
@@ -58,8 +58,7 @@ class ELMoModel(AllenELMo):
 
     def extra_repr(self) -> str:
         args = [
-            f'{self._elmo_lstm._elmo_lstm.input_size}',
-            f'{self._elmo_lstm._elmo_lstm.hidden_size}',
+            f'encoding_dim={self.encoding_dim}',
             f'num_layers={self._elmo_lstm.num_layers}',
             f'dropout={self._dropout.p}',
         ]
@@ -95,7 +94,7 @@ class ELMoForManyLanguages(Model):
         'zh': '179',
     }
 
-    def __init__(self, *, options_file: Path, weight_file: Path, pack_output) -> None:
+    def __init__(self, *, options_file: Path, weight_file: Path, pack_output: bool, requires_grad: bool) -> None:
         with options_file.open('r', encoding='utf-8') as fp:
             config = json.load(fp)
 
@@ -140,11 +139,14 @@ class ELMoForManyLanguages(Model):
         self.load_model(path=weight_file)
         self.char_lexicon = char_lexicon
         self.word_lexicon = word_lexicon
+
+        self.lang = weight_file.name
+        self.requires_grad = requires_grad
         self.pack_output = pack_output
         self.encoding_dim = self.output_dim * 2
 
     @classmethod
-    def from_pretraiend(cls, lang: str, pack_output: bool = True) -> 'ELMoForManyLanguages':
+    def from_pretraiend(cls, lang: str, pack_output: bool = True, freeze: bool = True) -> 'ELMoForManyLanguages':
         download_and_unzip(
             url=cls.configs[0],
             dest=data_path / cls.__name__.lower() / 'configs' / Path(cls.configs[0]).name,
@@ -161,9 +163,22 @@ class ELMoForManyLanguages(Model):
         with (path / 'config.json').open('r', encoding='utf-8') as fp:
             args = json.load(fp)
         return cls(
-            options_file=path / args['config_path'],
+            options_file=path / args['config_path'], requires_grad=not freeze,
             weight_file=path, pack_output=pack_output,
         )
+
+    def extra_repr(self) -> str:
+        args = [
+            f'lang={self.lang}', f'encoding_dim={self.encoding_dim}',
+            f'word_vocab={len(self.word_lexicon) if self.word_lexicon is not None else None}',
+            f'char_vocab={len(self.char_lexicon) if self.char_lexicon is not None else None}',
+        ]
+        if not self.requires_grad:
+            args.append('frozen')
+        return ', '.join(args)
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.extra_repr()})'
 
     def forward(self, batch: List[List[str]], output_layer: int = -1) -> Union[Tensor, PackedSequence]:
         if self.config['token_embedder']['name'].lower() == 'cnn':
@@ -187,7 +202,7 @@ class ELMoForManyLanguages(Model):
                     payload = data.mean(dim=0)
                 else:
                     payload = data[output_layer]
-                ans.append(payload)
+                ans.append(payload if self.requires_grad else payload.detach())
 
         ans = recover(ans, recover_idx)
         if self.pack_output:
