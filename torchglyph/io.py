@@ -1,12 +1,13 @@
 import gzip
 import logging
 import os
+import re
 import shutil
 import tarfile
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Union, TextIO
+from typing import Union, TextIO, Pattern
 from urllib.request import urlretrieve
 
 from tqdm import tqdm
@@ -78,3 +79,9 @@ def download_and_unzip(url: str, dest: Path) -> Path:
                 shutil.copyfileobj(fsrc, fdst)
 
     return dest
+
+
+def toggle_loggers(pattern: Union[str, Pattern], enable: bool) -> None:
+    for name in logging.root.manager.loggerDict:  # type:str
+        if re.match(pattern, name) is not None:
+            logging.getLogger(name).disabled = not enable

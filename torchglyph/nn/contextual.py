@@ -13,9 +13,10 @@ from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence
 from torch.nn.utils.rnn import pack_sequence
 
 from torchglyph import data_path
-from torchglyph.io import download_and_unzip
+from torchglyph.io import download_and_unzip, toggle_loggers
 
-logging.getLogger('elmoformanylangs').disabled = True
+toggle_loggers('allennlp', False)
+toggle_loggers('elmoformanylangs', False)
 
 
 class ELMoModel(AllenELMo):
