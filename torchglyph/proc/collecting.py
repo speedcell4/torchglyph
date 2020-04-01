@@ -1,5 +1,6 @@
 from typing import Any, Union, List, Tuple
 
+import numpy as np
 import torch
 from allennlp.data import Instance as AllenInstance, Vocabulary as AllenVocabulary
 from allennlp.data.dataset import Batch as AllenBatch
@@ -44,7 +45,9 @@ class ToTensor(Proc):
 
     def __call__(self, data: Any, **kwargs) -> Tensor:
         try:
-            return torch.tensor(data, dtype=self.dtype, requires_grad=False)
+            if isinstance(data, np.ndarray):
+                return torch.from_numpy(data).to(dtype=self.dtype).requires_grad_(False)
+            return torch.tensor(data, dtype=self.dtype).requires_grad_(False)
         except ValueError as err:
             if err.args[0] == "too many dimensions 'str'":
                 raise ValueError(f"'{data}' can not be converted to {Tensor.__name__}")
