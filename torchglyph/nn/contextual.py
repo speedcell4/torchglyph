@@ -39,9 +39,7 @@ class ELMoModel(AllenELMo):
         self.encoding_dim = self.get_output_dim()
 
     @classmethod
-    def from_pretrained(cls, weight: str, pack_output: bool = True,
-                        num_output_representations: int = 2,
-                        dropout: float = 0., freeze: bool = True) -> 'ELMoModel':
+    def fetch(cls, weight: str):
         elmo_path = data_path / cls.__name__.lower()
         options_file = download_and_unzip(
             url=cls.root + (cls.name[weight] + 'options.json'),
@@ -51,6 +49,13 @@ class ELMoModel(AllenELMo):
             url=cls.root + (cls.name[weight] + 'weights.hdf5'),
             dest=elmo_path / (cls.name[weight] + 'weights.hdf5'),
         )
+        return options_file, weight_file
+
+    @classmethod
+    def from_pretrained(cls, weight: str, pack_output: bool = True,
+                        num_output_representations: int = 2,
+                        dropout: float = 0., freeze: bool = True) -> 'ELMoModel':
+        options_file, weight_file = cls.fetch(weight=weight)
         return cls(
             options_file=str(options_file), weight_file=str(weight_file),
             num_output_representations=num_output_representations,
@@ -147,7 +152,7 @@ class ELMoForManyLanguages(Model):
         self.encoding_dim = self.output_dim * 2
 
     @classmethod
-    def from_pretraiend(cls, lang: str, pack_output: bool = True, freeze: bool = True) -> 'ELMoForManyLanguages':
+    def fetch(cls, lang: str):
         download_and_unzip(
             url=cls.configs[0],
             dest=data_path / cls.__name__.lower() / 'configs' / Path(cls.configs[0]).name,
@@ -156,10 +161,14 @@ class ELMoForManyLanguages(Model):
             url=cls.configs[1],
             dest=data_path / cls.__name__.lower() / 'configs' / Path(cls.configs[1]).name,
         )
-        path = download_and_unzip(
+        return download_and_unzip(
             url=cls.root + f'{cls.names[lang]}.zip',
             dest=data_path / cls.__name__.lower() / lang / f'{lang}.zip',
         ).parent
+
+    @classmethod
+    def from_pretraiend(cls, lang: str, pack_output: bool = True, freeze: bool = True) -> 'ELMoForManyLanguages':
+        path = cls.fetch(lang=lang)
 
         with (path / 'config.json').open('r', encoding='utf-8') as fp:
             args = json.load(fp)
