@@ -19,6 +19,7 @@ setup(
         'einops',
         'transformers',
         'allennlp',
+        'elmoformanylangs',
     ],
     extras_require={
         'dev': [

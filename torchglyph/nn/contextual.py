@@ -1,12 +1,21 @@
+import json
 import logging
+from pathlib import Path
+from typing import List
 from typing import Union
 
 from allennlp.modules import Elmo as AllenELMo
+from elmoformanylangs.elmo import read_list, create_batches, recover
+from elmoformanylangs.frontend import Model
+from elmoformanylangs.modules.embedding_layer import EmbeddingLayer
 from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence
+from torch.nn.utils.rnn import pack_sequence
 
 from torchglyph import data_path
 from torchglyph.io import download_and_unzip
+
+logging.getLogger('elmoformanylangs').disabled = True
 
 
 class ELMoModel(AllenELMo):
@@ -72,3 +81,91 @@ class ELMoModel(AllenELMo):
                 elmo_representations, lengths,
                 batch_first=True, enforce_sorted=False,
             )
+
+
+class ELMoForManyLanguage(Model):
+    def __init__(self, *, options_file: Path, weight_file: Path, pack_output) -> None:
+        with options_file.open('r', encoding='utf-8') as fp:
+            config = json.load(fp)
+
+        if config['token_embedder']['char_dim'] > 0:
+            char_lexicon = {}
+            with (weight_file / 'char.dic').open('r', encoding='utf-8') as fp:
+                for raw in fp:
+                    tokens = raw.strip().split('\t')
+                    if len(tokens) == 1:
+                        tokens.insert(0, '\u3000')
+                    token, index = tokens
+                    char_lexicon[token] = int(index)
+            char_emb_layer = EmbeddingLayer(
+                config['token_embedder']['char_dim'], char_lexicon,
+                fix_emb=False, embs=None,
+            )
+        else:
+            char_lexicon = None
+            char_emb_layer = None
+
+        if config['token_embedder']['word_dim'] > 0:
+            word_lexicon = {}
+            with (weight_file / 'word.dic').open('r', encoding='utf-8') as fp:
+                for raw in fp:
+                    tokens = raw.strip().split('\t')
+                    if len(tokens) == 1:
+                        tokens.insert(0, '\u3000')
+                    token, index = tokens
+                    word_lexicon[token] = int(index)
+            word_emb_layer = EmbeddingLayer(
+                config['token_embedder']['word_dim'], word_lexicon,
+                fix_emb=False, embs=None,
+            )
+        else:
+            word_lexicon = None
+            word_emb_layer = None
+
+        super(ELMoForManyLanguage, self).__init__(
+            config=config, word_emb_layer=word_emb_layer,
+            char_emb_layer=char_emb_layer, use_cuda=False,
+        )
+        self.load_model(path=weight_file)
+        self.char_lexicon = char_lexicon
+        self.word_lexicon = word_lexicon
+        self.pack_output = pack_output
+        self.encoding_dim = self.output_dim * 2
+
+    @classmethod
+    def from_pretraiend(cls, path: Path, pack_output: bool = True):
+        with (path / 'config.json').open('r', encoding='utf-8') as fp:
+            args = json.load(fp)
+        return cls(
+            options_file=path / args['config_path'],
+            weight_file=path, pack_output=pack_output,
+        )
+
+    def forward(self, batch: List[List[str]], output_layer: int = -1) -> Union[Tensor, PackedSequence]:
+        if self.config['token_embedder']['name'].lower() == 'cnn':
+            pad, text = read_list(batch, self.config['token_embedder']['max_characters_per_token'])
+        else:
+            pad, text = read_list(batch)
+
+        pad_w, pad_c, pad_ln, pad_mask, pad_text, recover_idx = create_batches(
+            pad, len(text), self.word_lexicon, self.char_lexicon, self.config, text=text)
+
+        ans = []
+        for word, char, length, mask, pads in zip(pad_w, pad_c, pad_ln, pad_mask, pad_text):
+            output = super(ELMoForManyLanguage, self).forward(word, char, mask)
+            for index, text in enumerate(pads):
+                if self.config['encoder']['name'].lower() == 'lstm':
+                    data = output[index, 1:length[index] - 1, :]
+                elif self.config['encoder']['name'].lower() == 'elmo':
+                    data = output[:, index, 1:length[index] - 1, :]
+
+                if output_layer == -1:
+                    payload = data.mean(dim=0)
+                else:
+                    payload = data[output_layer]
+                ans.append(payload)
+
+        ans = recover(ans, recover_idx)
+        if self.pack_output:
+            ans = pack_sequence(ans, enforce_sorted=False)
+        return ans
