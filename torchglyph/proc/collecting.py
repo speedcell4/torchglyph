@@ -7,8 +7,11 @@ from allennlp.data.dataset import Batch as AllenBatch
 from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence, pad_packed_sequence
 
+from torchglyph.io import toggle_loggers
 from torchglyph.proc import Proc, Chain, stoi
 from torchglyph.vocab import Vocab
+
+toggle_loggers('allennlp', False)
 
 
 class ToDevice(Proc):

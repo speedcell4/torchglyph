@@ -5,7 +5,10 @@ from allennlp.data import Token as AllenToken, Instance as AllenInstance
 from allennlp.data.fields import TextField as AllenTextField
 from allennlp.data.token_indexers import ELMoTokenCharactersIndexer
 
-from torchglyph.proc import Proc
+from torchglyph.proc import Proc, toggle_loggers
+
+toggle_loggers('allennlp', False)
+toggle_loggers('transformers', False)
 
 
 class ELMoTokenizer(Proc):
