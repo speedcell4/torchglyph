@@ -83,7 +83,18 @@ class ELMoModel(AllenELMo):
             )
 
 
-class ELMoForManyLanguage(Model):
+class ELMoForManyLanguages(Model):
+    root = 'http://vectors.nlpl.eu/repository/11/'
+    configs = [
+        'https://raw.githubusercontent.com/HIT-SCIR/ELMoForManyLangs/master/configs/cnn_0_100_512_4096_sample.json',
+        'https://raw.githubusercontent.com/HIT-SCIR/ELMoForManyLangs/master/configs/cnn_50_100_512_4096_sample.json',
+    ]
+    names = {
+        'ca': '138',
+        'es': '145',
+        'zh': '179',
+    }
+
     def __init__(self, *, options_file: Path, weight_file: Path, pack_output) -> None:
         with options_file.open('r', encoding='utf-8') as fp:
             config = json.load(fp)
@@ -122,7 +133,7 @@ class ELMoForManyLanguage(Model):
             word_lexicon = None
             word_emb_layer = None
 
-        super(ELMoForManyLanguage, self).__init__(
+        super(ELMoForManyLanguages, self).__init__(
             config=config, word_emb_layer=word_emb_layer,
             char_emb_layer=char_emb_layer, use_cuda=False,
         )
@@ -133,7 +144,20 @@ class ELMoForManyLanguage(Model):
         self.encoding_dim = self.output_dim * 2
 
     @classmethod
-    def from_pretraiend(cls, path: Path, pack_output: bool = True):
+    def from_pretraiend(cls, lang: str, pack_output: bool = True) -> 'ELMoForManyLanguages':
+        download_and_unzip(
+            url=cls.configs[0],
+            dest=data_path / cls.__name__.lower() / 'configs' / Path(cls.configs[0]).name,
+        )
+        download_and_unzip(
+            url=cls.configs[1],
+            dest=data_path / cls.__name__.lower() / 'configs' / Path(cls.configs[1]).name,
+        )
+        path = download_and_unzip(
+            url=cls.root + f'{cls.names[lang]}.zip',
+            dest=data_path / cls.__name__.lower() / lang / f'{lang}.zip',
+        ).parent
+
         with (path / 'config.json').open('r', encoding='utf-8') as fp:
             args = json.load(fp)
         return cls(
@@ -152,7 +176,7 @@ class ELMoForManyLanguage(Model):
 
         ans = []
         for word, char, length, mask, pads in zip(pad_w, pad_c, pad_ln, pad_mask, pad_text):
-            output = super(ELMoForManyLanguage, self).forward(word, char, mask)
+            output = super(ELMoForManyLanguages, self).forward(word, char, mask)
             for index, text in enumerate(pads):
                 if self.config['encoder']['name'].lower() == 'lstm':
                     data = output[index, 1:length[index] - 1, :]
