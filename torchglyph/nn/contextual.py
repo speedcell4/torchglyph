@@ -53,7 +53,7 @@ class ELMoModel(AllenELMo):
 
     @classmethod
     def from_pretrained(cls, weight: str, pack_output: bool = True,
-                        num_output_representations: int = 2,
+                        num_output_representations: int = 1,
                         dropout: float = 0., freeze: bool = True) -> 'ELMoModel':
         options_file, weight_file = cls.fetch(weight=weight)
         return cls(
