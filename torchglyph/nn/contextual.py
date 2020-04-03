@@ -167,7 +167,7 @@ class ELMoForManyLanguages(Model):
         ).parent
 
     @classmethod
-    def from_pretraiend(cls, lang: str, pack_output: bool = True, freeze: bool = True) -> 'ELMoForManyLanguages':
+    def from_pretrained(cls, lang: str, pack_output: bool = True, freeze: bool = True) -> 'ELMoForManyLanguages':
         path = cls.fetch(lang=lang)
 
         with (path / 'config.json').open('r', encoding='utf-8') as fp:
