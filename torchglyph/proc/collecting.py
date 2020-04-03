@@ -31,11 +31,11 @@ class ToDevice(Proc):
         return f'{self.device}'
 
     def __call__(self, batch: Batch, vocab: Vocab, **kwargs) -> Batch:
-        if isinstance(batch, (int, float, str, bool)):
-            return batch
-        if isinstance(batch, (PackedSequence, Tensor)):
-            return batch.to(self.device)
-        return type(batch)([self(e, vocab=vocab) for e in batch])
+        if isinstance(batch, (Tensor, PackedSequence)):
+            return batch.to(device=self.device)
+        if isinstance(batch, (list, tuple)):
+            return type(batch)([self(e, vocab=vocab) for e in batch])
+        return batch
 
 
 class ToTensor(Proc):
