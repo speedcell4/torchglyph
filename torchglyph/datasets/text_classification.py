@@ -39,9 +39,14 @@ class AgNews(Dataset):
             csv.dump((' '.join(raw_title), ' '.join(raw_text), raw_target, vocab.itos[pred]), fp)
 
     @classmethod
-    def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple['DataLoader', ...]:
+    def new(cls, batch_size: int, word_dim: Optional[int],
+            remove_missing: bool, device: int = -1) -> Tuple['DataLoader', ...]:
+        if word_dim is not None:
+            vectors = LoadGlove(name='6B', dim=word_dim, remove_missing=remove_missing)
+        else:
+            vectors = Identity()
         word = PackedTokSeqPipe(device=device, unk_token='<unk>').with_(
-            vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
+            vocab=... + vectors,
         )
         target = TokTensorPipe(device=device, unk_token=None)
 

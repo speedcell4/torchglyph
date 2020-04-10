@@ -34,10 +34,15 @@ class CoNLL2000Chunking(Dataset):
             conllx.dump(zip(raw_word, raw_pos, raw_chunk, pred_chunk), fp, sep=' ')
 
     @classmethod
-    def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
+    def new(cls, batch_size: int, word_dim: Optional[int],
+            remove_missing: bool, device: int = -1) -> Tuple[DataLoader, ...]:
+        if word_dim is not None:
+            vectors = LoadGlove(name='6B', dim=word_dim, remove_missing=remove_missing)
+        else:
+            vectors = Identity()
         word = PackedTokSeqPipe(device=device, unk_token='<unk>').with_(
             pre=ReplaceDigits(repl_token='<digits>') + ...,
-            vocab=... + (Identity() if word_dim is None else LoadGlove('6B', word_dim, str.lower)),
+            vocab=... + vectors,
         )
         length = SeqLengthTensorPipe(device=device)
         char = PackedTokBlockPipe(device=device, unk_token='<unk>')
@@ -90,10 +95,15 @@ class CoNLL2003NER(Dataset):
             conllx.dump(zip(raw_word, raw_pos, raw_chunk, raw_ner, pred_ner), fp, sep=' ')
 
     @classmethod
-    def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple[DataLoader, ...]:
+    def new(cls, batch_size: int, word_dim: Optional[int],
+            remove_missing: bool, device: int = -1) -> Tuple[DataLoader, ...]:
+        if word_dim is not None:
+            vectors = LoadGlove(name='6B', dim=word_dim, remove_missing=remove_missing)
+        else:
+            vectors = Identity()
         word = PackedTokSeqPipe(device=device, unk_token='<unk>').with_(
             pre=ReplaceDigits(repl_token='<digits>') + ...,
-            vocab=... + (Identity() if word_dim is None else LoadGlove('6B', word_dim, str.lower)),
+            vocab=... + vectors,
         )
         length = SeqLengthTensorPipe(device=device)
         char = PackedTokBlockPipe(device=device, unk_token='<unk>')
@@ -148,10 +158,15 @@ class SemEval2010T1NER(Dataset):
             conllx.dump(zip(raw_word, raw_pos, raw_ner, pred_ner), fp, sep=' ')
 
     @classmethod
-    def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple['DataLoader', ...]:
+    def new(cls, batch_size: int, word_dim: Optional[int],
+            remove_missing: bool, device: int = -1) -> Tuple['DataLoader', ...]:
+        if word_dim is not None:
+            vectors = LoadFastText(str.lower, lang=cls.lang, remove_missing=remove_missing)
+        else:
+            vectors = Identity()
         word = PackedTokSeqPipe(device=device, unk_token='<unk>').with_(
             pre=Prepend('<root>', 1) + ReplaceDigits(repl_token='<digits>') + ...,
-            vocab=... + (Identity() if word_dim is None else LoadFastText(cls.lang, str.lower)),
+            vocab=... + vectors,
         )
         length = SeqLengthTensorPipe(device=device).with_(pre=Prepend('<root>', 1) + ...)
         char = PackedTokBlockPipe(device=device, unk_token='<unk>').with_(

@@ -76,21 +76,24 @@ class StatsVocab(Proc):
 
 
 class LoadVectors(Proc):
-    def __init__(self, vectors: Vectors, *fallbacks) -> None:
+    def __init__(self, *fallback_fns, vectors: Vectors, remove_missing: bool) -> None:
         super(LoadVectors, self).__init__()
+        self.fallback_fns = fallback_fns
         self.vectors = vectors
-        self.fallbacks = fallbacks
+        self.remove_missing = remove_missing
 
     def extra_repr(self) -> str:
         return ', '.join([
             f'{self.vectors.extra_repr()}',
-            *[f'{f.__name__}' for f in self.fallbacks],
+            *[f'{f.__name__}' for f in self.fallback_fns],
         ])
 
     def __call__(self, vocab: Vocab, name: str, *args, **kwargs) -> Vocab:
         assert vocab is not None, f"did you forget '{BuildVocab.__name__}' before '{LoadVectors.__name__}'?"
 
-        tok, occ = vocab.load_vectors(self.vectors, *self.fallbacks)
+        if self.remove_missing:
+            vocab &= self.vectors
+        tok, occ = vocab.load_vectors(self.vectors, *self.fallback_fns)
         tok = tok / max(1, len(vocab.freq.values())) * 100
         occ = occ / max(1, sum(vocab.freq.values())) * 100
         logging.info(f"{self.vectors} hits {tok:.1f}% tokens and {occ:.1f}% occurrences of {Vocab.__name__} '{name}'")
@@ -98,16 +101,18 @@ class LoadVectors(Proc):
 
 
 class LoadGlove(LoadVectors):
-    def __init__(self, name: str, dim: int, *fallbacks) -> None:
+    def __init__(self, *fallback_fns, name: str, dim: int, remove_missing: bool) -> None:
         super(LoadGlove, self).__init__(
-            Glove(name=name, dim=dim),
-            *fallbacks,
+            *fallback_fns,
+            vectors=Glove(name=name, dim=dim),
+            remove_missing=remove_missing,
         )
 
 
 class LoadFastText(LoadVectors):
-    def __init__(self, lang: str, *fallbacks) -> None:
+    def __init__(self, *fallback_fns, lang: str, remove_missing: bool) -> None:
         super(LoadFastText, self).__init__(
-            FastTest(lang=lang),
-            *fallbacks,
+            *fallback_fns,
+            vectors=FastTest(lang=lang),
+            remove_missing=remove_missing,
         )

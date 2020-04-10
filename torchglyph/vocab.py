@@ -81,45 +81,15 @@ class Vocab(object):
         if isinstance(rhs, Vocab):
             rhs = rhs.freq
         return Vocab(
-            counter=Counter({
-                token: freq
-                for token, freq in self.freq.items()
-                if token in rhs
-            }),
+            counter=self.freq & rhs,
             unk_token=self.unk_token,
             pad_token=self.pad_token,
             special_tokens=self.special_tokens,
             max_size=self.max_size, min_freq=self.min_freq,
         )
 
-    def __add__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
-        if isinstance(rhs, Vocab):
-            rhs = rhs.freq
-        return Vocab(
-            counter=Counter({
-                token: self.freq[token] + rhs[token]
-                for token in {*self.freq.keys(), *rhs.keys()}
-            }),
-            unk_token=self.unk_token,
-            pad_token=self.pad_token,
-            special_tokens=self.special_tokens,
-            max_size=self.max_size, min_freq=self.min_freq,
-        )
-
-    def __sub__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
-        if isinstance(rhs, Vocab):
-            rhs = rhs.freq
-        return Vocab(
-            counter=Counter({
-                token: freq
-                for token, freq in self.freq.items()
-                if token not in rhs
-            }),
-            unk_token=self.unk_token,
-            pad_token=self.pad_token,
-            special_tokens=self.special_tokens,
-            max_size=self.max_size, min_freq=self.min_freq,
-        )
+    def __iand__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
+        return self.__and__(rhs=rhs)
 
     @property
     def pad_idx(self) -> Optional[int]:
@@ -167,6 +137,8 @@ class Vectors(Vocab):
 
         self.vectors = []
         self.unk_init_ = unk_init_
+
+        print(f'path => {path}')
 
         pt_path = path.with_suffix('.pt')
         if not pt_path.exists():
