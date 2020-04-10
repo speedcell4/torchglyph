@@ -84,15 +84,16 @@ class LoadVectors(Proc):
 
     def extra_repr(self) -> str:
         return ', '.join([
-            f'{self.vectors.extra_repr()}',
             *[f'{f.__name__}' for f in self.fallback_fns],
+            f'{self.vectors.extra_repr()}',
+            f'remove_missing={self.remove_missing}',
         ])
 
     def __call__(self, vocab: Vocab, name: str, *args, **kwargs) -> Vocab:
         assert vocab is not None, f"did you forget '{BuildVocab.__name__}' before '{LoadVectors.__name__}'?"
 
         if self.remove_missing:
-            vocab &= self.vectors
+            vocab = vocab & self.vectors
         tok, occ = vocab.load_vectors(self.vectors, *self.fallback_fns)
         tok = tok / max(1, len(vocab.freq.values())) * 100
         occ = occ / max(1, sum(vocab.freq.values())) * 100
