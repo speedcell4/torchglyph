@@ -2,7 +2,7 @@ import logging
 from collections import Counter
 from collections import defaultdict
 from pathlib import Path
-from typing import Union, Optional, Tuple, Callable, List
+from typing import Optional, Tuple, Callable, List
 
 import torch
 from torch import Tensor
@@ -77,19 +77,27 @@ class Vocab(object):
     def __contains__(self, token: str) -> bool:
         return token in self.stoi
 
-    def __and__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
-        if isinstance(rhs, Vocab):
-            rhs = rhs.freq
+    def union(self, rhs: 'Vocab', *fallback_fns) -> 'Vocab':
+        counter = Counter()
+
+        for token, freq in self.freq.items():
+            if token in rhs.stoi:
+                counter[token] = freq
+            else:
+                for fallback_fn in fallback_fns:
+                    new_token = fallback_fn(token)
+                    if new_token in rhs.stoi:
+                        counter[new_token] = freq
+                        break
+
         return Vocab(
-            counter=self.freq & rhs,
+            counter=counter,
             unk_token=self.unk_token,
             pad_token=self.pad_token,
             special_tokens=self.special_tokens,
-            max_size=self.max_size, min_freq=self.min_freq,
+            max_size=self.max_size,
+            min_freq=self.min_freq,
         )
-
-    def __iand__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
-        return self.__and__(rhs=rhs)
 
     @property
     def pad_idx(self) -> Optional[int]:
@@ -103,12 +111,12 @@ class Vocab(object):
             return 0
         return self.vectors.size(1)
 
-    def load_vectors(self, vectors: 'Vectors', *fallbacks) -> Tuple[int, int]:
+    def load_vectors(self, *fallback_fns, vectors: 'Vectors') -> Tuple[int, int]:
         self.vectors = torch.empty((len(self), vectors.vec_dim), dtype=torch.float32)
 
         tok, occ = 0, 0
         for token, index in self.stoi.items():
-            if vectors.query_(token, self.vectors[index], *fallbacks):
+            if vectors.query_(token, self.vectors[index], *fallback_fns):
                 tok += 1
                 occ += self.freq[token]
 
@@ -137,8 +145,6 @@ class Vectors(Vocab):
 
         self.vectors = []
         self.unk_init_ = unk_init_
-
-        print(f'path => {path}')
 
         pt_path = path.with_suffix('.pt')
         if not pt_path.exists():
@@ -171,12 +177,12 @@ class Vectors(Vocab):
             self.load(pt_path)
 
     @torch.no_grad()
-    def query_(self, token: str, vector: Tensor, *fallbacks) -> bool:
+    def query_(self, token: str, vector: Tensor, *fallback_fns) -> bool:
         if token in self:
             vector[:] = self.vectors[self.stoi[token]]
             return True
-        for fallback in fallbacks:
-            new_token = fallback(token)
+        for fallback_fn in fallback_fns:
+            new_token = fallback_fn(token)
             if new_token in self:
                 vector[:] = self.vectors[self.stoi[new_token]]
                 return True

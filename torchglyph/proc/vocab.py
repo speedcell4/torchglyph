@@ -93,8 +93,8 @@ class LoadVectors(Proc):
         assert vocab is not None, f"did you forget '{BuildVocab.__name__}' before '{LoadVectors.__name__}'?"
 
         if self.remove_missing:
-            vocab = vocab & self.vectors
-        tok, occ = vocab.load_vectors(self.vectors, *self.fallback_fns)
+            vocab = vocab.union(self.vectors, *self.fallback_fns)
+        tok, occ = vocab.load_vectors(*self.fallback_fns, vectors=self.vectors)
         tok = tok / max(1, len(vocab.freq.values())) * 100
         occ = occ / max(1, sum(vocab.freq.values())) * 100
         logging.info(f"{self.vectors} hits {tok:.1f}% tokens and {occ:.1f}% occurrences of {Vocab.__name__} '{name}'")
