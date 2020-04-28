@@ -136,45 +136,46 @@ class Vocab(object):
 
 class Vectors(Vocab):
     def __init__(self, urls_dest: List[Tuple[str, Path]], path: Path,
-                 has_head_info: bool, unk_init_: Callable[[Tensor], Tensor] = init.normal_) -> None:
+                 heading: bool, unicode_error: str = 'replace', dtype: torch.dtype = torch.float32,
+                 unk_init_: Callable[[Tensor], Tensor] = init.normal_) -> None:
         super(Vectors, self).__init__(
             counter=Counter(),
             unk_token=None, pad_token=None,
             special_tokens=(), max_size=None, min_freq=1,
         )
 
-        self.vectors = []
+        vectors = []
         self.unk_init_ = unk_init_
 
-        pt_path = path.with_suffix('.pt')
-        if not pt_path.exists():
+        dump_path = path.with_suffix('.pt')
+        if not dump_path.exists():
             if not path.exists():
                 for url, dest in urls_dest:
                     download_and_unzip(url, dest)
 
             with path.open('rb') as fp:
-                vec_dim = None
+                vector_dim = None
 
-                iteration = tqdm(fp, desc=f'reading {path}', unit=' tokens')
-                for raw in iteration:  # type:bytes
-                    if has_head_info:
-                        _, vec_dim = map(int, raw.strip().split(b' '))
-                        has_head_info = False
+                iteration = tqdm(fp, desc=f'reading {path}', unit=' lines')
+                for raw in iteration:  # type: bytes
+                    if heading:
+                        _, vector_dim = map(int, raw.strip().split(b' '))
+                        heading = False
                         continue
                     token, *vs = raw.rstrip().split(b' ')
 
-                    if vec_dim is None:
-                        vec_dim = len(vs)
-                    elif vec_dim != len(vs):
-                        raise ValueError(f'vector dimensions are not consistent, {vec_dim} != {len(vs)}')
+                    if vector_dim is None:
+                        vector_dim = len(vs)
+                    elif vector_dim != len(vs):
+                        raise ValueError(f'vector dimensions are not consistent, {vector_dim} != {len(vs)} :: {token}')
 
-                    self.add_token_(str(token, encoding='utf-8'))
-                    self.vectors.append(torch.tensor([float(v) for v in vs], dtype=torch.float32))
+                    self.add_token_(str(token, encoding='utf-8', errors=unicode_error))
+                    vectors.append(torch.tensor([float(v) for v in vs], dtype=dtype))
 
-            self.vectors = torch.stack(self.vectors, 0)
-            self.save(pt_path)
+            self.vectors = torch.stack(vectors, 0)
+            self.save(dump_path)
         else:
-            self.load(pt_path)
+            self.load(dump_path)
 
     @torch.no_grad()
     def query_(self, token: str, vector: Tensor, *fallback_fns) -> bool:
@@ -192,23 +193,35 @@ class Vectors(Vocab):
 
 class Glove(Vectors):
     def __init__(self, name: str, dim: int) -> None:
+        path = data_path / f'glove.{name}'
         super(Glove, self).__init__(
             urls_dest=[(
                 f'http://nlp.stanford.edu/data/glove.{name}.zip',
-                data_path / f'glove.{name}' / f'glove.{name}.zip'
+                path / f'glove.{name}.zip'
             )],
-            path=data_path / f'glove.{name}' / f'glove.{name}.{dim}d.txt',
-            has_head_info=False,
+            path=path / f'glove.{name}.{dim}d.txt', heading=False,
         )
 
 
 class FastTest(Vectors):
     def __init__(self, lang: str) -> None:
+        path = data_path / 'fasttext'
         super(FastTest, self).__init__(
             urls_dest=[(
                 f'https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.{lang}.vec',
-                data_path / 'fasttext' / f'wiki.{lang}.vec',
+                path / f'wiki.{lang}.vec',
             )],
-            path=data_path / 'fasttext' / f'wiki.{lang}.vec',
-            has_head_info=True,
+            path=path / f'wiki.{lang}.vec', heading=True,
+        )
+
+
+class NLPLVectors(Vectors):
+    def __init__(self, index: int, name: str = 'model.txt', heading: bool = False) -> None:
+        path = data_path / 'nlpl' / f'{index}'
+        super(NLPLVectors, self).__init__(
+            urls_dest=[(
+                f'http://vectors.nlpl.eu/repository/20/{index}.zip',
+                path / f'{index}.zip',
+            )],
+            path=path / name, heading=heading,
         )
