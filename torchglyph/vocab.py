@@ -156,10 +156,9 @@ class Vectors(Vocab):
             with path.open('rb') as fp:
                 vector_dim = None
 
-                iteration = tqdm(fp, desc=f'reading {path}', unit=' lines')
-                for raw in iteration:  # type: bytes
+                for raw in tqdm(fp, desc=f'reading {path}', unit=' lines'):  # type: bytes
                     if heading:
-                        _, vector_dim = map(int, raw.strip().split(b' '))
+                        _, vector_dim = map(int, raw.rstrip().split(b' '))
                         heading = False
                         continue
                     token, *vs = raw.rstrip().split(b' ')
@@ -167,7 +166,8 @@ class Vectors(Vocab):
                     if vector_dim is None:
                         vector_dim = len(vs)
                     elif vector_dim != len(vs):
-                        raise ValueError(f'vector dimensions are not consistent, {vector_dim} != {len(vs)} :: {token}')
+                        logging.error(f'vector dimensions are not consistent, {vector_dim} != {len(vs)} :: {token}')
+                        continue
 
                     self.add_token_(str(token, encoding='utf-8', errors=unicode_error))
                     vectors.append(torch.tensor([float(v) for v in vs], dtype=dtype))
