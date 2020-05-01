@@ -17,14 +17,16 @@ setup(
         'tqdm',
         'numpy',
         'einops',
-        'transformers',
-        'allennlp',
-        'elmoformanylangs',
     ],
     extras_require={
         'dev': [
             'pytest',
             'hypothesis',
         ],
+        'ctx': [
+            'transformers',
+            'allennlp',
+            'elmoformanylangs',
+        ]
     }
 )
