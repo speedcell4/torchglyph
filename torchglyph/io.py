@@ -69,7 +69,7 @@ def download_and_unzip(url: str, dest: Path) -> Path:
         logging.info(f'extracting {dest}')
         with zipfile.ZipFile(dest, "r") as fp:
             fp.extractall(path=dest.parent)
-    elif dest.suffixes[:-2] == ['.tar', '.gz']:
+    elif dest.suffixes[-2:] == ['.tar', '.gz']:
         logging.info(f'extracting {dest}')
         with tarfile.open(dest, 'r:gz') as fp:
             fp.extractall(path=dest.parent)
