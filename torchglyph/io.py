@@ -17,15 +17,14 @@ IO = Union[str, Path, TextIO]
 
 @contextmanager
 def open_io(f: IO, mode: str, encoding: str):
-    if isinstance(f, (str, Path)):
-        fp = open(f, mode=mode, encoding=encoding)
-    else:
-        fp = f
     try:
-        yield fp
+        if isinstance(f, (str, Path)):
+            with open(f, mode=mode, encoding=encoding) as fp:
+                yield fp
+        else:
+            yield f
     finally:
-        if isinstance(f, Path):
-            fp.close()
+        pass
 
 
 # copied and modified from https://github.com/pytorch/text
@@ -74,9 +73,9 @@ def download_and_unzip(url: str, dest: Path) -> Path:
         with tarfile.open(dest, 'r:gz') as fp:
             fp.extractall(path=dest.parent)
     elif dest.suffix == '.gz':
-        with gzip.open(dest, mode='rb') as fsrc:
-            with dest.with_suffix('').open(mode='wb') as fdst:
-                shutil.copyfileobj(fsrc, fdst)
+        with gzip.open(dest, mode='rb') as fs:
+            with dest.with_suffix('').open(mode='wb') as fd:
+                shutil.copyfileobj(fs, fd)
 
     return dest
 
