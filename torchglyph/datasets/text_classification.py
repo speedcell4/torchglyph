@@ -12,6 +12,8 @@ from torchglyph.io import open_io
 from torchglyph.pipe import PackedTokSeqPipe, TokTensorPipe, RawPipe
 from torchglyph.proc import Identity, LoadGlove
 
+logger = logging.Logger(__name__)
+
 
 class AgNews(Dataset):
     urls = [
@@ -61,7 +63,7 @@ class AgNews(Dataset):
         test = cls(path=test, target_vocab=target_vocab, pipes=pipes)
 
         for name, pipe in train.pipes.items():
-            logging.info(f'{name} => {pipe}')
+            logger.info(f'{name} => {pipe}')
 
         word.build_vocab(train, test, name='word')
         target.build_vocab(train, test, name='target')

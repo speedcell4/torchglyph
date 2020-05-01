@@ -12,6 +12,8 @@ from tqdm import tqdm
 from torchglyph import data_path
 from torchglyph.io import download_and_unzip
 
+logger = logging.Logger(__name__)
+
 
 class Vocab(object):
     def __init__(self, counter: Counter,
@@ -126,11 +128,11 @@ class Vocab(object):
         return tok, occ
 
     def save(self, path: Path) -> None:
-        logging.info(f'saving {self.__class__.__name__} to {path}')
+        logger.info(f'saving {self.__class__.__name__} to {path}')
         torch.save((self.stoi, self.itos, self.vectors), path)
 
     def load(self, path: Path) -> None:
-        logging.info(f'loading {self.__class__.__name__} from {path}')
+        logger.info(f'loading {self.__class__.__name__} from {path}')
         self.stoi, self.itos, self.vectors = torch.load(path)
 
 
@@ -166,7 +168,7 @@ class Vectors(Vocab):
                     if vector_dim is None:
                         vector_dim = len(vs)
                     elif vector_dim != len(vs):
-                        logging.error(f'vector dimensions are not consistent, {vector_dim} != {len(vs)} :: {token}')
+                        logger.error(f'vector dimensions are not consistent, {vector_dim} != {len(vs)} :: {token}')
                         continue
 
                     self.add_token_(str(token, encoding='utf-8', errors=unicode_error))

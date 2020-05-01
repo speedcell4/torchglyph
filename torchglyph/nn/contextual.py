@@ -18,6 +18,8 @@ from torchglyph.io import download_and_unzip, toggle_loggers
 toggle_loggers('allennlp', False)
 toggle_loggers('elmoformanylangs', False)
 
+logger = logging.Logger(__name__)
+
 
 class ELMoModel(AllenELMo):
     root = 'https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/'
@@ -29,7 +31,7 @@ class ELMoModel(AllenELMo):
     }
 
     def __init__(self, *, options_file: str, weight_file: str, pack_output, **kwargs) -> None:
-        logging.info(f'loading pretrained {self.__class__.__name__} from {weight_file}')
+        logger.info(f'loading pretrained {self.__class__.__name__} from {weight_file}')
 
         super(ELMoModel, self).__init__(
             options_file=options_file, weight_file=weight_file, **kwargs,

@@ -12,6 +12,8 @@ from urllib.request import urlretrieve
 
 from tqdm import tqdm
 
+logger = logging.Logger(__name__)
+
 IO = Union[str, Path, TextIO]
 
 
@@ -65,14 +67,15 @@ def download_and_unzip(url: str, dest: Path) -> Path:
             raise err
 
     if dest.suffix == '.zip':
-        logging.info(f'extracting {dest}')
+        logger.info(f'extracting {dest}')
         with zipfile.ZipFile(dest, "r") as fp:
             fp.extractall(path=dest.parent)
     elif dest.suffixes[-2:] == ['.tar', '.gz']:
-        logging.info(f'extracting {dest}')
+        logger.info(f'extracting {dest}')
         with tarfile.open(dest, 'r:gz') as fp:
             fp.extractall(path=dest.parent)
     elif dest.suffix == '.gz':
+        logger.info(f'extracting {dest}')
         with gzip.open(dest, mode='rb') as fs:
             with dest.with_suffix('').open(mode='wb') as fd:
                 shutil.copyfileobj(fs, fd)

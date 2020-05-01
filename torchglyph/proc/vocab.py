@@ -5,6 +5,7 @@ from typing import Tuple, List, Union, Optional
 from torchglyph.proc import Proc
 from torchglyph.vocab import Vocab, Vectors, Glove, FastTest
 
+logger = logging.Logger(__name__)
 
 class UpdateCounter(Proc):
     def __call__(self, data: Union[str, List[str]], counter: Counter, *args, **kwargs) -> Union[str, List[str]]:
@@ -61,14 +62,14 @@ class StatsVocab(Proc):
         occ_avg = sum(vocab.freq.values()) / max(1, tok_cnt)
 
         name = f"{vocab.__class__.__name__} '{name}'"
-        logging.info(f"{name} has {tok_cnt} token(s) => "
+        logger.info(f"{name} has {tok_cnt} token(s) => "
                      f"{occ_avg:.1f} occurrence(s)/token ["
                      f"{occ_max} :: '{tok_max}', "
                      f"{occ_min} :: '{tok_min}']")
         if tok_cnt <= self.threshold:
-            logging.info(f'{name} => [{", ".join(vocab.itos)}]')
+            logger.info(f'{name} => [{", ".join(vocab.itos)}]')
         else:
-            logging.info(f'{name} => ['
+            logger.info(f'{name} => ['
                          f'{", ".join(vocab.itos[:self.threshold // 2])}, ..., '
                          f'{", ".join(vocab.itos[-self.threshold // 2:])}]')
 
@@ -97,7 +98,7 @@ class LoadVectors(Proc):
         tok, occ = vocab.load_vectors(*self.fallback_fns, vectors=self.vectors)
         tok = tok / max(1, len(vocab.freq.values())) * 100
         occ = occ / max(1, sum(vocab.freq.values())) * 100
-        logging.info(f"{self.vectors} hits {tok:.1f}% tokens and {occ:.1f}% occurrences of {Vocab.__name__} '{name}'")
+        logger.info(f"{self.vectors} hits {tok:.1f}% tokens and {occ:.1f}% occurrences of {Vocab.__name__} '{name}'")
         return vocab
 
 

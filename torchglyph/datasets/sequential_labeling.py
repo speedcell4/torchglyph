@@ -13,6 +13,8 @@ from torchglyph.pipe import PackedTokSeqPipe, SeqLengthTensorPipe, RawPipe, Pack
 from torchglyph.pipe import PaddedTokSeqPipe, PackedTokBlockPipe
 from torchglyph.proc import ReplaceDigits, Identity, LoadGlove, LoadFastText, Prepend
 
+logger = logging.Logger(__name__)
+
 
 class CoNLL2000Chunking(Dataset):
     urls = [
@@ -61,7 +63,7 @@ class CoNLL2000Chunking(Dataset):
         test = cls(path=test, pipes=pipes)
 
         for name, pipe in train.pipes.items():
-            logging.info(f'{name} => {pipe}')
+            logger.info(f'{name} => {pipe}')
 
         word.build_vocab(train, test, name='word')
         char.build_vocab(train, test, name='char')
@@ -125,7 +127,7 @@ class CoNLL2003NER(Dataset):
         test = cls(path=test, pipes=pipes)
 
         for name, pipe in train.pipes.items():
-            logging.info(f'{name} => {pipe}')
+            logger.info(f'{name} => {pipe}')
 
         word.build_vocab(train, dev, test, name='word')
         char.build_vocab(train, dev, test, name='char')
@@ -192,7 +194,7 @@ class SemEval2010T1NER(Dataset):
         test = cls(path=test, pipes=pipes)
 
         for name, pipe in train.pipes.items():
-            logging.info(f'{name} => {pipe}')
+            logger.info(f'{name} => {pipe}')
 
         word.build_vocab(train, dev, test, name='word')
         char.build_vocab(train, dev, test, name='char')
