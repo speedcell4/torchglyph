@@ -51,7 +51,18 @@
 <li><code>post</code> for precessing <em>after</em> building vocabulary;</li>
 <li><code>batch</code> for collating examples to build <em>batches</em>.</li>
 </ul>
-<p>Defining the <code>Pipe</code>s of your dataset you can build it from scratch, or you can simply manipulate existing <code>Pipe</code>s by calling <code>.with_</code> method.</p>
+<p>Defining the <code>Pipe</code>s of your dataset you can build it from scratch, </p>
+<pre><code class="python">class PackedIdxSeqPipe(Pipe):
+    def __init__(self, device, dtype = torch.long) -&gt; None:
+        super(PackedIdxSeqPipe, self).__init__(
+            pre=None,
+            vocab=None,
+            post=ToTensor(dtype=dtype),
+            batch=PackSeq(enforce_sorted=False) + ToDevice(device=device),
+        )
+</code></pre>
+
+<p>or you can simply manipulate existing <code>Pipe</code>s by calling <code>.with_</code> method.</p>
 <pre><code class="python">class PackedTokSeqPipe(PackedIdxSeqPipe):
     def __init__(self, device, unk_token, special_tokens = (), 
                  threshold = THRESHOLD, dtype = torch.long) -&gt; None:
@@ -127,7 +138,7 @@
 
   <!--
   MkDocs version      : 1.1
-  Docs Build Date UTC : 2020-05-03 18:07:26
+  Docs Build Date UTC : 2020-05-03 18:10:29
   -->
 </body>
 </html>
