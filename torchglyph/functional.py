@@ -1,5 +1,5 @@
 import functools
-from typing import Union, Tuple, Dict, Any
+from typing import Any, Union, Tuple, Dict
 
 import torch
 from torch import Tensor
@@ -19,7 +19,7 @@ def support_pack(fn):
 
 class SupportPack(type):
     def __new__(cls, name: str, bases: Tuple[type, ...], attrs: Dict[str, Any]):
-        forward_fn = bases[0].forward
+        forward_fn = attrs.get('forward', bases[0].forward)
 
         @functools.wraps(forward_fn)
         def forward(self, x: Union[Tensor, PackedSequence], *args, **kwargs) -> Union[Tensor, PackedSequence]:
