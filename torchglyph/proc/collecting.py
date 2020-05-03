@@ -2,16 +2,11 @@ from typing import Any, Union, List, Tuple
 
 import numpy as np
 import torch
-from allennlp.data import Instance as AllenInstance, Vocabulary as AllenVocabulary
-from allennlp.data.dataset import Batch as AllenBatch
 from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence, pad_packed_sequence
 
-from torchglyph.io import toggle_loggers
 from torchglyph.proc import Proc, Chain, stoi
 from torchglyph.vocab import Vocab
-
-toggle_loggers('allennlp', False)
 
 
 class ToDevice(Proc):
@@ -103,13 +98,6 @@ class PadSeq(Proc):
             data, batch_first=self.batch_first,
             padding_value=stoi(token=self.pad_token, vocab=vocab),
         )
-
-
-class PadELMo(Proc):
-    def __call__(self, data: List[AllenInstance], *args, **kwargs) -> Tensor:
-        batch = AllenBatch(data)
-        batch.index_instances(AllenVocabulary())
-        return batch.as_tensor_dict()['elmo']['character_ids']
 
 
 class PackSeq(Proc):

@@ -3,8 +3,8 @@ from typing import Union
 import torch
 
 from torchglyph.pipe import Pipe
-from torchglyph.proc import PadELMo
 from torchglyph.proc import ToDevice
+from torchglyph.proc.ctx import PadELMo
 from torchglyph.proc.tokenizer import ELMoTokenizer
 
 

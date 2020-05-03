@@ -7,6 +7,7 @@ from torchglyph.vocab import Vocab, Vectors, Glove, FastTest
 
 logger = logging.Logger(__name__)
 
+
 class UpdateCounter(Proc):
     def __call__(self, data: Union[str, List[str]], counter: Counter, *args, **kwargs) -> Union[str, List[str]]:
         if isinstance(data, str):
@@ -63,15 +64,15 @@ class StatsVocab(Proc):
 
         name = f"{vocab.__class__.__name__} '{name}'"
         logger.info(f"{name} has {tok_cnt} token(s) => "
-                     f"{occ_avg:.1f} occurrence(s)/token ["
-                     f"{occ_max} :: '{tok_max}', "
-                     f"{occ_min} :: '{tok_min}']")
+                    f"{occ_avg:.1f} occurrence(s)/token ["
+                    f"{occ_max} :: '{tok_max}', "
+                    f"{occ_min} :: '{tok_min}']")
         if tok_cnt <= self.threshold:
             logger.info(f'{name} => [{", ".join(vocab.itos)}]')
         else:
             logger.info(f'{name} => ['
-                         f'{", ".join(vocab.itos[:self.threshold // 2])}, ..., '
-                         f'{", ".join(vocab.itos[-self.threshold // 2:])}]')
+                        f'{", ".join(vocab.itos[:self.threshold // 2])}, ..., '
+                        f'{", ".join(vocab.itos[-self.threshold // 2:])}]')
 
         return vocab
 
