@@ -25,6 +25,10 @@ setup(
             'transformers',
             'allennlp',
             'elmoformanylangs',
+        ],
+        'docs': [
+            'mkdocs',
+            'mkdocs-alabaster',
         ]
     }
 )
