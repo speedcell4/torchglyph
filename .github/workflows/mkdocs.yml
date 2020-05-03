@@ -1,0 +1,14 @@
+name: mkdocs
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build:
+    name: Deploy docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy MkDocs
+        uses: mhausenblas/mkdocs-deploy-gh-pages@1.11
+
