@@ -27,7 +27,20 @@ Composed `Proc`s act like data `Pipe`lines, in which raw input textual data is p
 + `post` for precessing *after* building vocabulary;
 + `batch` for collating examples to build *batches*.
 
-Defining the `Pipe`s of your dataset you can build it from scratch, or you can simply manipulate existing `Pipe`s by calling `.with_` method.
+Defining the `Pipe`s of your dataset you can build it from scratch, 
+
+```python
+class PackedIdxSeqPipe(Pipe):
+    def __init__(self, device, dtype = torch.long) -> None:
+        super(PackedIdxSeqPipe, self).__init__(
+            pre=None,
+            vocab=None,
+            post=ToTensor(dtype=dtype),
+            batch=PackSeq(enforce_sorted=False) + ToDevice(device=device),
+        )
+```
+
+or you can simply manipulate existing `Pipe`s by calling `.with_` method.
 
 ```python
 class PackedTokSeqPipe(PackedIdxSeqPipe):
