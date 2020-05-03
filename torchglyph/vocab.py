@@ -218,11 +218,11 @@ class FastTest(Vectors):
 
 
 class NLPLVectors(Vectors):
-    def __init__(self, index: int, name: str = 'model.txt', heading: bool = False) -> None:
+    def __init__(self, index: int, repository: str = '20', name: str = 'model.txt', heading: bool = False) -> None:
         path = data_path / 'nlpl' / f'{index}'
         super(NLPLVectors, self).__init__(
             urls_dest=[(
-                f'http://vectors.nlpl.eu/repository/20/{index}.zip',
+                f'http://vectors.nlpl.eu/repository/{repository}/{index}.zip',
                 path / f'{index}.zip',
             )],
             path=path / name, heading=heading,
