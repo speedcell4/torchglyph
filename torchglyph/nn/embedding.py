@@ -39,7 +39,7 @@ class SubLstmEmbedding(nn.Module):
             rearrange(tok_lengths.clamp_min(1), 'a b -> (a b)'),
             batch_first=self.rnn.batch_first, enforce_sorted=False,
         )
-        
+
         embedding = pack._replace(data=self.dropout(self.embedding(pack.data)))
         _, (encoding, _) = self.rnn(embedding)
 
