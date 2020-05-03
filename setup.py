@@ -6,7 +6,7 @@ setup(
     name=name,
     version='0.1.0',
     packages=[package for package in find_packages() if package.startswith(name)],
-    url=f'https://github.com/speedcell4/{name}',
+    url=f'https://speedcell4.github.io/torchglyph',
     license='MIT',
     author='speedcell4',
     author_email='speedcell4@gmail.com',
