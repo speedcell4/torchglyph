@@ -640,3 +640,4 @@ GitHub.sublime-settings
 *.ptx
 *.cubin
 *.fatbin
+!/docs/site/
