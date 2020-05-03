@@ -31,7 +31,7 @@ Defining the `Pipe`s of your dataset is the first step to build a dataset, you c
 
 ```python
 class PackedIdxSeqPipe(Pipe):
-    def __init__(self, device, dtype = torch.long) -> None:
+    def __init__(self, device, dtype=torch.long) -> None:
         super(PackedIdxSeqPipe, self).__init__(
             pre=None,
             vocab=None,
@@ -44,13 +44,13 @@ or you can simply manipulate existing `Pipe`s by calling `.with_` method.
 
 ```python
 class PackedTokSeqPipe(PackedIdxSeqPipe):
-    def __init__(self, device, unk_token, special_tokens = (), 
-                 threshold = THRESHOLD, dtype = torch.long) -> None:
+    def __init__(self, device, unk_token, special_tokens=(),
+                 threshold=THRESHOLD, dtype=torch.long) -> None:
         super(PackedTokSeqPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=UpdateCounter(),
             vocab=[
-                BuildVocab(unk_token=unk_token, pad_token=None, 
+                BuildVocab(unk_token=unk_token, pad_token=None,
                            special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
             ],
