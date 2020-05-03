@@ -32,26 +32,26 @@
         <div class="body" role="main">
           
             <h1 id="welcome-to-torchglyph">Welcome to TorchGlyph</h1>
-<p><a href="https://github.com/speedcell4/torchglyph/actions"><img alt="Actions Status" src="https://github.com/speedcell4/torchglyph/workflows/unit-tests/badge.svg" /></a></p>
 <p>Data Processor Combinators for Natural Language Processing</p>
+<p><a href="https://github.com/speedcell4/torchglyph/actions"><img alt="Actions Status" src="https://github.com/speedcell4/torchglyph/workflows/unit-tests/badge.svg" /></a></p>
 <h2 id="installation">Installation</h2>
 <p>Simply run this command in your terminal,</p>
 <pre><code class="bash">pip install torchglyph
 </code></pre>
 
 <h2 id="quickstart">Quickstart</h2>
-<p>The minimal data processor of TorchGlyph is called <code>Proc</code>. Compose operator <code>+</code> is provided to produce a more complex processor by composing two simple <code>Proc</code>s. </p>
+<p>The atomic data processor of TorchGlyph is called <code>Proc</code>. Compose operator <code>+</code> is provided to produce complex <code>Proc</code> by composing two simple <code>Proc</code>s. </p>
 <pre><code class="python">ToLower() + ReplaceDigits(repl_token='&lt;digits&gt;')
 </code></pre>
 
-<p>Composed <code>Proc</code>s act like data <code>Pipe</code>lines, in which raw input textual data is processed incrementally. According to the stages, they are roughly categories into four-groups:</p>
+<p>Composed <code>Proc</code>s act like data <code>Pipe</code>lines, where raw textual data is processed incrementally. According to the stages, they are roughly categorized into four-groups:</p>
 <ul>
 <li><code>pre</code> for processing <em>before</em> building vocabulary;</li>
 <li><code>vocab</code> for building and updating <em>vocabulary</em>;</li>
 <li><code>post</code> for precessing <em>after</em> building vocabulary;</li>
 <li><code>batch</code> for collating examples to build <em>batches</em>.</li>
 </ul>
-<p>Defining the <code>Pipe</code>s of your dataset you can build it from scratch, </p>
+<p>Defining the <code>Pipe</code>s of your dataset is the first step to build a dataset, you can build it from scratch, </p>
 <pre><code class="python">class PackedIdxSeqPipe(Pipe):
     def __init__(self, device, dtype = torch.long) -&gt; None:
         super(PackedIdxSeqPipe, self).__init__(
@@ -138,7 +138,7 @@
 
   <!--
   MkDocs version      : 1.1
-  Docs Build Date UTC : 2020-05-03 18:10:29
+  Docs Build Date UTC : 2020-05-03 18:15:35
   -->
 </body>
 </html>
