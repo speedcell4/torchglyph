@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: 3.7
       - name: Install dependencies
-          run: python -m pip install -e '.[docs]'
+        run: python -m pip install -e '.[docs]'
       - name: Deploy docs
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
         env:
