@@ -6,7 +6,7 @@ Data Processor Combinators for Natural Language Processing
 
 ## Installation
 
-Simply run this command in your terminal:
+Simply run this command in your terminal,
 
 ```bash
 pip install torchglyph
