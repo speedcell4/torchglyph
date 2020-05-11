@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Tuple
 
 import torch
 from einops import rearrange
@@ -57,3 +57,33 @@ class SubLstmEmbedding(nn.Module):
             return self._padded_forward(sub, *args)
         else:
             return self._packed_forward(sub, *args)
+
+
+class ContiguousSubLstmEmbedding(nn.Module):
+    def __init__(self, num_embeddings: int, embedding_dim: int,
+                 hidden_dim: int, dropout: float, num_layers: int = 1,
+                 bias: bool = True, batch_first: bool = True,
+                 bidirectional: bool = True, padding_idx: int = None) -> None:
+        super(ContiguousSubLstmEmbedding, self).__init__()
+
+        self.embedding = nn.Embedding(
+            num_embeddings=num_embeddings,
+            embedding_dim=embedding_dim,
+            padding_idx=padding_idx,
+        )
+        self.dropout = nn.Dropout(dropout)
+        self.rnn = nn.LSTM(
+            input_size=self.embedding.embedding_dim,
+            hidden_size=hidden_dim, num_layers=num_layers, bias=bias,
+            batch_first=batch_first, bidirectional=bidirectional,
+        )
+
+        self.embedding_dim = self.rnn.hidden_size * (2 if self.rnn.bidirectional else 1)
+
+    def forward(self, sub: PackedSequence, indices: Tuple[PackedSequence, PackedSequence]) -> PackedSequence:
+        embedding = sub._replace(data=self.dropout(self.embedding(sub.data)))
+        encoding, _ = self.rnn(embedding)  # type: (PackedSequence, _)
+
+        fidx, bidx = indices
+        fenc, benc = encoding.data.chunk(2, dim=-1)
+        return fidx._replace(data=torch.cat([fenc[fidx.data], benc[bidx.data]], dim=-1))
