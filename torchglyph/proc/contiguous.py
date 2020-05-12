@@ -41,19 +41,19 @@ class PackContiguousSubPtr(Proc):
     def extra_repr(self) -> str:
         return f'enforce_sorted={self.enforce_sorted}'
 
-    def __call__(self, data: List[Tuple[Tensor, Tensor]], **kwargs) -> Tuple[PackedSequence, PackedSequence]:
-        fs, bs = zip(*data)
+    def __call__(self, indices: List[Tuple[Tensor, Tensor]], **kwargs) -> Tuple[PackedSequence, PackedSequence]:
+        fidx, bidx = zip(*indices)
 
         pack = pack_sequence([
-            torch.empty((f.max().item() + 1,), dtype=torch.long) for f in fs
+            torch.empty((f.max().item() + 1,), dtype=torch.long) for f in fidx
         ], enforce_sorted=self.enforce_sorted)
         indices = pack._replace(data=torch.arange(pack.data.size(0), device=pack.data.device))
         indices, _ = pad_packed_sequence(indices, batch_first=True)
 
-        fs = pack_sequence([
-            indices[i, f] for i, f in enumerate(fs)
+        fidx = pack_sequence([
+            indices[i, f] for i, f in enumerate(fidx)
         ], enforce_sorted=self.enforce_sorted)
-        bs = pack_sequence([
-            indices[i, b] for i, b in enumerate(bs)
+        bidx = pack_sequence([
+            indices[i, b] for i, b in enumerate(bidx)
         ], enforce_sorted=self.enforce_sorted)
-        return fs, bs
+        return fidx, bidx
