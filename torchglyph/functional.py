@@ -4,6 +4,7 @@ from typing import Union, Tuple, Dict
 
 import torch
 from torch import Tensor
+from torch import nn
 from torch.nn.utils.rnn import PackedSequence
 
 
@@ -18,7 +19,19 @@ def support_pack(fn):
     return wrap
 
 
-class SupportPack(type):
+class SupportPack(nn.Module):
+    def __init__(self, module: nn.Module) -> None:
+        super(SupportPack, self).__init__()
+        self.module = module
+
+    def __repr__(self) -> str:
+        return f'Packed{self.module.__repr__()}'
+
+    def forward(self, x: Union[Tensor, PackedSequence], *args, **kwargs) -> Union[Tensor, PackedSequence]:
+        return support_pack(self.module)(x)
+
+
+class SupportPackMeta(type):
     def __new__(cls, name: str, bases: Tuple[type, ...], attrs: Dict[str, Any]):
         forward_fn = attrs.get('forward', bases[0].forward)
 

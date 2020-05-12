@@ -5,10 +5,10 @@ from einops import rearrange
 from torch import nn, Tensor
 from torch.nn.utils.rnn import pack_padded_sequence, PackedSequence
 
-from torchglyph.functional import SupportPack
+from torchglyph.functional import SupportPackMeta
 
 
-class TokEmbedding(nn.Embedding, metaclass=SupportPack):
+class TokEmbedding(nn.Embedding, metaclass=SupportPackMeta):
     pass
 
 
