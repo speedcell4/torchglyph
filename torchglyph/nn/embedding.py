@@ -18,11 +18,11 @@ class TokEmbedding(nn.Embedding, metaclass=SupportPackMeta):
             padding_idx=padding_idx, max_norm=max_norm, norm_type=norm_type,
             scale_grad_by_freq=scale_grad_by_freq, sparse=sparse, _weight=_weight,
         )
-        self._unk_idx = unk_idx
+        self.unk_idx = unk_idx
 
     @property
     def unk(self) -> Tensor:
-        return self.weight[self._unk_idx]
+        return self.weight[self.unk_idx]
 
 
 class SubLstmEmbedding(nn.Module):
@@ -45,11 +45,11 @@ class SubLstmEmbedding(nn.Module):
         )
 
         self.embedding_dim = self.rnn.hidden_size * (2 if self.rnn.bidirectional else 1)
-        self._unk_idx = unk_idx
+        self.unk_idx = unk_idx
 
     @property
     def unk(self) -> Tensor:
-        embedding = self.embedding.weight[None, self._unk_idx]
+        embedding = self.embedding.weight[None, self.unk_idx]
         _, (encoding, _) = self.rnn(pack_sequence([embedding], enforce_sorted=True))
         return rearrange(encoding, '(l d) a h -> l a (d h)', l=self.rnn.num_layers)[0, 0, :]
 
