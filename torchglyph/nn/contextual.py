@@ -18,7 +18,7 @@ from torchglyph.io import download_and_unzip, toggle_loggers
 toggle_loggers('allennlp', False)
 toggle_loggers('elmoformanylangs', False)
 
-logger = logging.Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class ELMoModel(AllenELMo):

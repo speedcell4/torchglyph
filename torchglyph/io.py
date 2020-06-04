@@ -12,7 +12,7 @@ from urllib.request import urlretrieve
 
 from tqdm import tqdm
 
-logger = logging.Logger(__name__)
+logger = logging.getLogger(__name__)
 
 IO = Union[str, Path, TextIO]
 

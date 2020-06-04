@@ -12,7 +12,7 @@ from tqdm import tqdm
 from torchglyph import data_path
 from torchglyph.io import download_and_unzip
 
-logger = logging.Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class Vocab(object):

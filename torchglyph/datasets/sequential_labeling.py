@@ -13,7 +13,7 @@ from torchglyph.pipe import PackedTokSeqPipe, SeqLengthTensorPipe, RawPipe, Pack
 from torchglyph.pipe import PaddedTokSeqPipe, PackedTokBlockPipe
 from torchglyph.proc import ReplaceDigits, Identity, LoadGlove, LoadFastText, Prepend
 
-logger = logging.Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class CoNLL2000Chunking(Dataset):

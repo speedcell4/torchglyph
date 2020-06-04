@@ -5,7 +5,7 @@ from typing import Tuple, List, Union, Optional
 from torchglyph.proc import Proc
 from torchglyph.vocab import Vocab, Vectors, Glove, FastTest
 
-logger = logging.Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class UpdateCounter(Proc):

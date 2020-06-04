@@ -12,7 +12,7 @@ from torchglyph.io import open_io
 from torchglyph.pipe import PackedTokSeqPipe, TokTensorPipe, RawPipe
 from torchglyph.proc import Identity, LoadGlove
 
-logger = logging.Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class AgNews(Dataset):
