@@ -1,4 +1,4 @@
-name: mkdocs
+name: Build Document by Mkdocs
 on:
   push:
     branches:
@@ -10,9 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout develop
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
       - name: Set up Python 3.7
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v2
         with:
           python-version: 3.7
       - name: Install dependencies
@@ -22,5 +22,5 @@ jobs:
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.PERSONAL_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site

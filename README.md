@@ -1,6 +1,7 @@
 # TorchGlyph
 
-[![Actions Status](https://github.com/speedcell4/torchglyph/workflows/unit-tests/badge.svg)](https://github.com/speedcell4/torchglyph/actions)
+![Unit Tests](https://github.com/speedcell4/torchglyph/workflows/Unit%20Tests/badge.svg)
+![Upload Python Package](https://github.com/speedcell4/torchglyph/workflows/Upload%20Python%20Package/badge.svg)
 
 ## Requirements
 
