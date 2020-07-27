@@ -12,6 +12,8 @@ from torchglyph.io import open_io
 from torchglyph.pipe import PackedTokSeqPipe, TokTensorPipe, RawPipe
 from torchglyph.proc import Identity, LoadGlove
 
+logger = logging.getLogger(__name__)
+
 
 class AgNews(Dataset):
     urls = [
@@ -39,9 +41,14 @@ class AgNews(Dataset):
             csv.dump((' '.join(raw_title), ' '.join(raw_text), raw_target, vocab.itos[pred]), fp)
 
     @classmethod
-    def new(cls, batch_size: int, word_dim: Optional[int], device: int = -1) -> Tuple['DataLoader', ...]:
+    def new(cls, batch_size: int, word_dim: Optional[int],
+            remove_missing: bool, device: int = -1) -> Tuple['DataLoader', ...]:
+        if word_dim is not None:
+            vectors = LoadGlove(name='6B', dim=word_dim, remove_missing=remove_missing)
+        else:
+            vectors = Identity()
         word = PackedTokSeqPipe(device=device, unk_token='<unk>').with_(
-            vocab=... + (Identity() if word_dim is None else LoadGlove(name='6B', dim=word_dim)),
+            vocab=... + vectors,
         )
         target = TokTensorPipe(device=device, unk_token=None)
 
@@ -56,7 +63,7 @@ class AgNews(Dataset):
         test = cls(path=test, target_vocab=target_vocab, pipes=pipes)
 
         for name, pipe in train.pipes.items():
-            logging.info(f'{name} => {pipe}')
+            logger.info(f'{name} => {pipe}')
 
         word.build_vocab(train, test, name='word')
         target.build_vocab(train, test, name='target')

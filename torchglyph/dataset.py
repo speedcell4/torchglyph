@@ -2,7 +2,7 @@ import itertools
 import uuid
 from collections import namedtuple
 from pathlib import Path
-from typing import Iterable, Any, TextIO
+from typing import Iterable, Any, TextIO, Optional
 from typing import Union, List, Type, Tuple, NamedTuple, Dict
 
 from torch.utils import data
@@ -14,6 +14,7 @@ from torchglyph.pipe import Pipe
 
 
 class Dataset(data.Dataset):
+    name: Optional[str]
     urls: List[Union[Tuple[str, ...]]]
 
     def __init__(self, pipes: List[Dict[str, Pipe]], **load_kwargs) -> None:
@@ -62,14 +63,16 @@ class Dataset(data.Dataset):
 
     @classmethod
     def paths(cls, root: Path = data_path) -> Tuple[Path, ...]:
+        root = root / getattr(cls, 'name', cls.__name__).lower()
+
         ans = []
         for url, name, *filenames in cls.urls:
             if len(filenames) == 0:
                 filenames = [name]
-            if any(not (root / cls.__name__.lower() / n).exists() for n in filenames):
-                download_and_unzip(url, root / cls.__name__.lower() / name)
-            for n in filenames:
-                ans.append(root / cls.__name__.lower() / n)
+            if any(not (root / filename).exists() for filename in filenames):
+                download_and_unzip(url, root / name)
+            for filename in filenames:
+                ans.append(root / filename)
 
         return tuple(ans)
 

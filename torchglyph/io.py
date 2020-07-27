@@ -1,30 +1,32 @@
 import gzip
 import logging
 import os
+import re
 import shutil
 import tarfile
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Union, TextIO
+from typing import Union, TextIO, Pattern
 from urllib.request import urlretrieve
 
 from tqdm import tqdm
+
+logger = logging.getLogger(__name__)
 
 IO = Union[str, Path, TextIO]
 
 
 @contextmanager
 def open_io(f: IO, mode: str, encoding: str):
-    if isinstance(f, (str, Path)):
-        fp = open(f, mode=mode, encoding=encoding)
-    else:
-        fp = f
     try:
-        yield fp
+        if isinstance(f, (str, Path)):
+            with open(f, mode=mode, encoding=encoding) as fp:
+                yield fp
+        else:
+            yield f
     finally:
-        if isinstance(f, Path):
-            fp.close()
+        pass
 
 
 # copied and modified from https://github.com/pytorch/text
@@ -50,7 +52,10 @@ def reporthook(t):
 
 
 # copied and modified from https://github.com/pytorch/text
-def download_and_unzip(url: str, dest: Path) -> None:
+def download_and_unzip(url: str, dest: Path) -> Path:
+    if dest.exists():
+        return dest
+
     if not dest.parent.exists():
         dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -62,14 +67,23 @@ def download_and_unzip(url: str, dest: Path) -> None:
             raise err
 
     if dest.suffix == '.zip':
-        logging.info(f'extracting {dest}')
+        logger.info(f'extracting {dest}')
         with zipfile.ZipFile(dest, "r") as fp:
             fp.extractall(path=dest.parent)
-    elif dest.suffixes[:-2] == ['.tar', '.gz']:
-        logging.info(f'extracting {dest}')
+    elif dest.suffixes[-2:] == ['.tar', '.gz']:
+        logger.info(f'extracting {dest}')
         with tarfile.open(dest, 'r:gz') as fp:
             fp.extractall(path=dest.parent)
     elif dest.suffix == '.gz':
-        with gzip.open(dest, mode='rb') as fsrc:
-            with dest.with_suffix('').open(mode='wb') as fdst:
-                shutil.copyfileobj(fsrc, fdst)
+        logger.info(f'extracting {dest}')
+        with gzip.open(dest, mode='rb') as fs:
+            with dest.with_suffix('').open(mode='wb') as fd:
+                shutil.copyfileobj(fs, fd)
+
+    return dest
+
+
+def toggle_loggers(pattern: Union[str, Pattern], enable: bool) -> None:
+    for name in logging.root.manager.loggerDict:  # type:str
+        if re.match(pattern, name) is not None:
+            logging.getLogger(name).disabled = not enable

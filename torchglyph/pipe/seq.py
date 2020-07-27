@@ -90,7 +90,7 @@ class PackedSeqPtrSeqPipe(PackedIdxSeqPipe):
     def __init__(self, device: Union[int, torch.device], dtype: torch.dtype = torch.long) -> None:
         super(PackedSeqPtrSeqPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
-            pre=GetMask(token=0),
+            post=GetMask(token=0) + ...,
             batch=Scan(fn=cum_seq, init=0) + ...,
         )
 

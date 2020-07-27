@@ -5,6 +5,8 @@ from typing import Tuple, List, Union, Optional
 from torchglyph.proc import Proc
 from torchglyph.vocab import Vocab, Vectors, Glove, FastTest
 
+logger = logging.getLogger(__name__)
+
 
 class UpdateCounter(Proc):
     def __call__(self, data: Union[str, List[str]], counter: Counter, *args, **kwargs) -> Union[str, List[str]]:
@@ -61,53 +63,59 @@ class StatsVocab(Proc):
         occ_avg = sum(vocab.freq.values()) / max(1, tok_cnt)
 
         name = f"{vocab.__class__.__name__} '{name}'"
-        logging.info(f"{name} has {tok_cnt} token(s) => "
-                     f"{occ_avg:.1f} occurrence(s)/token ["
-                     f"{occ_max} :: '{tok_max}', "
-                     f"{occ_min} :: '{tok_min}']")
+        logger.info(f"{name} has {tok_cnt} token(s) => "
+                    f"{occ_avg:.1f} occurrence(s)/token ["
+                    f"{occ_max} :: '{tok_max}', "
+                    f"{occ_min} :: '{tok_min}']")
         if tok_cnt <= self.threshold:
-            logging.info(f'{name} => [{", ".join(vocab.itos)}]')
+            logger.info(f'{name} => [{", ".join(vocab.itos)}]')
         else:
-            logging.info(f'{name} => ['
-                         f'{", ".join(vocab.itos[:self.threshold // 2])}, ..., '
-                         f'{", ".join(vocab.itos[-self.threshold // 2:])}]')
+            logger.info(f'{name} => ['
+                        f'{", ".join(vocab.itos[:self.threshold // 2])}, ..., '
+                        f'{", ".join(vocab.itos[-self.threshold // 2:])}]')
 
         return vocab
 
 
 class LoadVectors(Proc):
-    def __init__(self, vectors: Vectors, *fallbacks) -> None:
+    def __init__(self, *fallback_fns, vectors: Vectors, remove_missing: bool) -> None:
         super(LoadVectors, self).__init__()
+        self.fallback_fns = fallback_fns
         self.vectors = vectors
-        self.fallbacks = fallbacks
+        self.remove_missing = remove_missing
 
     def extra_repr(self) -> str:
         return ', '.join([
+            *[f'{f.__name__}' for f in self.fallback_fns],
             f'{self.vectors.extra_repr()}',
-            *[f'{f.__name__}' for f in self.fallbacks],
+            f'remove_missing={self.remove_missing}',
         ])
 
     def __call__(self, vocab: Vocab, name: str, *args, **kwargs) -> Vocab:
         assert vocab is not None, f"did you forget '{BuildVocab.__name__}' before '{LoadVectors.__name__}'?"
 
-        tok, occ = vocab.load_vectors(self.vectors, *self.fallbacks)
+        if self.remove_missing:
+            vocab = vocab.union(self.vectors, *self.fallback_fns)
+        tok, occ = vocab.load_vectors(*self.fallback_fns, vectors=self.vectors)
         tok = tok / max(1, len(vocab.freq.values())) * 100
         occ = occ / max(1, sum(vocab.freq.values())) * 100
-        logging.info(f"{self.vectors} hits {tok:.1f}% tokens and {occ:.1f}% occurrences of {Vocab.__name__} '{name}'")
+        logger.info(f"{self.vectors} hits {tok:.1f}% tokens and {occ:.1f}% occurrences of {Vocab.__name__} '{name}'")
         return vocab
 
 
 class LoadGlove(LoadVectors):
-    def __init__(self, name: str, dim: int, *fallbacks) -> None:
+    def __init__(self, *fallback_fns, name: str, dim: int, remove_missing: bool) -> None:
         super(LoadGlove, self).__init__(
-            Glove(name=name, dim=dim),
-            *fallbacks,
+            *fallback_fns,
+            vectors=Glove(name=name, dim=dim),
+            remove_missing=remove_missing,
         )
 
 
 class LoadFastText(LoadVectors):
-    def __init__(self, lang: str, *fallbacks) -> None:
+    def __init__(self, *fallback_fns, lang: str, remove_missing: bool) -> None:
         super(LoadFastText, self).__init__(
-            FastTest(lang=lang),
-            *fallbacks,
+            *fallback_fns,
+            vectors=FastTest(lang=lang),
+            remove_missing=remove_missing,
         )

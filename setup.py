@@ -1,18 +1,16 @@
 from setuptools import setup, find_packages
 
-with open('README.md', 'r', encoding='utf-8') as fp:
-    long_description = fp.read()
+name = 'torchglyph'
 
 setup(
-    name='torchglyph',
-    version='0.1.0',
-    packages=find_packages(),
-    url='https://github.com/speedcell4/torchglyph',
+    name=name,
+    version='0.1.1',
+    packages=[package for package in find_packages() if package.startswith(name)],
+    url=f'https://speedcell4.github.io/torchglyph',
     license='MIT',
     author='speedcell4',
     author_email='speedcell4@gmail.com',
     description='Data Processor Combinators for Natural Language Processing',
-    long_description=long_description,
     install_requires=[
         'tqdm',
         'numpy',
@@ -23,5 +21,14 @@ setup(
             'pytest',
             'hypothesis',
         ],
+        'ctx': [
+            'transformers',
+            'allennlp',
+            'elmoformanylangs',
+        ],
+        'docs': [
+            'mkdocs',
+            'mkdocs-alabaster',
+        ]
     }
 )

@@ -4,7 +4,7 @@ from typing import Union
 import torch
 from torch.nn.utils.rnn import PackedSequence
 
-data_path = Path.home() / '.torchglyph'
+data_path = (Path.home() / '.torchglyph').expanduser().absolute()
 if not data_path.exists():
     data_path.mkdir(parents=True, exist_ok=True)
 

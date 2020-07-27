@@ -1,5 +1,6 @@
 from typing import Any, Union, List, Tuple
 
+import numpy as np
 import torch
 from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence, PackedSequence, pack_sequence, pad_packed_sequence
@@ -9,7 +10,8 @@ from torchglyph.vocab import Vocab
 
 
 class ToDevice(Proc):
-    Batch = Union[Tensor, PackedSequence, Tuple[Union[Tensor, PackedSequence], ...]]
+    Item = Union[int, float, bool, Tensor, PackedSequence]
+    Batch = Union[Item, Tuple[Item, ...]]
 
     def __init__(self, device: Union[int, torch.device]) -> None:
         super(ToDevice, self).__init__()
@@ -24,9 +26,11 @@ class ToDevice(Proc):
         return f'{self.device}'
 
     def __call__(self, batch: Batch, vocab: Vocab, **kwargs) -> Batch:
-        if isinstance(batch, (PackedSequence, Tensor)):
-            return batch.to(self.device)
-        return type(batch)([self(e, vocab=vocab) for e in batch])
+        if isinstance(batch, (Tensor, PackedSequence)):
+            return batch.to(device=self.device)
+        if isinstance(batch, (list, tuple)):
+            return type(batch)([self(e, vocab=vocab) for e in batch])
+        return batch
 
 
 class ToTensor(Proc):
@@ -39,7 +43,9 @@ class ToTensor(Proc):
 
     def __call__(self, data: Any, **kwargs) -> Tensor:
         try:
-            return torch.tensor(data, dtype=self.dtype, requires_grad=False)
+            if isinstance(data, np.ndarray):
+                return torch.from_numpy(data).to(dtype=self.dtype).requires_grad_(False)
+            return torch.tensor(data, dtype=self.dtype).requires_grad_(False)
         except ValueError as err:
             if err.args[0] == "too many dimensions 'str'":
                 raise ValueError(f"'{data}' can not be converted to {Tensor.__name__}")

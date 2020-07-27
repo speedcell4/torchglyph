@@ -2,7 +2,7 @@ import logging
 from collections import Counter
 from collections import defaultdict
 from pathlib import Path
-from typing import Union, Optional, Tuple, Callable, List
+from typing import Optional, Tuple, Callable, List
 
 import torch
 from torch import Tensor
@@ -11,6 +11,8 @@ from tqdm import tqdm
 
 from torchglyph import data_path
 from torchglyph.io import download_and_unzip
+
+logger = logging.getLogger(__name__)
 
 
 class Vocab(object):
@@ -77,48 +79,26 @@ class Vocab(object):
     def __contains__(self, token: str) -> bool:
         return token in self.stoi
 
-    def __and__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
-        if isinstance(rhs, Vocab):
-            rhs = rhs.freq
-        return Vocab(
-            counter=Counter({
-                token: freq
-                for token, freq in self.freq.items()
-                if token in rhs
-            }),
-            unk_token=self.unk_token,
-            pad_token=self.pad_token,
-            special_tokens=self.special_tokens,
-            max_size=self.max_size, min_freq=self.min_freq,
-        )
+    def union(self, rhs: 'Vocab', *fallback_fns) -> 'Vocab':
+        counter = Counter()
 
-    def __add__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
-        if isinstance(rhs, Vocab):
-            rhs = rhs.freq
-        return Vocab(
-            counter=Counter({
-                token: self.freq[token] + rhs[token]
-                for token in {*self.freq.keys(), *rhs.keys()}
-            }),
-            unk_token=self.unk_token,
-            pad_token=self.pad_token,
-            special_tokens=self.special_tokens,
-            max_size=self.max_size, min_freq=self.min_freq,
-        )
+        for token, freq in self.freq.items():
+            if token in rhs.stoi:
+                counter[token] = freq
+            else:
+                for fallback_fn in fallback_fns:
+                    new_token = fallback_fn(token)
+                    if new_token in rhs.stoi:
+                        counter[new_token] = freq
+                        break
 
-    def __sub__(self, rhs: Union['Counter', 'Vocab']) -> 'Vocab':
-        if isinstance(rhs, Vocab):
-            rhs = rhs.freq
         return Vocab(
-            counter=Counter({
-                token: freq
-                for token, freq in self.freq.items()
-                if token not in rhs
-            }),
+            counter=counter,
             unk_token=self.unk_token,
             pad_token=self.pad_token,
             special_tokens=self.special_tokens,
-            max_size=self.max_size, min_freq=self.min_freq,
+            max_size=self.max_size,
+            min_freq=self.min_freq,
         )
 
     @property
@@ -133,12 +113,12 @@ class Vocab(object):
             return 0
         return self.vectors.size(1)
 
-    def load_vectors(self, vectors: 'Vectors', *fallbacks) -> Tuple[int, int]:
+    def load_vectors(self, *fallback_fns, vectors: 'Vectors') -> Tuple[int, int]:
         self.vectors = torch.empty((len(self), vectors.vec_dim), dtype=torch.float32)
 
         tok, occ = 0, 0
         for token, index in self.stoi.items():
-            if vectors.query_(token, self.vectors[index], *fallbacks):
+            if vectors.query_(token, self.vectors[index], *fallback_fns):
                 tok += 1
                 occ += self.freq[token]
 
@@ -148,63 +128,64 @@ class Vocab(object):
         return tok, occ
 
     def save(self, path: Path) -> None:
-        logging.info(f'saving {self.__class__.__name__} to {path}')
+        logger.info(f'saving {self.__class__.__name__} to {path}')
         torch.save((self.stoi, self.itos, self.vectors), path)
 
     def load(self, path: Path) -> None:
-        logging.info(f'loading {self.__class__.__name__} from {path}')
+        logger.info(f'loading {self.__class__.__name__} from {path}')
         self.stoi, self.itos, self.vectors = torch.load(path)
 
 
 class Vectors(Vocab):
     def __init__(self, urls_dest: List[Tuple[str, Path]], path: Path,
-                 has_head_info: bool, unk_init_: Callable[[Tensor], Tensor] = init.normal_) -> None:
+                 heading: bool, unicode_error: str = 'replace', dtype: torch.dtype = torch.float32,
+                 unk_init_: Callable[[Tensor], Tensor] = init.normal_) -> None:
         super(Vectors, self).__init__(
             counter=Counter(),
             unk_token=None, pad_token=None,
             special_tokens=(), max_size=None, min_freq=1,
         )
 
-        self.vectors = []
+        vectors = []
         self.unk_init_ = unk_init_
 
-        pt_path = path.with_suffix('.pt')
-        if not pt_path.exists():
+        dump_path = path.with_suffix('.pt')
+        if not dump_path.exists():
             if not path.exists():
                 for url, dest in urls_dest:
                     download_and_unzip(url, dest)
 
             with path.open('rb') as fp:
-                vec_dim = None
+                vector_dim = None
 
-                iteration = tqdm(fp, desc=f'reading {path}', unit=' tokens')
-                for raw in iteration:  # type:bytes
-                    if has_head_info:
-                        _, vec_dim = map(int, raw.strip().split(b' '))
-                        has_head_info = False
+                for raw in tqdm(fp, desc=f'reading {path}', unit=' lines'):  # type: bytes
+                    if heading:
+                        _, vector_dim = map(int, raw.rstrip().split(b' '))
+                        heading = False
                         continue
                     token, *vs = raw.rstrip().split(b' ')
 
-                    if vec_dim is None:
-                        vec_dim = len(vs)
-                    elif vec_dim != len(vs):
-                        raise ValueError(f'vector dimensions are not consistent, {vec_dim} != {len(vs)}')
+                    if vector_dim is None:
+                        vector_dim = len(vs)
+                    elif vector_dim != len(vs):
+                        logger.error(f'vector dimensions are not consistent, {vector_dim} != {len(vs)} :: {token}')
+                        continue
 
-                    self.add_token_(str(token, encoding='utf-8'))
-                    self.vectors.append(torch.tensor([float(v) for v in vs], dtype=torch.float32))
+                    self.add_token_(str(token, encoding='utf-8', errors=unicode_error))
+                    vectors.append(torch.tensor([float(v) for v in vs], dtype=dtype))
 
-            self.vectors = torch.stack(self.vectors, 0)
-            self.save(pt_path)
+            self.vectors = torch.stack(vectors, 0)
+            self.save(dump_path)
         else:
-            self.load(pt_path)
+            self.load(dump_path)
 
     @torch.no_grad()
-    def query_(self, token: str, vector: Tensor, *fallbacks) -> bool:
+    def query_(self, token: str, vector: Tensor, *fallback_fns) -> bool:
         if token in self:
             vector[:] = self.vectors[self.stoi[token]]
             return True
-        for fallback in fallbacks:
-            new_token = fallback(token)
+        for fallback_fn in fallback_fns:
+            new_token = fallback_fn(token)
             if new_token in self:
                 vector[:] = self.vectors[self.stoi[new_token]]
                 return True
@@ -214,23 +195,35 @@ class Vectors(Vocab):
 
 class Glove(Vectors):
     def __init__(self, name: str, dim: int) -> None:
+        path = data_path / f'glove.{name}'
         super(Glove, self).__init__(
             urls_dest=[(
                 f'http://nlp.stanford.edu/data/glove.{name}.zip',
-                data_path / f'glove.{name}' / f'glove.{name}.zip'
+                path / f'glove.{name}.zip'
             )],
-            path=data_path / f'glove.{name}' / f'glove.{name}.{dim}d.txt',
-            has_head_info=False,
+            path=path / f'glove.{name}.{dim}d.txt', heading=False,
         )
 
 
 class FastTest(Vectors):
     def __init__(self, lang: str) -> None:
+        path = data_path / 'fasttext'
         super(FastTest, self).__init__(
             urls_dest=[(
                 f'https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.{lang}.vec',
-                data_path / 'fasttext' / f'wiki.{lang}.vec',
+                path / f'wiki.{lang}.vec',
             )],
-            path=data_path / 'fasttext' / f'wiki.{lang}.vec',
-            has_head_info=True,
+            path=path / f'wiki.{lang}.vec', heading=True,
+        )
+
+
+class NLPLVectors(Vectors):
+    def __init__(self, index: int, repository: str = '20', name: str = 'model.txt', heading: bool = False) -> None:
+        path = data_path / 'nlpl' / f'{index}'
+        super(NLPLVectors, self).__init__(
+            urls_dest=[(
+                f'http://vectors.nlpl.eu/repository/{repository}/{index}.zip',
+                path / f'{index}.zip',
+            )],
+            path=path / name, heading=heading,
         )
