@@ -28,7 +28,7 @@ class Vocab(object):
         self.freq = counter
         self.unk_token = unk_token
         self.pad_token = pad_token
-        self.special_tokens = special_tokens
+        self.special_tokens = tuple(t for t in (unk_token, pad_token, *special_tokens) if t is not None)
         self.unk_idx = 0
         self.max_size = max_size
         self.min_freq = min_freq
@@ -41,7 +41,7 @@ class Vocab(object):
             self.unk_idx = self.add_token_(unk_token)
             self.stoi = defaultdict(self._default_factory, **self.stoi)
 
-        for token in (pad_token, *special_tokens):
+        for token in special_tokens:
             if token is not None:
                 self.add_token_(token)
 
