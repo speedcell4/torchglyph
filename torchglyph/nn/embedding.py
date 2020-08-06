@@ -165,3 +165,31 @@ class FrageEmbedding(nn.Module, metaclass=SupportPackMeta):
     def forward(self, x: Tensor) -> Tensor:
         weight = (self.weight * self.mask)[self.partitions[x]]
         return torch.einsum('...x,...zx->...z', self.embedding(x), weight)
+
+
+class TokenDropout(nn.Module, metaclass=SupportPackMeta):
+    def __init__(self, vocab: Vocab, dropout_idx: int = None) -> None:
+        super(TokenDropout, self).__init__()
+        freq = torch.tensor([vocab.freq.get(token, 1) for token in vocab.stoi], dtype=torch.float32)
+        freq = 1 / (1 + freq)
+        freq[:len(vocab.special_tokens)] = 0.
+
+        if dropout_idx is None:
+            assert vocab.unk_idx is not None
+            dropout_idx = vocab.unk_idx
+
+        self.dropout_idx = dropout_idx
+        self.register_buffer('freq', freq)
+
+    def extra_repr(self) -> str:
+        freq = []
+        if self.freq.size(0) < 10:
+            freq.extend(self.freq.detach().cpu().tolist())
+        else:
+            freq.extend(self.freq[:+5].detach().cpu().tolist())
+            freq.extend(self.freq[-5:].detach().cpu().tolist())
+        return f'{", ".join(str(f) for f in freq)}'
+
+    def forward(self, indices: Tensor) -> Tensor:
+        mask = torch.rand_like(indices, dtype=torch.float32) < self.freq[indices]
+        return torch.masked_fill(indices, mask, value=self.dropout_idx)
