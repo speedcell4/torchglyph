@@ -41,7 +41,7 @@ class Vocab(object):
             self.unk_idx = self.add_token_(unk_token)
             self.stoi = defaultdict(self._default_factory, **self.stoi)
 
-        for token in special_tokens:
+        for token in self.special_tokens:
             if token is not None:
                 self.add_token_(token)
 
