@@ -1,7 +1,7 @@
 # TorchGlyph
 
 ![Unit Tests](https://github.com/speedcell4/torchglyph/workflows/Unit%20Tests/badge.svg)
-![Upload Python Package](https://github.com/speedcell4/torchglyph/workflows/Upload%20Python%20Package/badge.svg)
+[![Downloads](https://pepy.tech/badge/torchglyph)](https://pepy.tech/project/torchglyph)
 
 ## Requirements
 
