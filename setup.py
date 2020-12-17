@@ -15,6 +15,7 @@ setup(
         'tqdm',
         'numpy',
         'einops',
+        'torchrua',
     ],
     extras_require={
         'dev': [

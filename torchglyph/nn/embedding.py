@@ -7,13 +7,13 @@ from torch import Tensor
 from torch import nn
 from torch.nn import init
 from torch.nn.utils.rnn import PackedSequence, pack_sequence, pack_padded_sequence
+from torchrua import PackedMeta
 
-from torchglyph.functional import SupportPackMeta
 from torchglyph.nn.utils import partition_by_entropy
 from torchglyph.vocab import Vocab
 
 
-class TokEmbedding(nn.Embedding, metaclass=SupportPackMeta):
+class TokEmbedding(nn.Embedding, metaclass=PackedMeta):
     def __init__(self, num_embeddings: int, embedding_dim: int, padding_idx: int = None, unk_idx: int = None,
                  max_norm: float = None, norm_type: float = 2., scale_grad_by_freq: bool = False,
                  sparse: bool = False, _weight: Tensor = None):
@@ -113,7 +113,7 @@ class ContiguousSubLstmEmbedding(nn.Module):
         return fidx._replace(data=torch.cat([fenc[fidx.data], benc[bidx.data]], dim=-1))
 
 
-class FrageEmbedding(nn.Module, metaclass=SupportPackMeta):
+class FrageEmbedding(nn.Module, metaclass=PackedMeta):
     def __init__(self, embedding_dim: int, num_partitions: int, vocab: Vocab) -> None:
         super(FrageEmbedding, self).__init__()
 
@@ -167,7 +167,7 @@ class FrageEmbedding(nn.Module, metaclass=SupportPackMeta):
         return torch.einsum('...x,...zx->...z', self.embedding(x), weight)
 
 
-class TokenDropout(nn.Module, metaclass=SupportPackMeta):
+class TokenDropout(nn.Module, metaclass=PackedMeta):
     def __init__(self, vocab: Vocab, repl_idx: int = None) -> None:
         super(TokenDropout, self).__init__()
         freq = torch.tensor([vocab.freq.get(token, 1) for token in vocab.stoi], dtype=torch.float32)
