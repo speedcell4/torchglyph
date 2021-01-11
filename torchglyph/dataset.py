@@ -127,9 +127,11 @@ class DataLoader(data.DataLoader):
 
         return tuple(
             DataLoader(
-                dataset=dataset, shuffle=shuffle and (index == 0),
-                batch_size=batch_size, collate_fn=dataset.collate_fn,
-                num_workers=num_workers, pin_memory=pin_memory, drop_last=drop_last,
+                dataset=dataset, batch_size=batch_size,
+                collate_fn=dataset.collate_fn,
+                shuffle=shuffle if index == 0 else False,
+                drop_last=drop_last if index == 0 else False,
+                num_workers=num_workers, pin_memory=pin_memory,
             )
             for index, (dataset, batch_size) in enumerate(zip(datasets, batch_sizes))
         )
