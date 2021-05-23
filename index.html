@@ -36,14 +36,12 @@
 <p><a href="https://github.com/speedcell4/torchglyph/actions"><img alt="Actions Status" src="https://github.com/speedcell4/torchglyph/workflows/unit-tests/badge.svg" /></a></p>
 <h2 id="installation">Installation</h2>
 <p>Simply run this command in your terminal,</p>
-<pre><code class="bash">pip install torchglyph
+<pre><code class="language-bash">pip install torchglyph
 </code></pre>
-
 <h2 id="quickstart">Quickstart</h2>
 <p>The atomic data processor of TorchGlyph is called <code>Proc</code>. Compose operator <code>+</code> is provided to produce complex <code>Proc</code> by composing two simple <code>Proc</code>s. </p>
-<pre><code class="python">ToLower() + ReplaceDigits(repl_token='&lt;digits&gt;')
+<pre><code class="language-python">ToLower() + ReplaceDigits(repl_token='&lt;digits&gt;')
 </code></pre>
-
 <p>Composed <code>Proc</code>s act like data <code>Pipe</code>lines, where raw textual data is processed incrementally. According to the stages, they are roughly categorized into four-groups:</p>
 <ul>
 <li><code>pre</code> for processing <em>before</em> building vocabulary;</li>
@@ -52,7 +50,7 @@
 <li><code>batch</code> for collating examples to build <em>batches</em>.</li>
 </ul>
 <p>Defining the <code>Pipe</code>s of your dataset is the first step to build a dataset, you can build it from scratch, </p>
-<pre><code class="python">class PackedIdxSeqPipe(Pipe):
+<pre><code class="language-python">class PackedIdxSeqPipe(Pipe):
     def __init__(self, device, dtype=torch.long) -&gt; None:
         super(PackedIdxSeqPipe, self).__init__(
             pre=None,
@@ -61,9 +59,8 @@
             batch=PackSeq(enforce_sorted=False) + ToDevice(device=device),
         )
 </code></pre>
-
 <p>or you can simply manipulate existing <code>Pipe</code>s by calling <code>.with_</code> method.</p>
-<pre><code class="python">class PackedTokSeqPipe(PackedIdxSeqPipe):
+<pre><code class="language-python">class PackedTokSeqPipe(PackedIdxSeqPipe):
     def __init__(self, device, unk_token, special_tokens=(),
                  threshold=THRESHOLD, dtype=torch.long) -&gt; None:
         super(PackedTokSeqPipe, self).__init__(device=device, dtype=dtype)
@@ -138,7 +135,7 @@
 
   <!--
   MkDocs version      : 1.1.2
-  Docs Build Date UTC : 2020-07-27 13:17:44.950353+00:00
+  Docs Build Date UTC : 2021-05-23 06:37:48.957227+00:00
   -->
 </body>
 </html>
