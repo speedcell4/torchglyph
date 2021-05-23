@@ -3,7 +3,7 @@ from collections import Counter
 from typing import Tuple, List, Union, Optional
 
 from torchglyph.proc import Proc
-from torchglyph.vocab import Vocab, Vectors, Glove, FastTest
+from torchglyph.vocab import Vocab, Vectors, Glove, FastText
 
 logger = logging.getLogger(__name__)
 
@@ -113,9 +113,9 @@ class LoadGlove(LoadVectors):
 
 
 class LoadFastText(LoadVectors):
-    def __init__(self, *fallback_fns, lang: str, remove_missing: bool) -> None:
+    def __init__(self, *fallback_fns, name: str, lang: str, remove_missing: bool) -> None:
         super(LoadFastText, self).__init__(
             *fallback_fns,
-            vectors=FastTest(lang=lang),
+            vectors=FastText(name=name, lang=lang),
             remove_missing=remove_missing,
         )

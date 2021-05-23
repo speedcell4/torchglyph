@@ -28,7 +28,7 @@ class Vocab(object):
         self.freq = counter
         self.unk_token = unk_token
         self.pad_token = pad_token
-        self.special_tokens = special_tokens
+        self.special_tokens = tuple(t for t in (unk_token, pad_token, *special_tokens) if t is not None)
         self.unk_idx = 0
         self.max_size = max_size
         self.min_freq = min_freq
@@ -41,7 +41,7 @@ class Vocab(object):
             self.unk_idx = self.add_token_(unk_token)
             self.stoi = defaultdict(self._default_factory, **self.stoi)
 
-        for token in (pad_token, *special_tokens):
+        for token in self.special_tokens:
             if token is not None:
                 self.add_token_(token)
 
@@ -195,35 +195,48 @@ class Vectors(Vocab):
 
 class Glove(Vectors):
     def __init__(self, name: str, dim: int) -> None:
-        path = data_path / f'glove.{name}'
+        root_path = data_path / f'glove.{name}'
         super(Glove, self).__init__(
             urls_dest=[(
                 f'http://nlp.stanford.edu/data/glove.{name}.zip',
-                path / f'glove.{name}.zip'
+                root_path / f'glove.{name}.zip'
             )],
-            path=path / f'glove.{name}.{dim}d.txt', heading=False,
+            path=root_path / f'glove.{name}.{dim}d.txt', heading=False,
         )
 
 
-class FastTest(Vectors):
-    def __init__(self, lang: str) -> None:
-        path = data_path / 'fasttext'
-        super(FastTest, self).__init__(
-            urls_dest=[(
-                f'https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.{lang}.vec',
-                path / f'wiki.{lang}.vec',
-            )],
-            path=path / f'wiki.{lang}.vec', heading=True,
+class FastText(Vectors):
+    def __init__(self, name: str, lang: str) -> None:
+        root_path = data_path / 'fasttext'
+
+        if name == 'cc':
+            url = f'https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.{lang}.300.vec.gz'
+            file_path = root_path / f'cc.{lang}.300.vec.gz'
+            vec_path = root_path / f'cc.{lang}.300.vec'
+        elif name == 'wiki':
+            url = f'https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.{lang}.vec'
+            file_path = root_path / f'wiki.{lang}.vec'
+            vec_path = root_path / f'wiki.{lang}.vec'
+        elif name == 'aligned':
+            url = f'https://dl.fbaipublicfiles.com/fasttext/vectors-aligned/wiki.{lang}.align.vec'
+            file_path = root_path / f'wiki.{lang}.align.vec'
+            vec_path = root_path / f'wiki.{lang}.align.vec'
+        else:
+            raise NotImplementedError(f'name should be one of ["cc", "wiki", "aligned"]')
+
+        super(FastText, self).__init__(
+            urls_dest=[(url, file_path,)],
+            path=vec_path, heading=True,
         )
 
 
 class NLPLVectors(Vectors):
     def __init__(self, index: int, repository: str = '20', name: str = 'model.txt', heading: bool = False) -> None:
-        path = data_path / 'nlpl' / f'{index}'
+        root_path = data_path / 'nlpl' / f'{index}'
         super(NLPLVectors, self).__init__(
             urls_dest=[(
                 f'http://vectors.nlpl.eu/repository/{repository}/{index}.zip',
-                path / f'{index}.zip',
+                root_path / f'{index}.zip',
             )],
-            path=path / name, heading=heading,
+            path=root_path / name, heading=heading,
         )

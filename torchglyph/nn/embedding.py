@@ -1,15 +1,19 @@
+import math
 from typing import Union, Tuple
 
 import torch
 from einops import rearrange
 from torch import Tensor
 from torch import nn
+from torch.nn import init
 from torch.nn.utils.rnn import PackedSequence, pack_sequence, pack_padded_sequence
+from torchrua import PackedMeta
 
-from torchglyph.functional import SupportPackMeta
+from torchglyph.nn.utils import partition_by_entropy
+from torchglyph.vocab import Vocab
 
 
-class TokEmbedding(nn.Embedding, metaclass=SupportPackMeta):
+class TokEmbedding(nn.Embedding, metaclass=PackedMeta):
     def __init__(self, num_embeddings: int, embedding_dim: int, padding_idx: int = None, unk_idx: int = None,
                  max_norm: float = None, norm_type: float = 2., scale_grad_by_freq: bool = False,
                  sparse: bool = False, _weight: Tensor = None):
@@ -107,3 +111,84 @@ class ContiguousSubLstmEmbedding(nn.Module):
         fidx, bidx = indices
         fenc, benc = encoding.data.chunk(2, dim=-1)
         return fidx._replace(data=torch.cat([fenc[fidx.data], benc[bidx.data]], dim=-1))
+
+
+class FrageEmbedding(nn.Module, metaclass=PackedMeta):
+    def __init__(self, embedding_dim: int, num_partitions: int, vocab: Vocab) -> None:
+        super(FrageEmbedding, self).__init__()
+
+        self.num_embeddings = len(vocab)
+        self.embedding_dim = embedding_dim
+        self.num_partitions = num_partitions
+
+        partitions = partition_by_entropy(num_partitions, vocab)
+        partitions = torch.cat([
+            torch.zeros((len(vocab) - partitions.size(0),), dtype=torch.long), partitions], dim=0)
+        self.register_buffer('partitions', partitions)
+
+        self.partition_sizes = [
+            (index == self.partitions).long().sum().detach().cpu().item()
+            for index in range(self.num_partitions)
+        ]
+
+        self.embedding = nn.Embedding(
+            num_embeddings=self.num_embeddings,
+            embedding_dim=embedding_dim,
+            padding_idx=vocab.pad_idx,
+            _weight=vocab.vectors,
+        )
+        self.weight = nn.Parameter(
+            torch.zeros((num_partitions, embedding_dim, embedding_dim), dtype=torch.float32),
+            requires_grad=True,
+        )
+
+        self.register_buffer('mask', torch.zeros((num_partitions, 1, embedding_dim), dtype=torch.float32))
+
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        embedding_dim = self.embedding_dim
+        for index in range(self.num_partitions):
+            init.kaiming_uniform_(self.weight[index, :, :embedding_dim], a=math.sqrt(5))
+            init.constant_(self.mask[index, :, :embedding_dim], 1.)
+            init.constant_(self.mask[index, :, embedding_dim:], 0.)
+            embedding_dim //= 2
+
+    def extra_repr(self) -> str:
+        partition_sizes = ', '.join(map(str, self.partition_sizes))
+        return f'partition_sizes=[{partition_sizes}]'
+
+    def __repr__(self) -> str:
+        args = ', '.join([self.embedding.extra_repr(), self.extra_repr()])
+        return f'{self.__class__.__name__}({args})'
+
+    def forward(self, x: Tensor) -> Tensor:
+        weight = (self.weight * self.mask)[self.partitions[x]]
+        return torch.einsum('...x,...zx->...z', self.embedding(x), weight)
+
+
+class TokenDropout(nn.Module, metaclass=PackedMeta):
+    def __init__(self, vocab: Vocab, repl_idx: int = None) -> None:
+        super(TokenDropout, self).__init__()
+        freq = torch.tensor([vocab.freq.get(token, 1) for token in vocab.stoi], dtype=torch.float32)
+        freq = 1. / (1. + freq)
+        freq[:len(vocab.special_tokens)] = 0.
+
+        if repl_idx is None:
+            assert vocab.unk_idx is not None
+            repl_idx = vocab.unk_idx
+
+        self.repl_idx = repl_idx
+        self.register_buffer('freq', freq)
+
+    def extra_repr(self) -> str:
+        if self.freq.size(0) <= 10:
+            return ', '.join(str(f) for f in self.freq.detach().cpu().tolist())
+        else:
+            freq1 = ', '.join(str(f) for f in self.freq[:+5].detach().cpu().tolist())
+            freq2 = ', '.join(str(f) for f in self.freq[-5:].detach().cpu().tolist())
+            return f'{freq1}, ..., {freq2}'
+
+    def forward(self, indices: Tensor) -> Tensor:
+        mask = torch.rand_like(indices, dtype=torch.float32) < self.freq[indices]
+        return torch.masked_fill(indices, mask=mask, value=self.repl_idx)
