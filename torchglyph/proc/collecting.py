@@ -10,8 +10,8 @@ from torchglyph.vocab import Vocab
 
 
 class ToDevice(Proc):
-    Item = Union[int, float, bool, Tensor, PackedSequence]
-    Batch = Union[Item, Tuple[Item, ...]]
+    Data = Union[int, float, bool, Tensor, PackedSequence]
+    Batch = Union[Data, Tuple[Data, ...]]
 
     def __init__(self, device: Union[int, torch.device]) -> None:
         super(ToDevice, self).__init__()
@@ -25,11 +25,11 @@ class ToDevice(Proc):
     def extra_repr(self) -> str:
         return f'{self.device}'
 
-    def __call__(self, batch: Batch, vocab: Vocab, **kwargs) -> Batch:
+    def __call__(self, batch: Batch, *, vocab: Vocab, **kwargs) -> Batch:
         if isinstance(batch, (Tensor, PackedSequence)):
             return batch.to(device=self.device)
-        if isinstance(batch, (list, tuple)):
-            return type(batch)([self(e, vocab=vocab) for e in batch])
+        if isinstance(batch, (list, tuple, set)):
+            return type(batch)([self(e, vocab=vocab, **kwargs) for e in batch])
         return batch
 
 
