@@ -43,9 +43,13 @@ class ToTensor(Proc):
 
     def __call__(self, data: Any, **kwargs) -> Tensor:
         try:
-            if isinstance(data, np.ndarray):
-                return torch.from_numpy(data).to(dtype=self.dtype).requires_grad_(False)
-            return torch.tensor(data, dtype=self.dtype).requires_grad_(False)
+            if torch.is_tensor(data):
+                tensor = data.clone()
+            elif isinstance(data, np.ndarray):
+                tensor = torch.from_numpy(data)
+            else:
+                tensor = torch.tensor(data)
+            return tensor.to(dtype=self.dtype).requires_grad_(False)
         except ValueError as err:
             if err.args[0] == "too many dimensions 'str'":
                 raise ValueError(f"'{data}' can not be converted to {Tensor.__name__}")
