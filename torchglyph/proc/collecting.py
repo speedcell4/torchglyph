@@ -29,7 +29,7 @@ class ToDevice(Proc):
         if isinstance(batch, (Tensor, PackedSequence)):
             return batch.to(device=self.device)
         if isinstance(batch, (list, tuple, set)):
-            return type(batch)([self(e, vocab=vocab, **kwargs) for e in batch])
+            return type(batch)([self(example, vocab=vocab, **kwargs) for example in batch])
         return batch
 
 
@@ -46,7 +46,7 @@ class ToTensor(Proc):
             if torch.is_tensor(data):
                 tensor = data.clone()
             elif isinstance(data, np.ndarray):
-                tensor = torch.from_numpy(data)
+                tensor = torch.from_numpy(data).clone()
             else:
                 tensor = torch.tensor(data)
             return tensor.to(dtype=self.dtype).requires_grad_(False)
