@@ -5,11 +5,13 @@ from torch.nn.utils.rnn import PackedSequence
 from torchrua.padding import pad_packed_sequence
 
 from torchglyph.pipe import Pipe, THRESHOLD
-from torchglyph.proc import ToTensor, UpdateCounter, BuildVocab, StatsVocab, Numbering
-from torchglyph.proc.packing import PackList
+from torchglyph.proc import ToTensor, UpdateCounter, BuildVocab, StatsVocab, Numbering, Lift
+from torchglyph.proc.catting import CatList
+from torchglyph.proc.packing import PackList, PackListList
 
 __all__ = [
-    'PackListNumPipe', 'PackListStrPipe'
+    'PackListNumPipe', 'PackListStrPipe',
+    'PackListListNumPipe', 'PackListListStrPipe',
 ]
 
 
@@ -27,8 +29,7 @@ class PackListStrPipe(PackListNumPipe):
     def __init__(self, device: torch.device,
                  unk_token: Optional[str], pad_token: Optional[str],
                  special_tokens: Tuple[Optional[str], ...] = (),
-                 threshold: int = THRESHOLD,
-                 dtype: torch.dtype = torch.long) -> None:
+                 threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
         super(PackListStrPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=UpdateCounter(),
@@ -48,3 +49,29 @@ class PackListStrPipe(PackListNumPipe):
             self.vocab.itos[data[index1][index2]] for index2 in range(token_size)]
             for index1, token_size in enumerate(token_sizes)
         ]
+
+
+class PackListListNumPipe(Pipe):
+    def __init__(self, device: torch.device, dtype: torch.dtype = torch.long) -> None:
+        super(PackListListNumPipe, self).__init__(
+            pre=None,
+            vocab=None,
+            post=Lift(ToTensor(dtype=dtype)) + CatList(device=None),
+            batch=PackListList(device=device),
+        )
+
+
+class PackListListStrPipe(PackListListNumPipe):
+    def __init__(self, device: torch.device,
+                 unk_token: Optional[str], pad_token: Optional[str],
+                 special_tokens: Tuple[Optional[str], ...] = (),
+                 threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
+        super(PackListListStrPipe, self).__init__(device=device, dtype=dtype)
+        self.with_(
+            pre=Lift(UpdateCounter()),
+            vocab=[
+                BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
+                StatsVocab(threshold=threshold),
+            ],
+            post=Lift(Numbering()) + ...,
+        )
