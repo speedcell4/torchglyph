@@ -3,14 +3,29 @@ from typing import List, Optional, Tuple
 import torch
 from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence
-from torchrua import pack_sequence, reduce_catted_sequences
+from torchrua import pack_sequence, reduce_catted_sequences, batch_sizes_to_ptr, accumulate_sizes
 
 from torchglyph.proc import Proc
 
 __all__ = [
+    'ToTokenPtr',
     'PackList',
     'PackListList',
 ]
+
+
+class ToTokenPtr(Proc):
+    def __call__(self, sequence: PackedSequence, **kwargs) -> PackedSequence:
+        batch_sizes = sequence.batch_sizes.to(device=sequence.data.device)
+        _, batch_ptr, _ = batch_sizes_to_ptr(batch_sizes=batch_sizes)
+        acc_batch_sizes = accumulate_sizes(sizes=batch_sizes)
+
+        return PackedSequence(
+            data=acc_batch_sizes[sequence.data] + batch_ptr,
+            batch_sizes=sequence.batch_sizes,
+            sorted_indices=sequence.sorted_indices,
+            unsorted_indices=sequence.unsorted_indices,
+        )
 
 
 class PackList(Proc):
