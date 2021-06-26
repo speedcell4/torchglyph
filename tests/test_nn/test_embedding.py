@@ -6,7 +6,7 @@ from torch.nn.utils.rnn import pack_padded_sequence, pack_sequence
 
 from tests.test_nn.corpora import SeqCorpus, SubCorpus, SENTENCES
 from tests.utilities import assert_pack_allclose
-from torchglyph.nn import TokEmbedding, SubLstmEmbedding
+from torchglyph.nn import TokenEmbedding, CharLstmEmbedding
 from torchglyph.nn.embedding import FrageEmbedding
 from torchglyph.vocab import Vocab
 
@@ -19,7 +19,7 @@ from torchglyph.vocab import Vocab
 )
 def test_tok_embedding(batch_first, batch_size, char_dim, sentences):
     loader, = SeqCorpus.new(sentences=sentences, batch_size=batch_size, batch_first=batch_first)
-    layer = TokEmbedding(
+    layer = TokenEmbedding(
         num_embeddings=len(loader.vocabs.pad), embedding_dim=char_dim,
     )
 
@@ -44,7 +44,7 @@ def test_tok_embedding(batch_first, batch_size, char_dim, sentences):
 )
 def test_sub_lstm_embedding(batch_first, batch_size, char_dim, hidden_dim, sentences):
     loader, = SubCorpus.new(sentences=sentences, batch_size=batch_size, batch_first=batch_first)
-    layer = SubLstmEmbedding(
+    layer = CharLstmEmbedding(
         num_embeddings=len(loader.vocabs.pad), embedding_dim=char_dim,
         hidden_dim=hidden_dim, dropout=0,
     )
