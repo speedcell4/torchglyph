@@ -9,7 +9,7 @@ from torch import Tensor
 from torch.nn import init
 from tqdm import tqdm
 
-from torchglyph import data_path
+from torchglyph import usr_data_path
 from torchglyph.io import download_and_unzip
 
 logger = logging.getLogger(__name__)
@@ -195,7 +195,7 @@ class Vectors(Vocab):
 
 class Glove(Vectors):
     def __init__(self, name: str, dim: int) -> None:
-        root_path = data_path / f'glove.{name}'
+        root_path = usr_data_path / f'glove.{name}'
         super(Glove, self).__init__(
             urls_dest=[(
                 f'http://nlp.stanford.edu/data/glove.{name}.zip',
@@ -207,7 +207,7 @@ class Glove(Vectors):
 
 class FastText(Vectors):
     def __init__(self, name: str, lang: str) -> None:
-        root_path = data_path / 'fasttext'
+        root_path = usr_data_path / 'fasttext'
 
         if name == 'cc':
             url = f'https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.{lang}.300.vec.gz'
@@ -232,7 +232,7 @@ class FastText(Vectors):
 
 class NLPLVectors(Vectors):
     def __init__(self, index: int, repository: str = '20', name: str = 'model.txt', heading: bool = False) -> None:
-        root_path = data_path / 'nlpl' / f'{index}'
+        root_path = usr_data_path / 'nlpl' / f'{index}'
         super(NLPLVectors, self).__init__(
             urls_dest=[(
                 f'http://vectors.nlpl.eu/repository/{repository}/{index}.zip',

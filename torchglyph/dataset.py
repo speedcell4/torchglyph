@@ -8,7 +8,7 @@ from typing import Union, List, Type, Tuple, NamedTuple, Dict
 from torch.utils import data
 from tqdm import tqdm
 
-from torchglyph import data_path
+from torchglyph import usr_data_path
 from torchglyph.io import download_and_unzip
 from torchglyph.pipe import Pipe
 
@@ -62,7 +62,7 @@ class Dataset(data.Dataset):
         ])
 
     @classmethod
-    def paths(cls, root: Path = data_path) -> Tuple[Path, ...]:
+    def paths(cls, root: Path = usr_data_path) -> Tuple[Path, ...]:
         root = root / getattr(cls, 'name', cls.__name__).lower()
 
         ans = []
