@@ -2,12 +2,6 @@ import re
 from typing import Pattern, List
 
 from torchglyph.proc import RecurStr
-from torchglyph.vocab import Vocab
-
-
-class Numbering(RecurStr):
-    def process(self, data: str, vocab: Vocab, **kwargs) -> int:
-        return vocab.stoi[data]
 
 
 class ToInt(RecurStr):

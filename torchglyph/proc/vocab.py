@@ -1,6 +1,6 @@
 import logging
 from collections import Counter
-from typing import Tuple, List, Union, Optional
+from typing import Tuple, List, Union, Optional, Set
 
 from torchglyph.proc import Proc
 from torchglyph.vocab import Vocab, Vectors, Glove, FastText
@@ -75,6 +75,18 @@ class StatsVocab(Proc):
                         f'{", ".join(vocab.itos[-self.threshold // 2:])}]')
 
         return vocab
+
+
+class Numbering(Proc):
+    Str = Union[str, Set[str], List[str], Tuple[str, ...]]
+    Int = Union[int, Set[int], List[int], Tuple[int, ...]]
+
+    def __call__(self, data: Str, *, vocab: Vocab, **kwargs) -> Int:
+        if isinstance(data, str):
+            return vocab.stoi[data]
+        if isinstance(data, (set, list, tuple)):
+            return type(data)([vocab.stoi[datum] for datum in data])
+        raise TypeError(f'type {type(data)} is not supported.')
 
 
 class LoadVectors(Proc):
