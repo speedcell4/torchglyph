@@ -1,11 +1,11 @@
-from typing import Any, Union, List, Tuple
+from typing import Any, Union, List, Tuple, Set
 
 import numpy as np
 import torch
 from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence
 
-from torchglyph.proc import Proc
+from torchglyph.proc.abc import Proc
 
 __all__ = [
     'ToTensor', 'ToDevice',
@@ -37,8 +37,8 @@ class ToTensor(Proc):
 
 
 class ToDevice(Proc):
-    Data = Union[int, float, bool, Tensor, Tuple[Tensor, ...], PackedSequence]
-    Batch = Union[Data, Tuple[Data, ...]]
+    Data = Union[int, bool, float, Tensor, Tuple[Tensor, ...], PackedSequence]
+    Batch = Union[Data, Set[Data], List[Data], Tuple[Data, ...]]
 
     def __init__(self, device: Union[int, torch.device]) -> None:
         super(ToDevice, self).__init__()
@@ -55,7 +55,7 @@ class ToDevice(Proc):
     def __call__(self, data: Batch, **kwargs) -> Batch:
         if isinstance(data, (Tensor, PackedSequence)):
             return data.to(device=self.device)
-        if isinstance(data, (list, tuple, set)):
+        if isinstance(data, (set, list, tuple)):
             return type(data)([self(datum, **kwargs) for datum in data])
         return data
 

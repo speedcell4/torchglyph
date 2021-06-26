@@ -5,7 +5,7 @@ from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence
 from torchrua import pack_sequence, reduce_catted_sequences, batch_sizes_to_ptr, accumulate_sizes
 
-from torchglyph.proc import Proc
+from torchglyph.proc.abc import Proc
 
 __all__ = [
     'ToTokenPtr',

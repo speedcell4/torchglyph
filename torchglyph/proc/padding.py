@@ -4,7 +4,7 @@ import torch
 from torch import Tensor
 from torchrua.padding import pad_sequence
 
-from torchglyph.proc import Proc
+from torchglyph.proc.abc import Proc
 
 __all__ = [
     'PadList',
