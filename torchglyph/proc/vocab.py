@@ -1,20 +1,28 @@
 import logging
 from collections import Counter
-from typing import Tuple, List, Union, Optional, Set
+from typing import Tuple, Optional
 
-from torchglyph.proc import Proc
+from torchglyph.proc.abc import Proc
+from torchglyph.proc.mapping import Map
 from torchglyph.vocab import Vocab, Vectors, Glove, FastText
 
 logger = logging.getLogger(__name__)
 
+__all__ = [
+    'UpdateCounter', 'Numbering', 'BuildVocab', 'StatsVocab',
+    'LoadVectors', 'LoadGlove', 'LoadFastText',
+]
 
-class UpdateCounter(Proc):
-    def __call__(self, data: Union[str, List[str]], counter: Counter, *args, **kwargs) -> Union[str, List[str]]:
-        if isinstance(data, str):
-            counter[data] += 1
-        else:
-            counter.update(data)
-        return data
+
+class UpdateCounter(Map):
+    def map(self, token: str, *, counter: Counter, **kwargs) -> str:
+        counter[token] += 1
+        return token
+
+
+class Numbering(Map):
+    def map(self, token: str, *, vocab: Vocab, **kwargs) -> int:
+        return vocab.stoi[token]
 
 
 class BuildVocab(Proc):
@@ -27,20 +35,19 @@ class BuildVocab(Proc):
 
     def extra_repr(self) -> str:
         args = ', '.join(set([
-            f"'{t}'" for t in (self.unk_token, self.pad_token, *self.special_tokens)
-            if t is not None
+            f"'{token}'" for token in (self.unk_token, self.pad_token, *self.special_tokens)
+            if token is not None
         ]))
         if len(args) == 0:
             return ''
         return f'with={args}'
 
-    def __call__(self, vocab: Counter, *args, special_tokens: Tuple[str, ...],
-                 max_size: Optional[int], min_freq: int, **kwargs) -> Vocab:
+    def __call__(self, vocab: Counter, *, max_size: Optional[int], min_freq: int, **kwargs) -> Vocab:
         return Vocab(
             counter=vocab,
             unk_token=self.unk_token,
             pad_token=self.pad_token,
-            special_tokens=(*self.special_tokens, *special_tokens),
+            special_tokens=self.special_tokens,
             max_size=max_size, min_freq=min_freq,
         )
 
@@ -75,18 +82,6 @@ class StatsVocab(Proc):
                         f'{", ".join(vocab.itos[-self.threshold // 2:])}]')
 
         return vocab
-
-
-class Numbering(Proc):
-    Str = Union[str, Set[str], List[str], Tuple[str, ...]]
-    Int = Union[int, Set[int], List[int], Tuple[int, ...]]
-
-    def __call__(self, data: Str, *, vocab: Vocab, **kwargs) -> Int:
-        if isinstance(data, str):
-            return vocab.stoi[data]
-        if isinstance(data, (set, list, tuple)):
-            return type(data)([vocab.stoi[datum] for datum in data])
-        raise TypeError(f'type {type(data)} is not supported.')
 
 
 class LoadVectors(Proc):

@@ -2,11 +2,9 @@ import re
 from typing import Union, List, Tuple, Set, Pattern, Any
 
 from torchglyph.proc.abc import Proc
-from torchglyph.vocab import Vocab
 
 __all__ = [
     'Map',
-    'Numbering',
     'ToInt', 'ToBool', 'ToFloat',
     'ToLower', 'ToUpper', 'ToCapitalized',
     'Regex',
@@ -23,39 +21,34 @@ class Map(Proc):
         return type(data)([self(datum, **kwargs) for datum in data])
 
 
-class Numbering(Map):
-    def map(self, data: str, *, vocab: Vocab, **kwargs) -> int:
-        return vocab.stoi[data]
-
-
 class ToInt(Map):
-    def map(self, data: str, **kwargs) -> int:
-        return int(data)
+    def map(self, token: str, **kwargs) -> int:
+        return int(token)
 
 
 class ToBool(Map):
-    def map(self, data: str, **kwargs) -> bool:
-        return bool(data)
+    def map(self, token: str, **kwargs) -> bool:
+        return bool(token)
 
 
 class ToFloat(Map):
-    def map(self, data: str, **kwargs) -> float:
-        return float(data)
+    def map(self, token: str, **kwargs) -> float:
+        return float(token)
 
 
 class ToLower(Map):
-    def map(self, data: str, **kwargs) -> str:
-        return data.lower()
+    def map(self, token: str, **kwargs) -> str:
+        return token.lower()
 
 
 class ToUpper(Map):
-    def map(self, data: str, **kwargs) -> str:
-        return data.upper()
+    def map(self, token: str, **kwargs) -> str:
+        return token.upper()
 
 
 class ToCapitalized(Map):
-    def map(self, data: str, **kwargs) -> str:
-        return data.capitalize()
+    def map(self, token: str, **kwargs) -> str:
+        return token.capitalize()
 
 
 class Regex(Map):
@@ -67,5 +60,5 @@ class Regex(Map):
     def extra_repr(self) -> str:
         return f'{self.pattern} -> {self.repl}'
 
-    def map(self, data: str, **kwargs) -> str:
-        return re.sub(pattern=self.pattern, repl=self.repl, string=data)
+    def map(self, token: str, **kwargs) -> str:
+        return re.sub(pattern=self.pattern, repl=self.repl, string=token)
