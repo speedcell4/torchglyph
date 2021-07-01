@@ -1,4 +1,5 @@
-from einops import rearrange
+from aku import Literal
+from einops.layers.torch import Reduce
 from torch import nn, Tensor
 from torch.nn.utils.rnn import PackedSequence
 from torchrua import PackedMeta, PackedSequential
@@ -15,7 +16,8 @@ class TokenEmbedding(nn.Embedding, metaclass=PackedMeta):
 
 class CharLstmEmbedding(nn.Module):
     def __init__(self, hidden_dim: int, num_layers: int = 1, dropout: float = 0.5,
-                 bias: bool = True, bidirectional: bool = True, *,
+                 bias: bool = True, bidirectional: bool = True,
+                 reduction: Literal['max', 'mean'] = 'max', *,
                  char_embedding: TokenEmbedding) -> None:
         super(CharLstmEmbedding, self).__init__()
 
@@ -23,6 +25,7 @@ class CharLstmEmbedding(nn.Module):
             char_embedding,
             nn.Dropout(dropout),
         )
+
         self.rnn = nn.LSTM(
             input_size=char_embedding.embedding_dim,
             hidden_size=hidden_dim,
@@ -32,8 +35,9 @@ class CharLstmEmbedding(nn.Module):
 
         self.num_directions = 2 if self.rnn.bidirectional else 1
         self.embedding_dim = self.rnn.hidden_size * self.num_directions
+        self.reduce = Reduce('(d l) b x -> b (d x)', reduction=reduction, d=self.num_directions)
 
     def forward(self, indices: PackedSequence) -> Tensor:
         embedding = self.embedding(indices)
         _, (embedding, _) = self.rnn(embedding)
-        return rearrange(embedding, '(d l) n x -> l n (d x)', d=self.num_directions)[-1]
+        return self.reduce(embedding)

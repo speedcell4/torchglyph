@@ -12,6 +12,7 @@ setup(
     author_email='speedcell4@gmail.com',
     description='Data Processor Combinators for Natural Language Processing',
     install_requires=[
+        'aku',
         'tqdm',
         'numpy',
         'einops',
