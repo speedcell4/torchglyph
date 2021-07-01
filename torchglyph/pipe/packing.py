@@ -26,6 +26,17 @@ class PackListNumPipe(Pipe):
             batch=PackList(device=device),
         )
 
+    def inv(self, sequence: PackedSequence) -> List[List[Tuple[int, bool, float]]]:
+        data, token_sizes = pad_packed_sequence(sequence=sequence, batch_first=True)
+
+        data = data.detach().cpu().tolist()
+        token_sizes = token_sizes.detach().cpu().tolist()
+
+        return [
+            [data[index1][index2] for index2 in range(token_size)]
+            for index1, token_size in enumerate(token_sizes)
+        ]
+
 
 class PackListStrPipe(PackListNumPipe):
     def __init__(self, device: torch.device,
@@ -43,15 +54,11 @@ class PackListStrPipe(PackListNumPipe):
         )
 
     def inv(self, sequence: PackedSequence) -> List[List[str]]:
-        data, token_sizes = pad_packed_sequence(sequence=sequence, batch_first=True)
-        assert data.dim() == 2, f'{data.dim()} != 2'
-
-        data = data.detach().cpu().tolist()
-        token_sizes = token_sizes.detach().cpu().tolist()
+        assert sequence.data.dim() == 1, f'{sequence.data.dim()} != 1'
 
         return [
-            [self.vocab.itos[data[index1][index2]] for index2 in range(token_size)]
-            for index1, token_size in enumerate(token_sizes)
+            [self.vocab.itos[datum] for datum in data]
+            for data in super(PackListStrPipe, self).inv(sequence)
         ]
 
 

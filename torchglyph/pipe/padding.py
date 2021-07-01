@@ -35,6 +35,15 @@ class PadListNumPipe(Pipe):
             batch=PadList(batch_first=batch_first, padding_value=padding_value, device=device),
         )
 
+    def inv(self, data: Tensor, token_sizes: Tensor) -> List[List[Tuple[int, bool, float]]]:
+        data = data.detach().cpu().tolist()
+        token_sizes = token_sizes.detach().cpu().tolist()
+
+        return [
+            [data[index1][index2] for index2 in range(token_size)]
+            for index1, token_size in enumerate(token_sizes)
+        ]
+
 
 class PadListStrPipe(PadListNumPipe):
     def __init__(self, batch_first: bool, padding_value: Union[int, bool, float], device: torch.device,
@@ -56,11 +65,9 @@ class PadListStrPipe(PadListNumPipe):
 
     def inv(self, data: Tensor, token_sizes: Tensor) -> List[List[str]]:
         assert data.dim() == 2, f'{data.dim()} != 2'
-
-        data = data.detach().cpu().tolist()
-        token_sizes = token_sizes.detach().cpu().tolist()
+        assert token_sizes.dim() == 1, f'{token_sizes.dim()} == {1}'
 
         return [
-            [self.vocab.itos[data[index1][index2]] for index2 in range(token_size)]
-            for index1, token_size in enumerate(token_sizes)
+            [self.vocab.itos[datum] for datum in data]
+            for data in super(PadListStrPipe, self).inv(data=data, token_sizes=token_sizes)
         ]
