@@ -1,5 +1,6 @@
 from torchglyph.proc.abc import *
 from torchglyph.proc.catting import *
+from torchglyph.proc.list import *
 from torchglyph.proc.mapping import *
 from torchglyph.proc.packing import *
 from torchglyph.proc.padding import *

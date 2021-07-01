@@ -44,11 +44,13 @@ class PackListStrPipe(PackListNumPipe):
 
     def inv(self, sequence: PackedSequence) -> List[List[str]]:
         data, token_sizes = pad_packed_sequence(sequence=sequence, batch_first=True)
-        data = data.cpu().detach().tolist()
-        token_sizes = token_sizes.cpu().detach().tolist()
+        assert data.dim() == 2, f'{data.dim()} != 2'
 
-        return [[
-            self.vocab.itos[data[index1][index2]] for index2 in range(token_size)]
+        data = data.detach().cpu().tolist()
+        token_sizes = token_sizes.detach().cpu().tolist()
+
+        return [
+            [self.vocab.itos[data[index1][index2]] for index2 in range(token_size)]
             for index1, token_size in enumerate(token_sizes)
         ]
 
