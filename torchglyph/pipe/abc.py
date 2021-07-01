@@ -5,6 +5,8 @@ from typing import Optional, Union, List, Any, Tuple
 from torchglyph.proc import Proc, Procs, compress, subs, Identity
 from torchglyph.vocab import Vocab
 
+THRESHOLD = 8
+
 
 class Pipe(object, metaclass=ABCMeta):
     def __init__(self, pre: Procs = None, vocab: Procs = None, post: Procs = None, batch: Procs = None) -> None:

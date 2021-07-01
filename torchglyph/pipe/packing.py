@@ -4,10 +4,12 @@ import torch
 from torch.nn.utils.rnn import PackedSequence
 from torchrua.padding import pad_packed_sequence
 
-from torchglyph.pipe import Pipe, THRESHOLD
-from torchglyph.proc import ToTensor, UpdateCounter, BuildVocab, StatsVocab, Numbering, Lift
+from torchglyph.pipe.abc import Pipe, THRESHOLD
+from torchglyph.proc.abc import Lift
 from torchglyph.proc.catting import CatList
 from torchglyph.proc.packing import PackList, PackListList
+from torchglyph.proc.tensor import ToTensor
+from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [
     'PackListNumPipe', 'PackListStrPipe',

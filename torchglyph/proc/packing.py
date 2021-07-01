@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple
 import torch
 from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence
-from torchrua import pack_sequence, reduce_catted_sequences, batch_sizes_to_ptr, accumulate_sizes
+from torchrua import pack_sequence, pack_catted_sequences, batch_sizes_to_ptr, accumulate_sizes
 
 from torchglyph.proc.abc import Proc
 
@@ -49,4 +49,4 @@ class PackListList(Proc):
         return f'device={self.device}'
 
     def __call__(self, sequences: List[Tuple[Tensor, Tensor]], **kwargs) -> PackedSequence:
-        return reduce_catted_sequences(sequences, device=self.device)
+        return pack_catted_sequences(sequences, device=self.device)
