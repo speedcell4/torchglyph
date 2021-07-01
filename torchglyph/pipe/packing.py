@@ -12,8 +12,8 @@ from torchglyph.proc.tensor import ToTensor
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [
-    'PackListNumPipe', 'PackListStrPipe',
-    'PackListListNumPipe', 'PackListListStrPipe',
+    'PackListNumPipe', 'PackListListNumPipe',
+    'PackListStrPipe', 'PackListListStrPipe',
 ]
 
 

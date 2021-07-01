@@ -11,18 +11,50 @@ from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numberi
 
 __all__ = [
     'TokenSizesPipe',
-    'PadListNumPipe', 'PadListStrPipe',
+    'PadNumPipe', 'PadListNumPipe',
+    'PadStrPipe', 'PadListStrPipe',
 ]
 
 
-class TokenSizesPipe(Pipe):
+class PadNumPipe(Pipe):
     def __init__(self, device: torch.device, dtype: torch.dtype = torch.long) -> None:
-        super(TokenSizesPipe, self).__init__(
-            pre=ToTokenSize(),
+        super(PadNumPipe, self).__init__(
+            pre=None,
             vocab=None,
             post=None,
             batch=ToTensor(dtype=dtype) + ToDevice(device=device),
         )
+
+    def inv(self, data: Tensor) -> List[Tuple[int, bool, float]]:
+        return data.detach().cpu().tolist()
+
+
+class TokenSizesPipe(PadNumPipe):
+    def __init__(self, device: torch.device, dtype: torch.dtype = torch.long) -> None:
+        super(TokenSizesPipe, self).__init__(device=device, dtype=dtype)
+        self.with_(
+            pre=ToTokenSize(),
+        )
+
+
+class PadStrPipe(PadNumPipe):
+    def __init__(self, device: torch.device,
+                 unk_token: Optional[str], pad_token: Optional[str],
+                 special_tokens: Tuple[Optional[str], ...] = (),
+                 threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
+        super(PadStrPipe, self).__init__(device=device, dtype=dtype)
+        self.with_(
+            pre=UpdateCounter(),
+            vocab=[
+                BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
+                StatsVocab(threshold=threshold),
+            ],
+            post=Numbering() + ...,
+            batch=...,
+        )
+
+    def inv(self, data: Tensor) -> List[str]:
+        return [self.vocab.itos[datum] for datum in super(PadStrPipe, self).inv(data=data)]
 
 
 class PadListNumPipe(Pipe):
