@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Any
 
 import torch
 from torch import Tensor
@@ -6,12 +6,12 @@ from torch.nn.utils.rnn import PackedSequence
 from torchrua import pack_sequence, pack_catted_sequences, batch_sizes_to_ptr, accumulate_sizes
 
 from torchglyph.proc.abc import Proc
-from torchglyph.proc.annotations import Device
+from torchglyph.proc.annotations import Device, CattedSequence
 
 __all__ = [
     'AsTokenPtr',
-    'PackList',
-    'PackListList',
+    'PackSequence',
+    'ReduceCattedSequences',
 ]
 
 
@@ -30,9 +30,9 @@ class AsTokenPtr(Proc):
         )
 
 
-class PackList(Proc):
+class PackProc(Proc):
     def __init__(self, device: Device = None) -> None:
-        super(PackList, self).__init__()
+        super(PackProc, self).__init__()
         self.device = device
 
     def extra_repr(self) -> str:
@@ -40,19 +40,15 @@ class PackList(Proc):
             return f'device={self.device}'
         return ''
 
+    def __call__(self, sequences: List[Any], **kwargs) -> PackedSequence:
+        raise NotImplementedError
+
+
+class PackSequence(PackProc):
     def __call__(self, sequences: List[Tensor], **kwargs) -> PackedSequence:
         return pack_sequence(sequences, device=self.device)
 
 
-class PackListList(Proc):
-    def __init__(self, device: Device = None) -> None:
-        super(PackListList, self).__init__()
-        self.device = device
-
-    def extra_repr(self) -> str:
-        if self.device is not None:
-            return f'device={self.device}'
-        return ''
-
-    def __call__(self, sequences: List[Tuple[Tensor, Tensor]], **kwargs) -> PackedSequence:
+class ReduceCattedSequences(PackProc):
+    def __call__(self, sequences: List[CattedSequence], **kwargs) -> PackedSequence:
         return pack_catted_sequences(sequences, device=self.device)

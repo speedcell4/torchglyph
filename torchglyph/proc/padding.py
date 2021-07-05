@@ -1,20 +1,21 @@
-from typing import List
+from typing import List, Any
 
 from torch import Tensor
-from torchrua.padding import pad_sequence
+from torch.nn.utils.rnn import PackedSequence
+from torchrua import pad_sequence, pad_packed_sequence, pad_catted_sequence
 
 from torchglyph.proc.abc import Proc
-from torchglyph.proc.annotations import Device, Num
+from torchglyph.proc.annotations import Device, Num, CattedSequence
 
 __all__ = [
-    'PadList',
+    'PadProc', 'PadSequence',
+    'PadCattedSequence', 'PadPackedSequence',
 ]
 
 
-class PadList(Proc):
-    def __init__(self, batch_first: bool = True,
-                 padding_value: Num = 0, device: Device = None) -> None:
-        super(PadList, self).__init__()
+class PadProc(Proc):
+    def __init__(self, batch_first: bool = True, padding_value: Num = 0, device: Device = None) -> None:
+        super(PadProc, self).__init__()
         self.batch_first = batch_first
         self.padding_value = padding_value
         self.device = device
@@ -28,8 +29,33 @@ class PadList(Proc):
             args.append(f'device={self.device}')
         return ', '.join(args)
 
+    def __call__(self, sequence: Any, **kwargs) -> Tensor:
+        raise NotImplementedError
+
+
+class PadSequence(PadProc):
     def __call__(self, sequences: List[Tensor], **kwargs) -> Tensor:
         return pad_sequence(
             sequences=sequences, batch_first=self.batch_first,
             padding_value=self.padding_value, device=self.device,
+        )
+
+
+class PadPackedSequence(PadProc):
+    def __call__(self, sequence: PackedSequence, **kwargs) -> Tensor:
+        data, _ = pad_packed_sequence(
+            sequence=sequence,
+            batch_first=self.batch_first,
+            padding_value=self.padding_value,
+        )
+        return data
+
+
+class PadCattedSequence(PadProc):
+    def __call__(self, sequence: CattedSequence, **kwargs) -> Tensor:
+        sequence, token_sizes = sequence
+        return pad_catted_sequence(
+            sequence=sequence, token_sizes=token_sizes,
+            batch_first=self.batch_first,
+            padding_value=self.padding_value,
         )
