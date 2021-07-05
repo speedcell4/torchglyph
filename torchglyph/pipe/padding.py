@@ -6,7 +6,7 @@ from torch import Tensor
 from torchglyph.pipe.abc import Pipe, THRESHOLD
 from torchglyph.proc.basic import ToLen
 from torchglyph.proc.padding import PadSequences
-from torchglyph.proc.tensor import ToTensor, ToDevice
+from torchglyph.proc.collating import ToTensor, ToDevice
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [

@@ -12,5 +12,5 @@ Device = Optional[torch.device]
 
 PackedSequence = PackedSequence
 CattedSequence = Tuple[Tensor, Tensor]
-PaddedSequence = Tuple[Tensor, Tensor]
+PaddedSequence = Union[Tensor, Tuple[Tensor, Tensor]]
 Sequence = Union[PackedSequence, CattedSequence, PaddedSequence]

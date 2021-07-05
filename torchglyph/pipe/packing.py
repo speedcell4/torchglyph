@@ -8,7 +8,7 @@ from torchglyph.pipe.abc import Pipe, THRESHOLD
 from torchglyph.proc.abc import Lift
 from torchglyph.proc.catting import CatSequences
 from torchglyph.proc.packing import PackSequences, ReduceCattedSequences
-from torchglyph.proc.tensor import ToTensor
+from torchglyph.proc.collating import ToTensor
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [

@@ -7,7 +7,7 @@ from torchrua import pack_sequence, pack_catted_sequences, batch_sizes_to_ptr, a
 from torchrua import pack_catted_sequence
 
 from torchglyph.proc.abc import Proc
-from torchglyph.proc.annotations import Device, CattedSequence, PaddedSequence
+from torchglyph.annotations import Device, CattedSequence, PaddedSequence
 
 __all__ = [
     'PackProc',

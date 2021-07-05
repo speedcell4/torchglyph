@@ -5,7 +5,7 @@ from torch.nn.utils.rnn import PackedSequence
 from torchrua import cat_sequence, cat_packed_sequence, cat_padded_sequence
 
 from torchglyph.proc.abc import Proc
-from torchglyph.proc.annotations import Device, CattedSequence
+from torchglyph.annotations import Device, CattedSequence
 
 __all__ = [
     'CatProc',

@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import Optional, Union, Any, List
 
-from torchglyph.proc.annotations import Container
+from torchglyph.annotations import Container
 
 __all__ = [
     'compress', 'subs',

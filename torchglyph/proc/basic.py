@@ -3,7 +3,7 @@ from typing import Pattern, Any
 
 from torchglyph.proc import Proc
 from torchglyph.proc.abc import Map
-from torchglyph.proc.annotations import Container
+from torchglyph.annotations import Container
 
 __all__ = [
     'ToInt', 'ToBool', 'ToFloat',
