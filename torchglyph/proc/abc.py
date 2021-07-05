@@ -1,10 +1,13 @@
 from abc import ABCMeta, abstractmethod
 from typing import Optional, Union, Any, List
 
+from torchglyph.proc.annotations import Container
+
 __all__ = [
     'compress', 'subs',
     'Proc', 'Identity', 'Lift',
     'ProcList', 'Chain',
+    'Map', 'Filter',
 ]
 
 ProcList = Union[Optional['Proc'], List[Optional['Proc']]]
@@ -96,3 +99,21 @@ class Chain(Proc):
         for proc in self.proc:
             data = proc(data, **kwargs)
         return data
+
+
+class Map(Proc):
+    def map(self, data: Any, **kwargs) -> Any:
+        raise NotImplementedError
+
+    def __call__(self, data: Union[Any, Container], **kwargs) -> Union[Any, Container]:
+        if not isinstance(data, (set, list, tuple)):
+            return self.map(data, **kwargs)
+        return type(data)([self.map(datum, **kwargs) for datum in data])
+
+
+class Filter(Proc):
+    def predicate(self, data: Any, **kwargs) -> bool:
+        raise NotImplementedError
+
+    def __call__(self, *data: Container, **kwargs) -> Container:
+        return type(data)([datum for datum in data if self.predicate(datum, **kwargs)])

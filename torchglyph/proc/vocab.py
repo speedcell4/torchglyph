@@ -2,8 +2,7 @@ import logging
 from collections import Counter
 from typing import Tuple, Optional
 
-from torchglyph.proc.abc import Proc
-from torchglyph.proc.mapping import Map
+from torchglyph.proc.abc import Proc, Map
 from torchglyph.vocab import Vocab, Vectors, Glove, FastText
 
 logger = logging.getLogger(__name__)

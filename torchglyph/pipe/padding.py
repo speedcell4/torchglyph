@@ -4,7 +4,7 @@ import torch
 from torch import Tensor
 
 from torchglyph.pipe.abc import Pipe, THRESHOLD
-from torchglyph.proc.list import ToTokenSize
+from torchglyph.proc.basic import ToLen
 from torchglyph.proc.padding import PadSequences
 from torchglyph.proc.tensor import ToTensor, ToDevice
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
@@ -33,7 +33,7 @@ class TokenSizesPipe(PadNumPipe):
     def __init__(self, device: torch.device, dtype: torch.dtype = torch.long) -> None:
         super(TokenSizesPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
-            pre=ToTokenSize(),
+            pre=ToLen(),
         )
 
 

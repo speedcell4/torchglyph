@@ -1,4 +1,4 @@
-from typing import Any, Union, List, Tuple, Set
+from typing import Any, List
 
 import numpy as np
 import torch
@@ -6,6 +6,7 @@ from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence
 
 from torchglyph.proc.abc import Proc
+from torchglyph.proc.annotations import DType, Device, Container
 
 __all__ = [
     'ToTensor', 'ToDevice',
@@ -14,12 +15,14 @@ __all__ = [
 
 
 class ToTensor(Proc):
-    def __init__(self, dtype: torch.dtype) -> None:
+    def __init__(self, dtype: DType = None) -> None:
         super(ToTensor, self).__init__()
         self.dtype = dtype
 
     def extra_repr(self) -> str:
-        return f'{self.dtype}'
+        if self.dtype is not None:
+            return f'{self.dtype}'
+        return ''
 
     def __call__(self, data: Any, **kwargs) -> Tensor:
         try:
@@ -37,22 +40,16 @@ class ToTensor(Proc):
 
 
 class ToDevice(Proc):
-    Data = Union[int, bool, float, Tensor, Tuple[Tensor, ...], PackedSequence]
-    Batch = Union[Data, Set[Data], List[Data], Tuple[Data, ...]]
-
-    def __init__(self, device: Union[int, torch.device]) -> None:
+    def __init__(self, device: Device = None) -> None:
         super(ToDevice, self).__init__()
-        if isinstance(device, int):
-            if device < 0:
-                device = torch.device(f'cpu')
-            else:
-                device = torch.device(f'cuda:{device}')
         self.device = device
 
     def extra_repr(self) -> str:
-        return f'{self.device}'
+        if self.device is not None:
+            return f'{self.device}'
+        return ''
 
-    def __call__(self, data: Batch, **kwargs) -> Batch:
+    def __call__(self, data: Container, **kwargs) -> Container:
         if isinstance(data, (Tensor, PackedSequence)):
             return data.to(device=self.device)
         if isinstance(data, (set, list, tuple)):
@@ -68,8 +65,8 @@ class Cat(Proc):
     def extra_repr(self) -> str:
         return f'dim={self.dim}'
 
-    def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
-        return torch.cat(data, dim=self.dim)
+    def __call__(self, tensors: List[Tensor], **kwargs) -> Tensor:
+        return torch.cat(tensors, dim=self.dim)
 
 
 class Stack(Proc):
@@ -80,5 +77,5 @@ class Stack(Proc):
     def extra_repr(self) -> str:
         return f'dim={self.dim}'
 
-    def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
-        return torch.stack(data, dim=self.dim)
+    def __call__(self, tensors: List[Tensor], **kwargs) -> Tensor:
+        return torch.stack(tensors, dim=self.dim)
