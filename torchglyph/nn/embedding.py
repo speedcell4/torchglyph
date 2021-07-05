@@ -39,5 +39,5 @@ class CharLstmEmbedding(nn.Module):
 
     def forward(self, indices: PackedSequence) -> Tensor:
         embedding = self.embedding(indices)
-        _, (embedding, _) = self.rnn(embedding)
-        return self.reduce(embedding)
+        _, (encoding, _) = self.rnn(embedding)
+        return self.reduce(encoding)
