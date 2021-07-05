@@ -2,28 +2,28 @@ from abc import ABCMeta
 from collections import Counter
 from typing import Optional, Union, List, Any, Tuple
 
-from torchglyph.proc import Proc, Procs, compress, subs, Identity
+from torchglyph.proc import Proc, ProcList, compress, subs, Identity
 from torchglyph.vocab import Vocab
 
 THRESHOLD = 8
 
 
 class Pipe(object, metaclass=ABCMeta):
-    def __init__(self, pre: Procs = None, vocab: Procs = None, post: Procs = None, batch: Procs = None) -> None:
+    def __init__(self, pre: ProcList = None, vocab: ProcList = None, post: ProcList = None, batch: ProcList = None) -> None:
         super(Pipe, self).__init__()
 
         self.vocab: Optional[Union[Vocab]] = None
 
-        self._pre_proc = Proc.from_list(compress(procs=pre))
-        self._vocab_proc = Proc.from_list(compress(procs=vocab))
-        self._post_proc = Proc.from_list(compress(procs=post))
-        self._batch_proc = Proc.from_list(compress(procs=batch))
+        self._pre_proc = Proc.from_list(compress(processors=pre))
+        self._vocab_proc = Proc.from_list(compress(processors=vocab))
+        self._post_proc = Proc.from_list(compress(processors=post))
+        self._batch_proc = Proc.from_list(compress(processors=batch))
 
-    def with_(self, pre: Procs = ..., vocab: Procs = ..., post: Procs = ..., batch: Procs = ...) -> 'Pipe':
-        self._pre_proc = Proc.from_list(subs(procs=pre, repl=self._pre_proc))
-        self._vocab_proc = Proc.from_list(subs(procs=vocab, repl=self._vocab_proc))
-        self._post_proc = Proc.from_list(subs(procs=post, repl=self._post_proc))
-        self._batch_proc = Proc.from_list(subs(procs=batch, repl=self._batch_proc))
+    def with_(self, pre: ProcList = ..., vocab: ProcList = ..., post: ProcList = ..., batch: ProcList = ...) -> 'Pipe':
+        self._pre_proc = Proc.from_list(subs(processors=pre, repl=self._pre_proc))
+        self._vocab_proc = Proc.from_list(subs(processors=vocab, repl=self._vocab_proc))
+        self._post_proc = Proc.from_list(subs(processors=post, repl=self._post_proc))
+        self._batch_proc = Proc.from_list(subs(processors=batch, repl=self._batch_proc))
         return self
 
     def extra_repr(self):

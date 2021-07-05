@@ -8,8 +8,8 @@ __all__ = [
 
 
 class ToTokenSize(Proc):
-    def __call__(self, x: List[Any], **kwargs) -> int:
-        return len(x)
+    def __call__(self, data: List[Any], **kwargs) -> int:
+        return len(data)
 
 
 class Prepend(Proc):
@@ -21,8 +21,8 @@ class Prepend(Proc):
     def extra_repr(self) -> str:
         return f'{self.token} x {self.num_times} + [...]'
 
-    def __call__(self, x: List[Any], **kwargs) -> List[Any]:
-        return [self.token for _ in range(self.num_times)] + x
+    def __call__(self, data: List[Any], **kwargs) -> List[Any]:
+        return [self.token for _ in range(self.num_times)] + data
 
 
 class Append(Proc):
@@ -34,5 +34,5 @@ class Append(Proc):
     def extra_repr(self) -> str:
         return f'[...] + {self.token} x {self.num_times}'
 
-    def __call__(self, x: List[Any], **kwargs) -> List[Any]:
-        return x + [self.token for _ in range(self.num_times)]
+    def __call__(self, data: List[Any], **kwargs) -> List[Any]:
+        return data + [self.token for _ in range(self.num_times)]
