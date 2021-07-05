@@ -6,8 +6,8 @@ from torchrua.padding import pad_packed_sequence
 
 from torchglyph.pipe.abc import Pipe, THRESHOLD
 from torchglyph.proc.abc import Lift
-from torchglyph.proc.catting import CatList
-from torchglyph.proc.packing import PackSequence, ReduceCattedSequences
+from torchglyph.proc.catting import CatSequences
+from torchglyph.proc.packing import PackSequences, ReduceCattedSequences
 from torchglyph.proc.tensor import ToTensor
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
@@ -23,7 +23,7 @@ class PackListNumPipe(Pipe):
             pre=None,
             vocab=None,
             post=ToTensor(dtype=dtype),
-            batch=PackSequence(device=device),
+            batch=PackSequences(device=device),
         )
 
     def inv(self, sequence: PackedSequence) -> List[List[Tuple[int, bool, float]]]:
@@ -67,7 +67,7 @@ class PackListListNumPipe(Pipe):
         super(PackListListNumPipe, self).__init__(
             pre=None,
             vocab=None,
-            post=Lift(ToTensor(dtype=dtype)) + CatList(device=None),
+            post=Lift(ToTensor(dtype=dtype)) + CatSequences(device=None),
             batch=ReduceCattedSequences(device=device),
         )
 

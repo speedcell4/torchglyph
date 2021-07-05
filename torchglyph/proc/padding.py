@@ -8,8 +8,8 @@ from torchglyph.proc.abc import Proc
 from torchglyph.proc.annotations import Device, Num, CattedSequence
 
 __all__ = [
-    'PadProc', 'PadSequence',
-    'PadCattedSequence', 'PadPackedSequence',
+    'PadProc',
+    'PadSequences', 'PadCattedSequence', 'PadPackedSequence',
 ]
 
 
@@ -33,7 +33,7 @@ class PadProc(Proc):
         raise NotImplementedError
 
 
-class PadSequence(PadProc):
+class PadSequences(PadProc):
     def __call__(self, sequences: List[Tensor], **kwargs) -> Tensor:
         return pad_sequence(
             sequences=sequences, batch_first=self.batch_first,

@@ -9,3 +9,4 @@ DType = Optional[torch.dtype]
 Device = Optional[torch.device]
 
 CattedSequence = Tuple[Tensor, Tensor]
+PaddedSequence = Tuple[Tensor, Tensor]
