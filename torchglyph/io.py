@@ -28,7 +28,7 @@ def toggle_loggers(pattern: Union[str, Pattern], enable: bool) -> None:
 
 
 def download(url: str, path: Path, exist_ok: bool = True, chunk_size: int = 1024 * 1024) -> Path:
-    path.mkdir(parents=True, exist_ok=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
 
     response: Response = requests.get(url=url, stream=True)
     assert response.status_code == 200, f'{response.status_code} != {200}'
@@ -36,7 +36,7 @@ def download(url: str, path: Path, exist_ok: bool = True, chunk_size: int = 1024
     if not path.exists() or not exist_ok:
         with path.open(mode='wb') as fp:
             for chunk in tqdm(response.iter_content(chunk_size=chunk_size),
-                              total=int(response.headers['Content-Length']) / chunk_size,
+                              total=int(response.headers['Content-Length']) // chunk_size,
                               desc=f'downloading from {url}', unit='MB'):
                 fp.write(chunk)
 
@@ -44,6 +44,8 @@ def download(url: str, path: Path, exist_ok: bool = True, chunk_size: int = 1024
 
 
 def extract(path: Path) -> Path:
+    logger.info(f'extracting files from {path}')
+
     if path.suffix == '.zip':
         logger.info(f'extracting {path}')
         with zipfile.ZipFile(path, "r") as fp:
@@ -57,6 +59,7 @@ def extract(path: Path) -> Path:
         with gzip.open(path, mode='rb') as fs:
             with path.with_suffix('').open(mode='wb') as fd:
                 shutil.copyfileobj(fs, fd)
+
     return path
 
 
@@ -68,8 +71,7 @@ class DownloadMixin(object):
         return self.url
 
     def paths(self, root: Path = data_dir, **kwargs) -> List[Path]:
-        cls = self.__class__
-        root = root / getattr(cls, 'name', cls.__name__).lower()
+        root = root / getattr(self.__class__, 'name', self.__class__.__name__).lower()
 
         paths = []
         for url, path, *names in self.urls(**kwargs):

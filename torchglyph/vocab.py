@@ -2,7 +2,7 @@ import logging
 from collections import Counter
 from collections import defaultdict
 from pathlib import Path
-from typing import Optional, Tuple, Callable, List
+from typing import Optional, Tuple, List
 
 import torch
 from torch import Tensor
@@ -10,14 +10,20 @@ from torch.nn import init
 from tqdm import tqdm
 
 from torchglyph import data_dir
-from torchglyph.io import extract
+from torchglyph.io import DownloadMixin
 
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    'Vocab', 'Vectors',
+    'Glove', 'FastText',
+]
 
 
 class Vocab(object):
     def __init__(self, counter: Counter,
-                 unk_token: Optional[str], pad_token: Optional[str],
+                 unk_token: Optional[str],
+                 pad_token: Optional[str],
                  special_tokens: Tuple[Optional[str], ...] = (),
                  max_size: Optional[int] = None, min_freq: int = 1) -> None:
         super(Vocab, self).__init__()
@@ -29,34 +35,33 @@ class Vocab(object):
         self.max_size = max_size
         self.min_freq = min_freq
 
-        self.stoi = {}
         self.itos = []
+        self.stoi = defaultdict(self._default_factory)
         self.vectors: Optional[Tensor] = None
 
-        self.unk_idx = 0
+        self.unk_idx = None
         if unk_token is not None:
             self.unk_idx = self.add_token_(unk_token)
-            self.stoi = defaultdict(self._default_factory, **self.stoi)
-            special_tokens = (unk_token, *special_tokens)
 
         self.pad_idx = None
         if pad_token is not None:
             self.pad_idx = self.add_token_(pad_token)
-            special_tokens = (pad_token, *special_tokens)
 
-        for token in self.special_tokens:
+        for token in special_tokens:
             self.add_token_(token)
 
         self.unk_token = unk_token
         self.pad_token = pad_token
+
+        special_tokens = (unk_token, pad_token, *special_tokens)
         self.special_tokens = tuple(token for token in special_tokens if token is not None)
 
-        for token, freq in self.freq.most_common(n=max_size):
+        for token, freq in self.freq.most_common():
             if freq < min_freq:
                 break
             self.add_token_(token)
 
-    def _default_factory(self) -> int:
+    def _default_factory(self) -> Optional[int]:
         return self.unk_idx
 
     def add_token_(self, token) -> int:
@@ -68,16 +73,14 @@ class Vocab(object):
 
         return self.stoi[token]
 
-    def extra_repr(self) -> str:
-        return ', '.join([a for a in [
-            f"tok={self.__len__()}",
-            None if self.vectors is None else f"dim={self.vec_dim}",
-            None if self.unk_token is None else f"unk_token='{self.unk_token}'",
-            None if self.pad_token is None else f"pad_token='{self.pad_token}'",
-        ] if a is not None])
-
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.extra_repr()})'
+
+    def extra_repr(self) -> str:
+        return ', '.join([
+            f'{len(self.stoi)}',
+            *self.special_tokens,
+        ])
 
     def __len__(self) -> int:
         return len(self.stoi)
@@ -107,6 +110,7 @@ class Vocab(object):
             min_freq=self.min_freq,
         )
 
+    @torch.no_grad()
     def load_vectors(self, *fallbacks, vectors: 'Vectors') -> Tuple[int, int]:
         self.vectors = torch.empty((len(self), vectors.vectors.size()[1]), dtype=torch.float32)
 
@@ -130,107 +134,105 @@ class Vocab(object):
         self.stoi, self.itos, self.vectors = torch.load(path)
 
 
-class Vectors(Vocab):
-    def __init__(self, urls_dest: List[Tuple[str, Path]], path: Path,
-                 heading: bool, unicode_error: str = 'replace', dtype: torch.dtype = torch.float32,
-                 unk_init_: Callable[[Tensor], Tensor] = init.normal_) -> None:
+class Vectors(Vocab, DownloadMixin):
+    vector_format: str
+
+    def __init__(self, root: Path = data_dir, **kwargs) -> None:
         super(Vectors, self).__init__(
             counter=Counter(),
-            unk_token=None, pad_token=None,
-            special_tokens=(), max_size=None, min_freq=1,
+            unk_token=None,
+            pad_token=None,
+            special_tokens=(),
+            max_size=None, min_freq=1,
         )
 
-        vectors = []
-        self.unk_init_ = unk_init_
+        path, = self.paths(root=root, **kwargs)  # type:Path
+        self.cache_(path=path)
 
-        dump_path = path.with_suffix('.pt')
-        if not dump_path.exists():
-            if not path.exists():
-                for url, dest in urls_dest:
-                    extract(url, dest)
+    def cache_(self, path: Path) -> None:
+        torch_path = path.with_suffix('.pt')
 
-            with path.open('rb') as fp:
-                vector_dim = None
+        if not torch_path.exists():
+            vectors = []
+            with path.open('r', encoding='utf-8', errors='replace') as fp:
 
-                for raw in tqdm(fp, desc=f'reading {path}', unit=' lines'):  # type: bytes
-                    if heading:
-                        _, vector_dim = map(int, raw.rstrip().split(b' '))
-                        heading = False
-                        continue
-                    token, *vs = raw.rstrip().split(b' ')
+                num_vectors, vector_size = None, None
+                if self.vector_format == 'word2vec':
+                    num_vectors, vector_size = map(int, next(fp).strip().split(' '))
 
-                    if vector_dim is None:
-                        vector_dim = len(vs)
-                    elif vector_dim != len(vs):
-                        logger.error(f'vector dimensions are not consistent, {vector_dim} != {len(vs)} :: {token}')
-                        continue
+                for raw in tqdm(fp, desc=f'caching {path}', unit=' tokens', total=num_vectors):
+                    token, *vector = raw.rstrip().split(' ')
 
-                    self.add_token_(str(token, encoding='utf-8', errors=unicode_error))
-                    vectors.append(torch.tensor([float(v) for v in vs], dtype=dtype))
+                    if vector_size is None:
+                        vector_size = len(vector)
+                    assert vector_size == len(vector), f'{vector_size} != {len(vector)} :: {token}'
 
-            self.vectors = torch.stack(vectors, 0)
-            self.save(dump_path)
+                    self.add_token_(token)
+                    vectors.append([float(v) for v in vector])
+
+            self.vectors = torch.tensor(vectors, dtype=torch.float32)
+            self.save(torch_path)
         else:
-            self.load(dump_path)
+            self.load(torch_path)
 
     @torch.no_grad()
-    def query_(self, token: str, vector: Tensor, *fallback_fns) -> bool:
+    def query_(self, token: str, tensor: Tensor, *fallbacks) -> bool:
         if token in self:
-            vector[:] = self.vectors[self.stoi[token]]
+            tensor[:] = self.vectors[self.stoi[token]]
             return True
-        for fallback_fn in fallback_fns:
-            new_token = fallback_fn(token)
+
+        for fallbacks in fallbacks:
+            new_token = fallbacks(token)
             if new_token in self:
-                vector[:] = self.vectors[self.stoi[new_token]]
+                tensor[:] = self.vectors[self.stoi[new_token]]
                 return True
-        self.unk_init_(vector)
+
+        self.unk_init_(tensor)
         return False
+
+    @staticmethod
+    def unk_init_(tensor: Tensor) -> None:
+        init.normal_(tensor)
 
 
 class Glove(Vectors):
-    def __init__(self, name: str, dim: int) -> None:
-        root_path = data_dir / f'glove.{name}'
-        super(Glove, self).__init__(
-            urls_dest=[(
-                f'http://nlp.stanford.edu/data/glove.{name}.zip',
-                root_path / f'glove.{name}.zip'
-            )],
-            path=root_path / f'glove.{name}.{dim}d.txt', heading=False,
-        )
+    vector_format = 'glove'
+
+    def __init__(self, name: str, dim: int, root: Path = data_dir) -> None:
+        super(Glove, self).__init__(root=root, name=name, dim=dim)
+
+    def urls(self, name: str, dim: int) -> List[Tuple[str, ...]]:
+        return [(
+            f'https://nlp.stanford.edu/data/glove.{name}.zip',
+            f'glove.{name}.zip',
+            f'glove.{name}.{dim}d.txt',
+        )]
 
 
 class FastText(Vectors):
-    def __init__(self, name: str, lang: str) -> None:
-        root_path = data_dir / 'fasttext'
+    vector_format = 'word2vec'
 
+    def __init__(self, name: str, lang: str, root: Path = data_dir) -> None:
+        super(FastText, self).__init__(root=root, name=name, lang=lang)
+
+    def urls(self, name: str, lang: str) -> List[Tuple[str, ...]]:
         if name == 'cc':
-            url = f'https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.{lang}.300.vec.gz'
-            file_path = root_path / f'cc.{lang}.300.vec.gz'
-            vec_path = root_path / f'cc.{lang}.300.vec'
-        elif name == 'wiki':
-            url = f'https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.{lang}.vec'
-            file_path = root_path / f'wiki.{lang}.vec'
-            vec_path = root_path / f'wiki.{lang}.vec'
-        elif name == 'aligned':
-            url = f'https://dl.fbaipublicfiles.com/fasttext/vectors-aligned/wiki.{lang}.align.vec'
-            file_path = root_path / f'wiki.{lang}.align.vec'
-            vec_path = root_path / f'wiki.{lang}.align.vec'
-        else:
-            raise NotImplementedError(f'name should be one of ["cc", "wiki", "aligned"]')
+            return [(
+                f'https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.{lang}.300.vec.gz',
+                f'cc.{lang}.300.vec.gz',
+                f'cc.{lang}.300.vec',
+            )]
+        if name == 'wiki':
+            return [(
+                f'https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.{lang}.vec',
+                f'wiki.{lang}.vec',
+                f'wiki.{lang}.vec',
+            )]
+        if name == 'aligned':
+            return [(
+                f'https://dl.fbaipublicfiles.com/fasttext/vectors-aligned/wiki.{lang}.align.vec',
+                f'wiki.{lang}.align.vec',
+                f'wiki.{lang}.align.vec',
+            )]
 
-        super(FastText, self).__init__(
-            urls_dest=[(url, file_path,)],
-            path=vec_path, heading=True,
-        )
-
-
-class NLPLVectors(Vectors):
-    def __init__(self, index: int, repository: str = '20', name: str = 'model.txt', heading: bool = False) -> None:
-        root_path = data_dir / 'nlpl' / f'{index}'
-        super(NLPLVectors, self).__init__(
-            urls_dest=[(
-                f'http://vectors.nlpl.eu/repository/{repository}/{index}.zip',
-                root_path / f'{index}.zip',
-            )],
-            path=root_path / name, heading=heading,
-        )
+        raise KeyError(f'{name} is not supported')
