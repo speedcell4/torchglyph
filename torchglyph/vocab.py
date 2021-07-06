@@ -9,8 +9,8 @@ from torch import Tensor
 from torch.nn import init
 from tqdm import tqdm
 
-from torchglyph import usr_data_path
-from torchglyph.io import download_and_unzip
+from torchglyph import data_dir
+from torchglyph.io import extract
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +147,7 @@ class Vectors(Vocab):
         if not dump_path.exists():
             if not path.exists():
                 for url, dest in urls_dest:
-                    download_and_unzip(url, dest)
+                    extract(url, dest)
 
             with path.open('rb') as fp:
                 vector_dim = None
@@ -189,7 +189,7 @@ class Vectors(Vocab):
 
 class Glove(Vectors):
     def __init__(self, name: str, dim: int) -> None:
-        root_path = usr_data_path / f'glove.{name}'
+        root_path = data_dir / f'glove.{name}'
         super(Glove, self).__init__(
             urls_dest=[(
                 f'http://nlp.stanford.edu/data/glove.{name}.zip',
@@ -201,7 +201,7 @@ class Glove(Vectors):
 
 class FastText(Vectors):
     def __init__(self, name: str, lang: str) -> None:
-        root_path = usr_data_path / 'fasttext'
+        root_path = data_dir / 'fasttext'
 
         if name == 'cc':
             url = f'https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.{lang}.300.vec.gz'
@@ -226,7 +226,7 @@ class FastText(Vectors):
 
 class NLPLVectors(Vectors):
     def __init__(self, index: int, repository: str = '20', name: str = 'model.txt', heading: bool = False) -> None:
-        root_path = usr_data_path / 'nlpl' / f'{index}'
+        root_path = data_dir / 'nlpl' / f'{index}'
         super(NLPLVectors, self).__init__(
             urls_dest=[(
                 f'http://vectors.nlpl.eu/repository/{repository}/{index}.zip',

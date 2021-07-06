@@ -17,6 +17,7 @@ setup(
         'numpy',
         'einops',
         'torchrua',
+        'requests',
     ],
     extras_require={
         'dev': [

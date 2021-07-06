@@ -8,8 +8,8 @@ from typing import Union, List, Type, Tuple, NamedTuple, Dict
 from torch.utils import data
 from tqdm import tqdm
 
-from torchglyph import usr_data_path
-from torchglyph.io import download_and_unzip
+from torchglyph import data_dir
+from torchglyph.io import extract
 from torchglyph.pipe import Pipe
 
 
@@ -62,7 +62,7 @@ class Dataset(data.Dataset):
         ])
 
     @classmethod
-    def paths(cls, root: Path = usr_data_path) -> Tuple[Path, ...]:
+    def paths(cls, root: Path = data_dir) -> Tuple[Path, ...]:
         root = root / getattr(cls, 'name', cls.__name__).lower()
 
         ans = []
@@ -70,7 +70,7 @@ class Dataset(data.Dataset):
             if len(filenames) == 0:
                 filenames = [name]
             if any(not (root / filename).exists() for filename in filenames):
-                download_and_unzip(url, root / name)
+                extract(url, root / name)
             for filename in filenames:
                 ans.append(root / filename)
 
