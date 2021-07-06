@@ -34,7 +34,7 @@ class BuildVocab(Proc):
         self.special_tokens = tuple(token for token in special_tokens if token is not None)
 
     def extra_repr(self) -> str:
-        return ', .'.join(self.special_tokens)
+        return ', '.join(self.special_tokens)
 
     def __call__(self, vocab: Counter, *, max_size: Optional[int], min_freq: int, **kwargs) -> Vocab:
         return Vocab(
