@@ -26,10 +26,6 @@ class Vocab(object):
             counter = Counter(counter.most_common(n=max_size))
 
         self.freq = counter
-        self.unk_token = unk_token
-        self.pad_token = pad_token
-        self.special_tokens = tuple(t for t in (unk_token, pad_token, *special_tokens) if t is not None)
-        self.unk_idx = 0
         self.max_size = max_size
         self.min_freq = min_freq
 
@@ -37,13 +33,23 @@ class Vocab(object):
         self.itos = []
         self.vectors: Optional[Tensor] = None
 
+        self.unk_idx = 0
         if unk_token is not None:
             self.unk_idx = self.add_token_(unk_token)
             self.stoi = defaultdict(self._default_factory, **self.stoi)
+            special_tokens = (unk_token, *special_tokens)
+
+        self.pad_idx = None
+        if pad_token is not None:
+            self.pad_idx = self.add_token_(pad_token)
+            special_tokens = (pad_token, *special_tokens)
 
         for token in self.special_tokens:
-            if token is not None:
-                self.add_token_(token)
+            self.add_token_(token)
+
+        self.unk_token = unk_token
+        self.pad_token = pad_token
+        self.special_tokens = tuple(token for token in special_tokens if token is not None)
 
         for token, freq in self.freq.most_common(n=max_size):
             if freq < min_freq:
@@ -57,7 +63,7 @@ class Vocab(object):
         assert token is not None
 
         if token not in self.stoi:
-            self.stoi[token] = len(self.itos)
+            self.stoi[token] = len(self.stoi)
             self.itos.append(token)
 
         return self.stoi[token]
@@ -79,17 +85,17 @@ class Vocab(object):
     def __contains__(self, token: str) -> bool:
         return token in self.stoi
 
-    def union(self, rhs: 'Vocab', *fallback_fns) -> 'Vocab':
+    def union(self, other: 'Vocab', *fallbacks) -> 'Vocab':
         counter = Counter()
 
         for token, freq in self.freq.items():
-            if token in rhs.stoi:
+            if token in other.stoi:
                 counter[token] = freq
             else:
-                for fallback_fn in fallback_fns:
-                    new_token = fallback_fn(token)
-                    if new_token in rhs.stoi:
-                        counter[new_token] = freq
+                for fallback in fallbacks:
+                    fallback_token = fallback(token)
+                    if fallback_token in other.stoi:
+                        counter[fallback_token] = freq
                         break
 
         return Vocab(
@@ -101,31 +107,19 @@ class Vocab(object):
             min_freq=self.min_freq,
         )
 
-    @property
-    def pad_idx(self) -> Optional[int]:
-        if self.pad_token is None:
-            return None
-        return self.stoi[self.pad_token]
+    def load_vectors(self, *fallbacks, vectors: 'Vectors') -> Tuple[int, int]:
+        self.vectors = torch.empty((len(self), vectors.vectors.size()[1]), dtype=torch.float32)
 
-    @property
-    def vec_dim(self) -> int:
-        if self.vectors is None:
-            return 0
-        return self.vectors.size(1)
-
-    def load_vectors(self, *fallback_fns, vectors: 'Vectors') -> Tuple[int, int]:
-        self.vectors = torch.empty((len(self), vectors.vec_dim), dtype=torch.float32)
-
-        tok, occ = 0, 0
+        cnt_token, cnt_occurrence = 0, 0
         for token, index in self.stoi.items():
-            if vectors.query_(token, self.vectors[index], *fallback_fns):
-                tok += 1
-                occ += self.freq[token]
+            if vectors.query_(token, self.vectors[index], *fallbacks):
+                cnt_token += 1
+                cnt_occurrence += self.freq[token]
 
         if self.pad_token is not None:
             init.zeros_(self.vectors[self.stoi[self.pad_token]])
 
-        return tok, occ
+        return cnt_token, cnt_occurrence
 
     def save(self, path: Path) -> None:
         logger.info(f'saving {self.__class__.__name__} to {path}')
