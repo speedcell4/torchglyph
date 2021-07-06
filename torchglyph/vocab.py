@@ -114,16 +114,16 @@ class Vocab(object):
     def load_vectors(self, *fallbacks, vectors: 'Vectors') -> Tuple[int, int]:
         self.vectors = torch.empty((len(self), vectors.vectors.size()[1]), dtype=torch.float32)
 
-        cnt_token, cnt_occurrence = 0, 0
+        tok, occ = 0, 0
         for token, index in self.stoi.items():
             if vectors.query_(token, self.vectors[index], *fallbacks):
-                cnt_token += 1
-                cnt_occurrence += self.freq[token]
+                tok += 1
+                occ += self.freq[token]
 
         if self.pad_token is not None:
             init.zeros_(self.vectors[self.stoi[self.pad_token]])
 
-        return cnt_token, cnt_occurrence
+        return tok, occ
 
     def save(self, path: Path) -> None:
         logger.info(f'saving {self.__class__.__name__} to {path}')
