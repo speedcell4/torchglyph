@@ -1,8 +1,7 @@
 import logging
-from collections import Counter
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict
 
 import torch
 from torch import Tensor
@@ -32,16 +31,14 @@ class Vocab(object):
             counter = Counter(counter.most_common(n=max_size))
 
         self.freq = counter
-        self.max_size = max_size
-        self.min_freq = min_freq
-
-        self.itos = []
-        self.stoi = defaultdict(self._default_factory)
+        self.itos: List[str] = []
+        self.stoi: Dict[str, int] = {}
         self.vectors: Optional[Tensor] = None
 
         self.unk_idx = None
         if unk_token is not None:
             self.unk_idx = self.add_token_(unk_token)
+            self.stoi = defaultdict(self._default_factory)
 
         self.pad_idx = None
         if pad_token is not None:
@@ -52,9 +49,10 @@ class Vocab(object):
 
         self.unk_token = unk_token
         self.pad_token = pad_token
-
-        special_tokens = (unk_token, pad_token, *special_tokens)
-        self.special_tokens = tuple(token for token in special_tokens if token is not None)
+        self.special_tokens = tuple(
+            token for token in (unk_token, pad_token, *special_tokens)
+            if token is not None
+        )
 
         for token, freq in self.freq.most_common():
             if freq < min_freq:
@@ -88,31 +86,10 @@ class Vocab(object):
     def __contains__(self, token: str) -> bool:
         return token in self.stoi
 
-    def union(self, other: 'Vocab', *fallbacks) -> 'Vocab':
-        counter = Counter()
-
-        for token, freq in self.freq.items():
-            if token in other.stoi:
-                counter[token] = freq
-            else:
-                for fallback in fallbacks:
-                    fallback_token = fallback(token)
-                    if fallback_token in other.stoi:
-                        counter[fallback_token] = freq
-                        break
-
-        return Vocab(
-            counter=counter,
-            unk_token=self.unk_token,
-            pad_token=self.pad_token,
-            special_tokens=self.special_tokens,
-            max_size=self.max_size,
-            min_freq=self.min_freq,
-        )
-
     @torch.no_grad()
     def load_vectors(self, *fallbacks, vectors: 'Vectors') -> Tuple[int, int]:
-        self.vectors = torch.empty((len(self), vectors.vectors.size()[1]), dtype=torch.float32)
+        _, vector_size = vectors.vectors.size()
+        self.vectors = torch.empty((len(self), vector_size), dtype=torch.float32)
 
         tok, occ = 0, 0
         for token, index in self.stoi.items():

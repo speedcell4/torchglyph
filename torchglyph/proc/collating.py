@@ -5,8 +5,8 @@ import torch
 from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence
 
-from torchglyph.proc.abc import Proc
 from torchglyph.annotations import DType, Device, Container
+from torchglyph.proc.abc import Proc
 
 __all__ = [
     'ToTensor', 'ToDevice',

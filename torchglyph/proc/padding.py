@@ -4,8 +4,8 @@ from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence
 from torchrua import pad_sequence, pad_packed_sequence, pad_catted_sequence
 
-from torchglyph.proc.abc import Proc
 from torchglyph.annotations import Device, Num, CattedSequence
+from torchglyph.proc.abc import Proc
 
 __all__ = [
     'PadProc',

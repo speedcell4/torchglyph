@@ -3,11 +3,11 @@ from typing import List, Any
 import torch
 from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence
-from torchrua import pack_sequence, pack_catted_sequences, batch_sizes_to_ptr, accumulate_sizes, pack_padded_sequence
 from torchrua import pack_catted_sequence
+from torchrua import pack_sequence, pack_catted_sequences, batch_sizes_to_ptr, accumulate_sizes, pack_padded_sequence
 
-from torchglyph.proc.abc import Proc
 from torchglyph.annotations import Device, CattedSequence, PaddedSequence
+from torchglyph.proc.abc import Proc
 
 __all__ = [
     'PackProc',
