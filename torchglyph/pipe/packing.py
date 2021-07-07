@@ -6,9 +6,10 @@ from torchrua.padding import pad_packed_sequence
 
 from torchglyph.pipe.abc import Pipe, THRESHOLD
 from torchglyph.proc.abc import Lift
+from torchglyph.proc.basic import ToList
 from torchglyph.proc.catting import CatSequences
-from torchglyph.proc.packing import PackSequences, ReduceCattedSequences
 from torchglyph.proc.collating import ToTensor
+from torchglyph.proc.packing import PackSequences, ReduceCattedSequences
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [
@@ -40,14 +41,13 @@ class PackListNumPipe(Pipe):
 
 class PackListStrPipe(PackListNumPipe):
     def __init__(self, device: torch.device,
-                 unk_token: Optional[str], pad_token: Optional[str],
-                 special_tokens: Tuple[Optional[str], ...] = (),
+                 unk_token: Optional[str], special_tokens: Tuple[Optional[str], ...] = (),
                  threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
         super(PackListStrPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=UpdateCounter(),
             vocab=[
-                BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
+                BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
             ],
             post=Numbering() + ...,
@@ -74,14 +74,13 @@ class PackListListNumPipe(Pipe):
 
 class PackListListStrPipe(PackListListNumPipe):
     def __init__(self, device: torch.device,
-                 unk_token: Optional[str], pad_token: Optional[str],
-                 special_tokens: Tuple[Optional[str], ...] = (),
+                 unk_token: Optional[str], special_tokens: Tuple[Optional[str], ...] = (),
                  threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
         super(PackListListStrPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
-            pre=Lift(UpdateCounter()),
+            pre=Lift(ToList() + UpdateCounter()),
             vocab=[
-                BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
+                BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
             ],
             post=Lift(Numbering()) + ...,

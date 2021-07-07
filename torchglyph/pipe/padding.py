@@ -4,13 +4,11 @@ import torch
 from torch import Tensor
 
 from torchglyph.pipe.abc import Pipe, THRESHOLD
-from torchglyph.proc.basic import ToLen
-from torchglyph.proc.padding import PadSequences
 from torchglyph.proc.collating import ToTensor, ToDevice
+from torchglyph.proc.padding import PadSequences
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [
-    'TokenSizesPipe',
     'PadNumPipe', 'PadListNumPipe',
     'PadStrPipe', 'PadListStrPipe',
 ]
@@ -29,17 +27,9 @@ class PadNumPipe(Pipe):
         return data.detach().cpu().tolist()
 
 
-class TokenSizesPipe(PadNumPipe):
-    def __init__(self, device: torch.device, dtype: torch.dtype = torch.long) -> None:
-        super(TokenSizesPipe, self).__init__(device=device, dtype=dtype)
-        self.with_(
-            pre=ToLen(),
-        )
-
-
 class PadStrPipe(PadNumPipe):
     def __init__(self, device: torch.device,
-                 unk_token: Optional[str], pad_token: Optional[str],
+                 unk_token: Optional[str], pad_token: str = '<pad>',
                  special_tokens: Tuple[Optional[str], ...] = (),
                  threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
         super(PadStrPipe, self).__init__(device=device, dtype=dtype)
@@ -78,12 +68,12 @@ class PadListNumPipe(Pipe):
 
 
 class PadListStrPipe(PadListNumPipe):
-    def __init__(self, batch_first: bool, padding_value: Union[int, bool, float], device: torch.device,
-                 unk_token: Optional[str], pad_token: Optional[str],
+    def __init__(self, batch_first: bool, device: torch.device,
+                 unk_token: Optional[str], pad_token: str = '<pad>',
                  special_tokens: Tuple[Optional[str], ...] = (),
                  threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
         super(PadListStrPipe, self).__init__(
-            batch_first=batch_first, padding_value=padding_value,
+            batch_first=batch_first, padding_value=0,  # TODO: fix padding_value
             device=device, dtype=dtype,
         )
         self.with_(

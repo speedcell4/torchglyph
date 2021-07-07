@@ -108,7 +108,7 @@ class Map(Proc):
     def __call__(self, data: Union[Any, Container], **kwargs) -> Union[Any, Container]:
         if not isinstance(data, (set, list, tuple)):
             return self.map(data, **kwargs)
-        return type(data)([self.map(datum, **kwargs) for datum in data])
+        return type(data)([self(datum, **kwargs) for datum in data])
 
 
 class Filter(Proc):

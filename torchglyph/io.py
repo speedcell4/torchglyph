@@ -67,14 +67,16 @@ class DownloadMixin(object):
     name: str
     url: List[Tuple[str, ...]]
 
-    def urls(self, **kwargs) -> List[Tuple[str, ...]]:
-        return self.url
+    @classmethod
+    def urls(cls, **kwargs) -> List[Tuple[str, ...]]:
+        return cls.url
 
-    def paths(self, root: Path = data_dir, **kwargs) -> List[Path]:
-        root = root / getattr(self.__class__, 'name', self.__class__.__name__).lower()
+    @classmethod
+    def paths(cls, root: Path = data_dir, **kwargs) -> List[Path]:
+        root = root / getattr(cls, 'name', cls.__name__).lower()
 
         paths = []
-        for url, path, *names in self.urls(**kwargs):
+        for url, path, *names in cls.urls(**kwargs):
             if len(names) == 0:
                 names = [path]
             if any(not (root / name).exists() for name in names):

@@ -1,7 +1,8 @@
 import itertools
 import uuid
+from collections import namedtuple
 from pathlib import Path
-from typing import Iterable, Any, TextIO
+from typing import Iterable, Any, Type
 from typing import Union, List, Tuple, NamedTuple, Dict
 
 from torch.utils.data import DataLoader as TorchDataLoader
@@ -26,16 +27,17 @@ class Dataset(TorchDataset, DownloadMixin):
             for ps in pipes
             for name, pipe in ps.items()
         }
-        self.Batch = NamedTuple(
+        self.Batch: Type = namedtuple(
             typename=f'Batch_{str(uuid.uuid4())[:8]}',
-            field_names=self.pipes.keys(),
+            field_names=list(self.pipes.keys()),
         )
         if self.Batch.__name__ not in globals():
             globals()[self.Batch.__name__] = self.Batch
 
         self.data: Dict[str, List[Any]] = {}
-        for datum, pipes in zip(zip(*self.load(**kwargs)), pipes):
-            for name, pipe in pipes.items():
+
+        for datum, ps in zip(zip(*self.load(**kwargs)), pipes):
+            for name, pipe in ps.items():
                 self.data.setdefault(name, []).extend(datum)
 
     def transpose(self) -> None:
@@ -67,7 +69,7 @@ class Dataset(TorchDataset, DownloadMixin):
     def load(cls, **kwargs) -> Iterable[Any]:
         raise NotImplementedError
 
-    def dump(self, fp: TextIO, batch: NamedTuple, prediction: List[Any], *args, **kwargs) -> None:
+    def dump(self, fp, batch: NamedTuple, prediction: Any, *args, **kwargs) -> None:
         raise NotImplementedError
 
     def eval(self, path: Path, **kwargs):
@@ -77,7 +79,7 @@ class Dataset(TorchDataset, DownloadMixin):
         raise NotImplementedError
 
     @classmethod
-    def new(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
+    def new(cls, **kwargs) -> Tuple['DataLoader', ...]:
         raise NotImplementedError
 
 

@@ -1,14 +1,14 @@
 import re
-from typing import Pattern, Any
+from typing import Pattern, Any, List
 
+from torchglyph.annotations import Container
 from torchglyph.proc import Proc
 from torchglyph.proc.abc import Map
-from torchglyph.annotations import Container
 
 __all__ = [
     'ToInt', 'ToBool', 'ToFloat',
     'ToLower', 'ToUpper', 'ToCapitalized', 'RegexSub',
-    'ToLen', 'Prepend', 'Append',
+    'ToList', 'ToLen', 'Prepend', 'Append',
 ]
 
 
@@ -53,6 +53,11 @@ class RegexSub(Map):
 
     def map(self, token: str, **kwargs) -> str:
         return re.sub(pattern=self.pattern, repl=self.repl, string=token)
+
+
+class ToList(Proc):
+    def __call__(self, data: Any, **kwargs) -> List[Any]:
+        return list(data)
 
 
 class ToLen(Proc):
