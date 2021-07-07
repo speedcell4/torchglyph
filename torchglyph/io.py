@@ -28,11 +28,10 @@ def toggle_loggers(pattern: Union[str, Pattern], enable: bool) -> None:
 
 
 def download(url: str, path: Path, exist_ok: bool = True, chunk_size: int = 1024 * 1024) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
-
     response: Response = requests.get(url=url, stream=True)
     assert response.status_code == 200, f'{response.status_code} != {200}'
 
+    path.parent.mkdir(parents=True, exist_ok=True)
     if not path.exists() or not exist_ok:
         with path.open(mode='wb') as fp:
             for chunk in tqdm(response.iter_content(chunk_size=chunk_size),
@@ -65,18 +64,18 @@ def extract(path: Path) -> Path:
 
 class DownloadMixin(object):
     name: str
-    url: List[Tuple[str, ...]]
+    urls: List[Tuple[str, ...]]
 
     @classmethod
-    def urls(cls, **kwargs) -> List[Tuple[str, ...]]:
-        return cls.url
+    def get_urls(cls, **kwargs) -> List[Tuple[str, ...]]:
+        return cls.urls
 
     @classmethod
     def paths(cls, root: Path = data_dir, **kwargs) -> List[Path]:
         root = root / getattr(cls, 'name', cls.__name__).lower()
 
         paths = []
-        for url, path, *names in cls.urls(**kwargs):
+        for url, path, *names in cls.get_urls(**kwargs):
             if len(names) == 0:
                 names = [path]
             if any(not (root / name).exists() for name in names):

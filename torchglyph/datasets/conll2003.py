@@ -15,7 +15,7 @@ __all__ = [
 
 
 class CoNLL2003(Dataset):
-    url = [
+    urls = [
         ('https://raw.githubusercontent.com/glample/tagger/master/dataset/eng.train', 'train.txt'),
         ('https://raw.githubusercontent.com/glample/tagger/master/dataset/eng.testa', 'dev.txt'),
         ('https://raw.githubusercontent.com/glample/tagger/master/dataset/eng.testb', 'test.txt'),
