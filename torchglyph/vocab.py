@@ -178,7 +178,8 @@ class Glove(Vectors):
     def __init__(self, name: str, dim: int, root: Path = data_dir) -> None:
         super(Glove, self).__init__(root=root, name=name, dim=dim)
 
-    def get_urls(self, name: str, dim: int) -> List[Tuple[str, ...]]:
+    @classmethod
+    def get_urls(cls, name: str, dim: int) -> List[Tuple[str, ...]]:
         return [(
             f'https://nlp.stanford.edu/data/glove.{name}.zip',
             f'glove.{name}.zip',
@@ -192,7 +193,8 @@ class FastText(Vectors):
     def __init__(self, name: str, lang: str, root: Path = data_dir) -> None:
         super(FastText, self).__init__(root=root, name=name, lang=lang)
 
-    def get_urls(self, name: str, lang: str) -> List[Tuple[str, ...]]:
+    @classmethod
+    def get_urls(cls, name: str, lang: str) -> List[Tuple[str, ...]]:
         if name == 'cc':
             return [(
                 f'https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.{lang}.300.vec.gz',
