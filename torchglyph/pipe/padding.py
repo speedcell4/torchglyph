@@ -3,10 +3,10 @@ from typing import Union, Optional, Tuple, List
 import torch
 from torch import Tensor
 
-from torchglyph.pipe.abc import Pipe, THRESHOLD
+from torchglyph.pipe.abc import Pipe
 from torchglyph.proc.collating import ToTensor, ToDevice
 from torchglyph.proc.padding import PadSequences
-from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
+from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering, THRESHOLD
 
 __all__ = [
     'PadNumPipe', 'PadListNumPipe',

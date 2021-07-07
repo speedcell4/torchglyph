@@ -6,11 +6,8 @@ from torchglyph.proc import Proc, ProcList, compress, subs, Identity
 from torchglyph.vocab import Vocab
 
 __all__ = [
-    'THRESHOLD',
     'Pipe', 'RawPipe',
 ]
-
-THRESHOLD = 8
 
 
 class Pipe(object, metaclass=ABCMeta):
@@ -43,36 +40,37 @@ class Pipe(object, metaclass=ABCMeta):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(\n  {self.extra_repr()}\n)'
 
-    def preprocess(self, *datasets, name: str) -> Counter:
+    def preprocess_(self, *datasets, name: str) -> Counter:
         counter = Counter()
-        for dataset in datasets:
-            todo = f'@{name}_{self.preprocess.__name__}_todo'
-            if getattr(dataset, todo, True) and not isinstance(self._pre_proc, Identity):
+        if not isinstance(self._pre_proc, Identity):
+            for dataset in datasets:
                 dataset.data[name] = [
                     self._pre_proc(datum, counter=counter, name=name)
                     for datum in dataset.data[name]
                 ]
-            setattr(dataset, todo, False)
+            self._pre_proc = Identity()
 
         return counter
 
-    def postprocess(self, *datasets, name: str) -> 'Pipe':
-        _ = self.preprocess(*datasets, name=name)
-        for dataset in datasets:
-            todo = f'@{name}_{self.postprocess.__name__}_todo'
-            if getattr(dataset, todo, True) and not isinstance(self._post_proc, Identity):
+    def postprocess_(self, *datasets, name: str) -> 'Pipe':
+        _ = self.preprocess_(*datasets, name=name)
+        if not isinstance(self._batch_proc, Identity):
+            self._batch_proc = Identity()
+
+        if not isinstance(self._post_proc, Identity):
+            for dataset in datasets:
                 dataset.data[name] = [
                     self._post_proc(datum, vocab=self.vocab, name=name)
                     for datum in dataset.data[name]
                 ]
-            setattr(dataset, todo, False)
+            self._post_proc = Identity()
 
         return self
 
     def build_vocab(self, *datasets, name: str = None,
                     special_tokens: Tuple[str, ...] = (),
                     max_size: Optional[int] = None, min_freq: int = 1) -> 'Pipe':
-        counter = self.preprocess(*datasets, name=name)
+        counter = self.preprocess_(*datasets, name=name)
         vocab = self._vocab_proc(
             counter, name=name,
             special_tokens=special_tokens,

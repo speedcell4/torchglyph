@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 from typing import Tuple, Iterable, NamedTuple
 
@@ -57,10 +56,3 @@ class CoNLL2003(Dataset):
             batch_size=batch_size,
             shuffle=True, drop_last=False,
         )
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    train, dev, test = CoNLL2003.new(batch_size=32, device=torch.device('cpu'))
-    for batch in train:
-        print(batch)

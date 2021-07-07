@@ -104,7 +104,7 @@ class DataLoader(TorchDataLoader):
         )
         for dataset in datasets:
             for name, pipe in dataset.pipes.items():
-                pipe.postprocess(dataset, name=name)
+                pipe.postprocess_(dataset, name=name)
                 iteration.update(1)
                 iteration.set_postfix_str(f'{name}')
             dataset.transpose()
