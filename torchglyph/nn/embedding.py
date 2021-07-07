@@ -14,7 +14,7 @@ class TokenEmbedding(nn.Embedding, metaclass=PackedMeta):
 
 
 class CharLstmEmbedding(nn.Module):
-    def __init__(self, hidden_dim: int, num_layers: int = 1,
+    def __init__(self, hidden_dim: int = 50, num_layers: int = 1,
                  bias: bool = True, bidirectional: bool = True,
                  dropout: float = 0.5, reduction: str = 'max', *,
                  char_embedding: TokenEmbedding) -> None:
