@@ -26,8 +26,6 @@ setup(
         ],
         'ctx': [
             'transformers',
-            'allennlp',
-            'elmoformanylangs',
         ],
         'docs': [
             'mkdocs',
