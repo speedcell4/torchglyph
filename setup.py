@@ -16,6 +16,7 @@ setup(
         'numpy',
         'einops',
         'torchrua',
+        'requests',
     ],
     extras_require={
         'dev': [
@@ -24,8 +25,6 @@ setup(
         ],
         'ctx': [
             'transformers',
-            'allennlp',
-            'elmoformanylangs',
         ],
         'docs': [
             'mkdocs',
