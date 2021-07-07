@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Tuple, Iterable, NamedTuple
 
@@ -41,6 +42,10 @@ class CoNLL2003(Dataset):
             dict(word=WORD, char=CHAR, raw_word=RawPipe()),
             dict(tag=TAG, raw_tag=RawPipe()),
         ]
+
+        for ps in pipes:
+            for name, pipe in ps.items():
+                logging.info(f'{name} => {pipe}')
 
         train, dev, test = cls.paths(root=root)
         train = cls(pipes=pipes, path=train)

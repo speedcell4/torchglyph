@@ -54,8 +54,8 @@ class Pipe(object, metaclass=ABCMeta):
 
     def postprocess_(self, *datasets, name: str) -> 'Pipe':
         _ = self.preprocess_(*datasets, name=name)
-        if not isinstance(self._batch_proc, Identity):
-            self._batch_proc = Identity()
+        if not isinstance(self._vocab_proc, Identity):
+            self._vocab_proc = Identity()
 
         if not isinstance(self._post_proc, Identity):
             for dataset in datasets:
