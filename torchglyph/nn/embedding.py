@@ -1,4 +1,3 @@
-from aku import Literal
 from einops.layers.torch import Reduce
 from torch import nn, Tensor
 from torch.nn.utils.rnn import PackedSequence
@@ -15,9 +14,9 @@ class TokenEmbedding(nn.Embedding, metaclass=PackedMeta):
 
 
 class CharLstmEmbedding(nn.Module):
-    def __init__(self, hidden_dim: int, num_layers: int = 1, dropout: float = 0.5,
+    def __init__(self, hidden_dim: int, num_layers: int = 1,
                  bias: bool = True, bidirectional: bool = True,
-                 reduction: Literal['max', 'mean'] = 'max', *,
+                 dropout: float = 0.5, reduction: str = 'max', *,
                  char_embedding: TokenEmbedding) -> None:
         super(CharLstmEmbedding, self).__init__()
 
