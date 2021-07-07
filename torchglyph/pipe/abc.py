@@ -42,28 +42,31 @@ class Pipe(object, metaclass=ABCMeta):
 
     def preprocess_(self, *datasets, name: str) -> Counter:
         counter = Counter()
+
+        todo = f'{name}_pre_todo'
         if not isinstance(self._pre_proc, Identity):
             for dataset in datasets:
-                dataset.data[name] = [
-                    self._pre_proc(datum, counter=counter, name=name)
-                    for datum in dataset.data[name]
-                ]
-            self._pre_proc = Identity()
+                if getattr(dataset, todo, True):
+                    dataset.data[name] = [
+                        self._pre_proc(datum, counter=counter, name=name)
+                        for datum in dataset.data[name]
+                    ]
+                setattr(dataset, todo, False)
 
         return counter
 
     def postprocess_(self, *datasets, name: str) -> 'Pipe':
         _ = self.preprocess_(*datasets, name=name)
-        if not isinstance(self._vocab_proc, Identity):
-            self._vocab_proc = Identity()
 
+        todo = f'{name}_post_todo'
         if not isinstance(self._post_proc, Identity):
             for dataset in datasets:
-                dataset.data[name] = [
-                    self._post_proc(datum, vocab=self.vocab, name=name)
-                    for datum in dataset.data[name]
-                ]
-            self._post_proc = Identity()
+                if getattr(dataset, todo, True):
+                    dataset.data[name] = [
+                        self._post_proc(datum, vocab=self.vocab, name=name)
+                        for datum in dataset.data[name]
+                    ]
+                setattr(dataset, todo, False)
 
         return self
 
