@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 
-from typing import NamedTuple, List, Iterable, get_type_hints
+from typing import NamedTuple, Iterable, Type, get_type_hints, Tuple
 
 __all__ = [
     'register_type', 'type_get',
@@ -30,11 +30,11 @@ def parse_bool(string: str) -> bool:
     raise TypeError(f'{string} is not {bool}')
 
 
-def load_conll(path: Path, config: NamedTuple, sep: str = ' ',
+def load_conll(path: Path, config: Type[NamedTuple], sep: str = ' ',
                blank: str = '', encoding: str = 'utf-8') -> Iterable[NamedTuple]:
-    Token = NamedTuple(
-        f'Token_{str(uuid.uuid4())[:8]}',
-        [(name, List[config._field_types[name]])
+    Sentence = NamedTuple(
+        f'Sentence_{str(uuid.uuid4())[:8]}',
+        [(name, Tuple[config._field_types[name], ...])
          for name in config._fields if not name.endswith('_')],
     )
 
@@ -42,15 +42,16 @@ def load_conll(path: Path, config: NamedTuple, sep: str = ' ',
         tokens = []
         for raw in fp:
             raw = raw.strip()
+
             if raw != blank:
                 tokens.append([
                     type_get(config._field_types[name])(data)
-                    for data, name in zip(raw.split(sep=sep), config._fields)
+                    for name, data in zip(config._fields, raw.split(sep=sep))
                     if not name.endswith('_')
                 ])
             elif len(tokens) != 0:
-                yield Token(*zip(*tokens))
+                yield Sentence(*zip(*tokens))
                 tokens = []
 
         if len(tokens) != 0:
-            yield Token(*zip(*tokens))
+            yield Sentence(*zip(*tokens))

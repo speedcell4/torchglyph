@@ -1,13 +1,14 @@
+import logging
 from pathlib import Path
-from typing import Iterable, Any
-from typing import Tuple
+from typing import Tuple, Iterable, NamedTuple
 
 import torch
 
 from torchglyph import data_dir
 from torchglyph.dataset import Dataset, DataLoader
-from torchglyph.pipe import PackListStrPipe, PackListListStrPipe
+from torchglyph.format import load_conll
 from torchglyph.pipe.abc import RawPipe
+from torchglyph.pipe.packing import PackListStrPipe, PackListListStrPipe
 
 __all__ = [
     'CoNLL2003',
@@ -21,22 +22,15 @@ class CoNLL2003(Dataset):
         ('https://raw.githubusercontent.com/glample/tagger/master/dataset/eng.testb', 'test.txt'),
     ]
 
-    @classmethod
-    def load(cls, path: Path, **kwargs) -> Iterable[Any]:
-        with path.open(mode='r', encoding='utf-8') as fp:
-            sentence = []
-            for raw in fp:
-                raw = raw.strip()
-                if len(raw) != 0:
-                    sentence.append(raw.split(sep=' '))
-                elif len(sentence) != 0:
-                    words, _, _, tags = zip(*sentence)
-                    yield words, tags
-                    sentence = []
+    class Config(NamedTuple):
+        word: str
+        pos_: str
+        chunk_: str
+        tag: str
 
-            if len(sentence) != 0:
-                words, _, _, tags = zip(*sentence)
-                yield words, tags
+    @classmethod
+    def load(cls, path: Path, **kwargs) -> Iterable[NamedTuple]:
+        yield from load_conll(path=path, config=cls.Config, sep=' ')
 
     @classmethod
     def new(cls, batch_size: int, *, device: torch.device, root: Path = data_dir, **kwargs) -> Tuple['DataLoader', ...]:
@@ -63,3 +57,10 @@ class CoNLL2003(Dataset):
             batch_size=batch_size,
             shuffle=True, drop_last=False,
         )
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    train, dev, test = CoNLL2003.new(batch_size=32, device=torch.device('cpu'))
+    for batch in train:
+        print(batch)
