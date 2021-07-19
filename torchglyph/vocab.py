@@ -1,5 +1,5 @@
 import logging
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict
 
@@ -38,7 +38,6 @@ class Vocab(object):
         self.unk_idx = None
         if unk_token is not None:
             self.unk_idx = self.add_token_(unk_token)
-            self.stoi = defaultdict(self._default_factory)
 
         self.pad_idx = None
         if pad_token is not None:
@@ -49,10 +48,7 @@ class Vocab(object):
 
         self.unk_token = unk_token
         self.pad_token = pad_token
-        self.special_tokens = tuple(
-            token for token in (unk_token, pad_token, *special_tokens)
-            if token is not None
-        )
+        self.special_tokens = self.itos[::]
 
         for token, freq in self.freq.most_common():
             if freq < min_freq:
@@ -60,7 +56,9 @@ class Vocab(object):
             self.add_token_(token)
 
     def _default_factory(self) -> Optional[int]:
-        return self.unk_idx
+        if self.unk_idx is not None:
+            return self.unk_idx
+        raise KeyError
 
     def add_token_(self, token) -> int:
         assert token is not None
@@ -131,21 +129,21 @@ class Vectors(Vocab, DownloadMixin):
 
         if not torch_path.exists():
             vectors = []
-            with path.open('r', encoding='utf-8', errors='replace') as fp:
+            with path.open('r', encoding='utf-8') as fp:
 
-                num_vectors, vector_size = None, None
+                num_embeddings, embedding_dim = None, None
                 if self.vector_format == 'word2vec':
-                    num_vectors, vector_size = map(int, next(fp).strip().split(' '))
+                    num_embeddings, embedding_dim = map(int, next(fp).strip().split(' '))
 
-                for raw in tqdm(fp, desc=f'caching {path}', unit=' tokens', total=num_vectors):
-                    token, *vector = raw.rstrip().split(' ')
+                for raw in tqdm(fp, desc=f'caching {path}', unit=' tokens', total=num_embeddings):
+                    token, *embeddings = raw.rstrip().split(' ')
 
-                    if vector_size is None:
-                        vector_size = len(vector)
-                    assert vector_size == len(vector), f'{vector_size} != {len(vector)} :: {token}'
+                    if embedding_dim is None:
+                        embedding_dim = len(embeddings)
+                    assert embedding_dim == len(embeddings), f'{embedding_dim} != {len(embeddings)} :: {token}'
 
                     self.add_token_(token)
-                    vectors.append([float(v) for v in vector])
+                    vectors.append([float(v) for v in embeddings])
 
             self.vectors = torch.tensor(vectors, dtype=torch.float32)
             self.save(torch_path)
@@ -158,8 +156,8 @@ class Vectors(Vocab, DownloadMixin):
             tensor[:] = self.vectors[self.stoi[token]]
             return True
 
-        for fallbacks in fallbacks:
-            new_token = fallbacks(token)
+        for fallback in fallbacks:
+            new_token = fallback(token)
             if new_token in self:
                 tensor[:] = self.vectors[self.stoi[new_token]]
                 return True
@@ -215,3 +213,7 @@ class FastText(Vectors):
             )]
 
         raise KeyError(f'{name} is not supported')
+
+
+if __name__ == '__main__':
+    FastText(name='cc', lang='zh')
