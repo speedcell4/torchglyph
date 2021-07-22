@@ -1,7 +1,7 @@
 import re
 from typing import Pattern, Any, List
 
-from torchglyph.annotations import Container
+from torchglyph.types import Tensors
 from torchglyph.proc import Proc
 from torchglyph.proc.abc import Map
 
@@ -61,7 +61,7 @@ class ToList(Proc):
 
 
 class ToLen(Proc):
-    def __call__(self, data: Container, **kwargs) -> int:
+    def __call__(self, data: Tensors, **kwargs) -> int:
         return len(data)
 
 
@@ -74,7 +74,7 @@ class Prepend(Proc):
     def extra_repr(self) -> str:
         return f'{self.token} x {self.num_times} + [...]'
 
-    def __call__(self, data: Container, **kwargs) -> Container:
+    def __call__(self, data: Tensors, **kwargs) -> Tensors:
         return type(data)([self.token for _ in range(self.num_times)] + data)
 
 
@@ -87,5 +87,5 @@ class Append(Proc):
     def extra_repr(self) -> str:
         return f'[...] + {self.token} x {self.num_times}'
 
-    def __call__(self, data: Container, **kwargs) -> Container:
+    def __call__(self, data: Tensors, **kwargs) -> Tensors:
         return type(data)(data + [self.token for _ in range(self.num_times)])

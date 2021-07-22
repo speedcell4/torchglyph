@@ -5,7 +5,7 @@ import torch
 from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence
 
-from torchglyph.annotations import DType, Device, Container
+from torchglyph.types import DType, Device, Tensors
 from torchglyph.proc.abc import Proc
 
 __all__ = [
@@ -49,7 +49,7 @@ class ToDevice(Proc):
             return f'{self.device}'
         return ''
 
-    def __call__(self, data: Container, **kwargs) -> Container:
+    def __call__(self, data: Tensors, **kwargs) -> Tensors:
         if isinstance(data, (Tensor, PackedSequence)):
             return data.to(device=self.device)
         if isinstance(data, (set, list, tuple)):

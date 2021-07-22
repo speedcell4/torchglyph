@@ -1,6 +1,6 @@
 import torch
 
-from torchglyph.annotations import PackedSequence
+from torchglyph.types import PackedSequence
 from torchglyph.datasets.conll2003 import CoNLL2003
 
 

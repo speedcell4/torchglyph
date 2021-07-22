@@ -6,7 +6,7 @@ from torch.nn.utils.rnn import PackedSequence
 from torchrua import pack_catted_sequence
 from torchrua import pack_sequence, reduce_catted_sequences, batch_sizes_to_ptr, accumulate_sizes, pack_padded_sequence
 
-from torchglyph.annotations import Device, CattedSequence, PaddedSequence
+from torchglyph.types import Device, CattedSequence, PaddedSequence
 from torchglyph.proc.abc import Proc
 
 __all__ = [

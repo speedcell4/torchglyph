@@ -1,20 +1,15 @@
-from typing import Optional, Tuple, Union, Any, Set, List
+from typing import Tuple, Union, Any, Set, List
 
-import torch
 from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence
+from torch.types import Number, _dtype as DType, Device
 
 __all__ = [
-    'Num', 'Container',
-    'DType', 'Device',
+    'Number', 'Tensor', 'Tensors', 'DType', 'Device',
     'CattedSequence', 'PackedSequence', 'PaddedSequence', 'Sequence',
 ]
 
-Num = Union[int, bool, float]
-Container = Union[Set[Any], List[Any], Tuple[Any, ...]]
-
-DType = Optional[torch.dtype]
-Device = Optional[torch.device]
+Tensors = Union[Set[Any], List[Any], Tuple[Any, ...]]
 
 PackedSequence = PackedSequence
 CattedSequence = Tuple[Tensor, Tensor]

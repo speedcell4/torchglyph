@@ -4,7 +4,7 @@ from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence
 from torchrua import pad_sequence, pad_packed_sequence, pad_catted_sequence
 
-from torchglyph.annotations import Device, Num, CattedSequence
+from torchglyph.types import Device, Number, CattedSequence
 from torchglyph.proc.abc import Proc
 
 __all__ = [
@@ -14,7 +14,7 @@ __all__ = [
 
 
 class PadProc(Proc):
-    def __init__(self, batch_first: bool = True, padding_value: Num = 0, device: Device = None) -> None:
+    def __init__(self, batch_first: bool = True, padding_value: Number = 0, device: Device = None) -> None:
         super(PadProc, self).__init__()
         self.batch_first = batch_first
         self.padding_value = padding_value
