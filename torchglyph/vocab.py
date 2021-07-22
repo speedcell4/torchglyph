@@ -1,5 +1,5 @@
 import logging
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict
 
@@ -32,7 +32,7 @@ class Vocab(object):
 
         self.freq = counter
         self.itos: List[str] = []
-        self.stoi: Dict[str, int] = {}
+        self.stoi: Dict[str, int] = defaultdict(self._default_factory)
         self.vectors: Optional[Tensor] = None
 
         self.unk_idx = None
@@ -54,6 +54,8 @@ class Vocab(object):
             if freq < min_freq:
                 break
             self.add_token_(token)
+
+        assert len(self.stoi) == len(self.itos)
 
     def _default_factory(self) -> Optional[int]:
         if self.unk_idx is not None:
