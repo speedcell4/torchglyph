@@ -15,7 +15,7 @@ setup(
         'tqdm',
         'numpy',
         'einops',
-        'torchrua',
+        'torchrua>=0.3.0',
         'requests',
     ],
     extras_require={
