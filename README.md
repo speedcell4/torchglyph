@@ -8,8 +8,8 @@ Data Processor Combinators for Natural Language Processing.
 
 ## Requirements
 
-- Python 3.7 or higher
-- PyTorch 1.4.0 or higher
+- Python 3.7
+- PyTorch 1.6.0
 
 ## Installation
 

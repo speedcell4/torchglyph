@@ -2,44 +2,48 @@ import itertools
 import uuid
 from collections import namedtuple
 from pathlib import Path
-from typing import Iterable, Any, TextIO, Optional
-from typing import Union, List, Type, Tuple, NamedTuple, Dict
+from typing import Iterable, Any, Type
+from typing import Union, List, Tuple, NamedTuple, Dict
 
-from torch.utils import data
+from torch.utils.data import DataLoader as TorchDataLoader
+from torch.utils.data import Dataset as TorchDataset
 from tqdm import tqdm
 
-from torchglyph import data_path
-from torchglyph.io import download_and_unzip
+from torchglyph.io import DownloadMixin
 from torchglyph.pipe import Pipe
 
+__all__ = [
+    'Dataset',
+    'DataLoader',
+]
 
-class Dataset(data.Dataset):
-    name: Optional[str]
-    urls: List[Union[Tuple[str, ...]]]
 
-    def __init__(self, pipes: List[Dict[str, Pipe]], **load_kwargs) -> None:
+class Dataset(TorchDataset, DownloadMixin):
+    def __init__(self, pipes: List[Dict[str, Pipe]], **kwargs) -> None:
         super(Dataset, self).__init__()
 
         self.pipes: Dict[str, Pipe] = {
-            key: pipe
+            name: pipe
             for ps in pipes
-            for key, pipe in ps.items()
+            for name, pipe in ps.items()
         }
-        self.Batch: Type[NamedTuple] = namedtuple(
-            f'Batch_{str(uuid.uuid4())[:8]}', field_names=self.pipes.keys())
+        self.Batch: Type = namedtuple(
+            typename=f'Batch_{str(uuid.uuid4())[:8]}',
+            field_names=list(self.pipes.keys()),
+        )
         if self.Batch.__name__ not in globals():
             globals()[self.Batch.__name__] = self.Batch
 
         self.data: Dict[str, List[Any]] = {}
-        for ins, pipes in zip(zip(*self.load(**load_kwargs)), pipes):
-            for key, pipe in pipes.items():
-                self.data.setdefault(key, []).extend(ins)
 
-    def _transpose(self) -> None:
-        keys, values = zip(*self.data.items())
-        keys = list(keys)
-        values = zip(*values)
-        self.data = [self.Batch(**dict(zip(keys, ins))) for ins in values]
+        for datum, ps in zip(zip(*self.load(**kwargs)), pipes):
+            for name, pipe in ps.items():
+                self.data.setdefault(name, []).extend(datum)
+
+    def transpose(self) -> None:
+        names, data = zip(*self.data.items())
+        names, data = list(names), zip(*data)
+        self.data = [self.Batch(**dict(zip(names, datum))) for datum in data]
 
     def __getitem__(self, index: int) -> NamedTuple:
         return self.data[index]
@@ -50,77 +54,60 @@ class Dataset(data.Dataset):
     @property
     def vocabs(self) -> NamedTuple:
         return self.Batch(**{
-            key: pipe.vocab
-            for key, pipe in self.pipes.items()
+            name: pipe.vocab
+            for name, pipe in self.pipes.items()
         })
 
     def collate_fn(self, batch: List[NamedTuple]) -> NamedTuple:
-        batch = self.Batch(*zip(*batch))
+        data = self.Batch(*zip(*batch))
         return self.Batch(*[
-            self.pipes[key].collate_fn(collected_ins)
-            for key, collected_ins in zip(batch._fields, batch)
+            self.pipes[name].collate_fn(datum)
+            for name, datum in zip(self.Batch._fields, data)
         ])
-
-    @classmethod
-    def paths(cls, root: Path = data_path) -> Tuple[Path, ...]:
-        root = root / getattr(cls, 'name', cls.__name__).lower()
-
-        ans = []
-        for url, name, *filenames in cls.urls:
-            if len(filenames) == 0:
-                filenames = [name]
-            if any(not (root / filename).exists() for filename in filenames):
-                download_and_unzip(url, root / name)
-            for filename in filenames:
-                ans.append(root / filename)
-
-        return tuple(ans)
 
     @classmethod
     def load(cls, **kwargs) -> Iterable[Any]:
         raise NotImplementedError
 
-    def dump(self, fp: TextIO, batch: NamedTuple, prediction: List[Any], *args, **kwargs) -> None:
+    def dump(self, fp, batch: NamedTuple, prediction: Any, *args, **kwargs) -> None:
         raise NotImplementedError
 
-    def eval(self, path: Path):
+    def eval(self, path: Path, **kwargs):
         raise NotImplementedError
 
-    def viz(self, path: Path):
+    def viz(self, path: Path, **kwargs):
         raise NotImplementedError
 
     @classmethod
-    def new(cls, *args, **kwargs) -> Tuple['DataLoader', ...]:
+    def new(cls, **kwargs) -> Tuple['DataLoader', ...]:
         raise NotImplementedError
 
 
-class DataLoader(data.DataLoader):
+class DataLoader(TorchDataLoader):
     @property
     def vocabs(self) -> NamedTuple:
         return self.dataset.vocabs
 
     @classmethod
     def new(cls, datasets: Tuple[Dataset, ...],
-            batch_size: Union[int, Tuple[int, ...]], shuffle: bool,
-            num_workers: int = 0, pin_memory: bool = False,
-            drop_last: bool = False) -> Tuple['DataLoader', ...]:
+            batch_size: Union[int, Tuple[int, ...]],
+            shuffle: bool = True, drop_last: bool = False) -> Tuple['DataLoader', ...]:
         assert len(datasets) > 0
 
+        batch_sizes = batch_size
         if isinstance(batch_size, int):
             batch_sizes = itertools.repeat(batch_size)
-        else:
-            batch_sizes = batch_size
 
         iteration = tqdm(
-            desc='post-processing datasets',
+            desc='processing datasets',
             total=len(datasets) * (len(datasets[0].pipes) + 1),
         )
         for dataset in datasets:
-            for key, pipe in dataset.pipes.items():
-                pipe.postprocess(dataset)
+            for name, pipe in dataset.pipes.items():
+                pipe.postprocess_(dataset, name=name)
                 iteration.update(1)
-                iteration.set_postfix_str(f'{key}')
-            dataset._transpose()
+                iteration.set_postfix_str(f'{name}')
+            dataset.transpose()
             iteration.update(1)
             iteration.set_postfix_str('transpose')
         iteration.close()
@@ -131,7 +118,6 @@ class DataLoader(data.DataLoader):
                 collate_fn=dataset.collate_fn,
                 shuffle=shuffle if index == 0 else False,
                 drop_last=drop_last if index == 0 else False,
-                num_workers=num_workers, pin_memory=pin_memory,
             )
             for index, (dataset, batch_size) in enumerate(zip(datasets, batch_sizes))
         )
