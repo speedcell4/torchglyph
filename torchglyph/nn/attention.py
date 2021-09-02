@@ -56,11 +56,10 @@ class MultiHeadAttention(nn.Module):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.extra_repr()})'
 
-    def forward(self, q: Tensor, k: Tensor, v: Tensor,
-                mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
+    def forward(self, q: Tensor, k: Tensor, v: Tensor, mask: Optional[Tensor] = None) -> Tensor:
         attention = self.q(q) @ self.k(k) * self.tau
         if mask is not None:
             attention.masked_fill_(mask=mask, value=-float('inf'))
         attention = self.softmax(attention)
 
-        return self.o(attention @ self.v(v)), attention
+        return self.o(attention @ self.v(v))
