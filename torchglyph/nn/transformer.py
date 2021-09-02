@@ -2,6 +2,7 @@ from typing import Optional
 
 from torch import nn, Tensor
 
+from torchglyph.nn.activation import Activations
 from torchglyph.nn.attention import MultiHeadAttention
 
 __all__ = [
@@ -12,15 +13,18 @@ __all__ = [
 
 
 class TransformerFfn(nn.Sequential):
-    def __init__(self, hidden_size: int, dropout: float, bias: bool = True, *, in_size: int) -> None:
+    def __init__(self, hidden_size: int, dropout: float,
+                 activation: Activations = nn.Tanh,
+                 bias: bool = True, *, in_size: int) -> None:
         super(TransformerFfn, self).__init__(
             nn.Linear(in_size, hidden_size, bias=bias),
-            nn.Tanh(),
+            activation(),
             nn.Dropout(p=dropout, inplace=True),
             nn.Linear(hidden_size, in_size, bias=bias),
         )
 
         self.in_size = in_size
+        self.activation = activation.__name__
         self.dropout = dropout
         self.bias = bias
 
@@ -32,7 +36,7 @@ class TransformerFfn(nn.Sequential):
         ])
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self.extra_repr()})'
+        return f'{self.__class__.__name__}{self.activation}({self.extra_repr()})'
 
 
 class TransformerEncoderLayer(nn.Module):
@@ -63,8 +67,8 @@ class TransformerEncoderLayer(nn.Module):
         self.norm2 = nn.LayerNorm(in_size)
         self.dropout = nn.Dropout(ffn_dropout)
 
-    def forward(self, src: Tensor, mask: Optional[Tensor] = None) -> Tensor:
-        src = self.norm1(src + self.dropout(self.att(q=src, k=src, v=src, mask=mask)))
+    def forward(self, src: Tensor, src_mask: Optional[Tensor] = None) -> Tensor:
+        src = self.norm1(src + self.dropout(self.att(q=src, k=src, v=src, mask=src_mask)))
         src = self.norm2(src + self.dropout(self.ffn(src)))
         return src
 
@@ -104,7 +108,9 @@ class TransformerDecoderLayer(nn.Module):
         self.norm3 = nn.LayerNorm(in_size)
         self.dropout = nn.Dropout(ffn_dropout)
 
-    def forward(self, src: Tensor, src_mask: Tensor, tgt: Tensor, tgt_mask: Tensor):
+    def forward(self, src: Tensor, tgt: Tensor,
+                src_mask: Optional[Tensor] = None,
+                tgt_mask: Optional[Tensor] = None) -> Tensor:
         tgt = self.norm1(tgt + self.dropout(self.tgt(q=tgt, k=tgt, v=tgt, mask=tgt_mask)))
         tgt = self.norm2(tgt + self.dropout(self.src(q=tgt, k=src, v=src, mask=src_mask)))
         tgt = self.norm3(tgt + self.dropout(self.ffn(tgt)))
