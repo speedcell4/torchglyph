@@ -119,9 +119,8 @@ class TransformerDecoderLayer(nn.Module):
     def decode(self, tgt: Tensor,
                src_k: Tensor, src_v: Tensor,
                tgt_k: Tensor, tgt_v: Tensor,
-               src_mask: Optional[Tensor] = None,
-               tgt_mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
-        tgt, tgt_k, tgt_v = self.tgt.decode_tgt(q=tgt, k=tgt_k, v=tgt_v, mask=tgt_mask)
+               src_mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+        tgt, tgt_k, tgt_v = self.tgt.decode_tgt(q=tgt, k=tgt_k, v=tgt_v)
         tgt = self.norm1(tgt + self.dropout(tgt))
 
         tgt, src_k, src_v = self.src.decode_src(q=tgt, k=src_k, v=src_v, src_mask=src_mask)
@@ -163,22 +162,30 @@ class Transformer(nn.Module):
 
         return tgt
 
-    def decode(self, tgt: Tensor,
-               src_k: List[Tensor], src_v: List[Tensor],
-               tgt_k: List[Tensor], tgt_v: List[Tensor],
-               src_mask: Optional[Tensor] = None,
-               tgt_mask: Optional[Tensor] = None) -> \
-            Tuple[Tensor, List[Tensor], List[Tensor], List[Tensor], List[Tensor]]:
+    PREV = Tuple[List[Tensor], List[Tensor], List[Tensor], List[Tensor]]
+
+    def init_decoding(self, tgt: Tensor, src: Tensor, src_mask: Optional[Tensor] = None) -> PREV:
+        src = self.forward_encoder(src=src, src_mask=src_mask)
+
+        prev_src_ks = [src for _ in self.decoder_layers]
+        prev_src_vs = [src for _ in self.decoder_layers]
+        prev_tgt_ks = [tgt for _ in self.decoder_layers]
+        prev_tgt_vs = [tgt for _ in self.decoder_layers]
+
+        return prev_src_ks, prev_src_vs, prev_tgt_ks, prev_tgt_vs
+
+    def decode(self, tgt: Tensor, prev: PREV, src_mask: Optional[Tensor] = None) -> Tuple[Tensor, PREV]:
+        prev_src_ks, prev_src_vs, prev_tgt_ks, prev_tgt_vs = prev
 
         src_ks, src_vs, tgt_ks, tgt_vs = [], [], [], []
         for index, decoder_layer in enumerate(self.decoder_layers):  # type: (int, TransformerDecoderLayer)
             tgt, src_k_i, src_v_i, tgt_k_i, tgt_v_i = decoder_layer.decode(
-                src_k=src_k[index], src_v=src_v[index], src_mask=src_mask,
-                tgt_k=tgt_k[index], tgt_v=tgt_v[index], tgt_mask=tgt_mask, tgt=tgt,
+                src_k=prev_src_ks[index], src_v=prev_src_vs[index], src_mask=src_mask,
+                tgt_k=prev_tgt_ks[index], tgt_v=prev_tgt_vs[index], tgt=tgt,
             )
             src_ks.append(src_k_i)
             src_vs.append(src_v_i)
             tgt_ks.append(tgt_k_i)
             tgt_vs.append(tgt_v_i)
 
-        return tgt, src_ks, src_vs, tgt_ks, tgt_vs
+        return tgt, (src_ks, src_vs, tgt_ks, tgt_vs)
