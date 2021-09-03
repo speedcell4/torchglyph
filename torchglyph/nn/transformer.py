@@ -162,19 +162,19 @@ class Transformer(nn.Module):
             dec_layer_(in_size=in_size) for _ in range(num_dec_layers)
         ])
 
-    def forward_encoder(self, src: Tensor, src_mask: Optional[Tensor] = None) -> Tensor:
+    def encode(self, src: Tensor, src_mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
+        src_mask = att_mask(mask=src_mask)
         for encoder_layer in self.encoder_layers:
             src = encoder_layer(src=src, src_mask=src_mask)
-        return src
+
+        return src, src_mask
 
     def forward(self, src: Tensor, tgt: Tensor,
                 src_mask: Optional[Tensor] = None,
                 tgt_mask: Optional[Tensor] = None) -> Tensor:
-        src_mask = att_mask(mask=src_mask)
+        src, src_mask = self.encode(src=src, src_mask=src_mask)
+
         tgt_mask = cas_mask(mask=tgt_mask, tensor=tgt, dim=-2)
-
-        src = self.forward_encoder(src=src, src_mask=src_mask)
-
         for decoder_layer in self.decoder_layers:  # type: TransformerDecoderLayer
             tgt = decoder_layer.forward(
                 src=src, src_mask=src_mask,
@@ -183,11 +183,10 @@ class Transformer(nn.Module):
 
         return tgt
 
-    PREV = Tuple[List[Tensor], List[Tensor], List[Tensor], List[Tensor]]
+    Prev = Tuple[List[Tensor], List[Tensor], List[Tensor], List[Tensor]]
 
     def init_decoding(self, tgt: Tensor, src: Tensor, src_mask: Optional[Tensor] = None):
-        src_mask = att_mask(mask=src_mask)
-        src = self.forward_encoder(src=src, src_mask=src_mask)
+        src, src_mask = self.encode(src=src, src_mask=src_mask)
 
         src_ks = [src for _ in self.decoder_layers]
         src_vs = [src for _ in self.decoder_layers]
@@ -196,7 +195,7 @@ class Transformer(nn.Module):
 
         return (src_ks, src_vs, tgt_ks, tgt_vs), src_mask
 
-    def decode(self, tgt: Tensor, prev: PREV, src_mask: Optional[Tensor] = None) -> Tuple[Tensor, PREV]:
+    def decode(self, tgt: Tensor, prev: Prev, src_mask: Optional[Tensor] = None) -> Tuple[Tensor, Prev]:
         prev_src_ks, prev_src_vs, prev_tgt_ks, prev_tgt_vs = prev
 
         src_ks, src_vs, tgt_ks, tgt_vs = [], [], [], []
