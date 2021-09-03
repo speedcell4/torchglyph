@@ -71,7 +71,7 @@ class MultiHeadAttention(nn.Module):
         return self.o(attention @ v)
 
     def decode_tgt(self, q: Tensor, k: Tensor, v: Tensor,
-                   mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+                   mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, Tensor]:
         q = self.q(q)
         k = self.k(k) if q.dim() == k.dim() else torch.cat([k, self.k(q)], dim=-1)
         v = self.v(v) if q.dim() == v.dim() else torch.cat([v, self.v(q)], dim=-2)
@@ -81,17 +81,17 @@ class MultiHeadAttention(nn.Module):
             attention.masked_fill_(mask=mask, value=-float('inf'))
         attention = self.softmax(attention)
 
-        return self.o(attention @ v), q, k, v
+        return self.o(attention @ v), k, v
 
     def decode_src(self, q: Tensor, k: Tensor, v: Tensor,
-                   mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+                   mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, Tensor]:
         q = self.q(q)
-        k = self.k(k) if q.dim() == k.dim() else k
-        v = self.v(v) if q.dim() == v.dim() else v
+        k = self.k(k) if q.dim() != k.dim() else k
+        v = self.v(v) if q.dim() != v.dim() else v
 
         attention = q @ k * self.tau
         if mask is not None:
             attention.masked_fill_(mask=mask, value=-float('inf'))
         attention = self.softmax(attention)
 
-        return self.o(attention @ v), q, k, v
+        return self.o(attention @ v), k, v

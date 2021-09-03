@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Type, Tuple, List
 
 from torch import nn, Tensor
 
@@ -115,3 +115,70 @@ class TransformerDecoderLayer(nn.Module):
         tgt = self.norm2(tgt + self.dropout(self.src(q=tgt, k=src, v=src, mask=src_mask)))
         tgt = self.norm3(tgt + self.dropout(self.ffn(tgt)))
         return tgt
+
+    def decode(self, tgt: Tensor,
+               src_k: Tensor, src_v: Tensor,
+               tgt_k: Tensor, tgt_v: Tensor,
+               src_mask: Optional[Tensor] = None,
+               tgt_mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+        tgt, tgt_k, tgt_v = self.tgt.decode_tgt(q=tgt, k=tgt_k, v=tgt_v, mask=tgt_mask)
+        tgt = self.norm1(tgt + self.dropout(tgt))
+
+        tgt, src_k, src_v = self.src.decode_src(q=tgt, k=src_k, v=src_v, mask=src_mask)
+        tgt = self.norm2(tgt + self.dropout(tgt))
+
+        tgt = self.norm3(tgt + self.dropout(self.ffn(tgt)))
+        return tgt, src_k, src_v, tgt_k, tgt_v
+
+
+class Transformer(nn.Module):
+    def __init__(self, num_enc_layers: int = 6, num_dec_layers: int = 6,
+                 enc_layer_: Type[TransformerEncoderLayer] = TransformerEncoderLayer,
+                 dec_layer_: Type[TransformerDecoderLayer] = TransformerDecoderLayer, *,
+                 in_size: int) -> None:
+        super(Transformer, self).__init__()
+
+        self.encoder_layers = nn.ModuleList(modules=[
+            enc_layer_(in_size=in_size) for _ in range(num_enc_layers)
+        ])
+        self.decoder_layers = nn.ModuleList(modules=[
+            dec_layer_(in_size=in_size) for _ in range(num_dec_layers)
+        ])
+
+    def forward_encoder(self, src: Tensor, src_mask: Optional[Tensor] = None) -> Tensor:
+        for encoder_layer in self.encoder_layers:
+            src = encoder_layer(src=src, src_mask=src_mask)
+        return src
+
+    def forward(self, src: Tensor, tgt: Tensor,
+                src_mask: Optional[Tensor] = None,
+                tgt_mask: Optional[Tensor] = None) -> Tensor:
+        src = self.forward_encoder(src=src, src_mask=src_mask)
+
+        for decoder_layer in self.decoder_layers:  # type: TransformerDecoderLayer
+            tgt = decoder_layer.forward(
+                src=src, src_mask=src_mask,
+                tgt=tgt, tgt_mask=tgt_mask,
+            )
+
+        return tgt
+
+    def decode(self, tgt: Tensor,
+               src_k: List[Tensor], src_v: List[Tensor],
+               tgt_k: List[Tensor], tgt_v: List[Tensor],
+               src_mask: Optional[Tensor] = None,
+               tgt_mask: Optional[Tensor] = None) -> \
+            Tuple[Tensor, List[Tensor], List[Tensor], List[Tensor], List[Tensor]]:
+
+        src_ks, src_vs, tgt_ks, tgt_vs = [], [], [], []
+        for index, decoder_layer in enumerate(self.decoder_layers):  # type: (int, TransformerDecoderLayer)
+            tgt, src_k_i, src_v_i, tgt_k_i, tgt_v_i = decoder_layer.decode(
+                src_k=src_k[index], src_v=src_v[index], src_mask=src_mask,
+                tgt_k=tgt_k[index], tgt_v=tgt_v[index], tgt_mask=tgt_mask, tgt=tgt,
+            )
+            src_ks.append(src_k_i)
+            src_vs.append(src_v_i)
+            tgt_ks.append(tgt_k_i)
+            tgt_vs.append(tgt_v_i)
+
+        return tgt, src_ks, src_vs, tgt_ks, tgt_vs
