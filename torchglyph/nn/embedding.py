@@ -1,8 +1,9 @@
 from einops import rearrange
 from torch import nn, Tensor
 from torch.nn.utils.rnn import PackedSequence
-from torchglyph.vocab import Vocab
 from torchrua import PackedMeta, PackedSequential
+
+from torchglyph.vocab import Vocab
 
 __all__ = [
     'TokenEmbedding',
@@ -33,6 +34,9 @@ class TokenEmbedding(nn.Embedding, metaclass=PackedMeta):
         if not self.weight.requires_grad:
             return ', '.join([super(TokenEmbedding, self).extra_repr(), 'frozen'])
         return super(TokenEmbedding, self).extra_repr()
+
+    def padding_mask(self, indices: Tensor) -> Tensor:
+        return indices == (self.padding_idx if self.padding_idx is None else -100)
 
 
 class CharLstmEmbedding(nn.Module):
