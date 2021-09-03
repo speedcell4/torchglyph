@@ -1,5 +1,6 @@
 from typing import Tuple, Optional
 
+import torch
 from einops.layers.torch import Rearrange
 from torch import Tensor
 from torch import nn
@@ -56,10 +57,41 @@ class MultiHeadAttention(nn.Module):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.extra_repr()})'
 
-    def forward(self, q: Tensor, k: Tensor, v: Tensor, mask: Optional[Tensor] = None) -> Tensor:
-        attention = self.q(q) @ self.k(k) * self.tau
+    def forward(self, q: Tensor, k: Tensor, v: Tensor,
+                mask: Optional[Tensor] = None) -> Tensor:
+        q = self.q(q)
+        k = self.k(k)
+        v = self.v(v)
+
+        attention = q @ k * self.tau
         if mask is not None:
             attention.masked_fill_(mask=mask, value=-float('inf'))
         attention = self.softmax(attention)
 
-        return self.o(attention @ self.v(v))
+        return self.o(attention @ v)
+
+    def decode_tgt(self, q: Tensor, k: Tensor, v: Tensor,
+                   mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+        q = self.q(q)
+        k = self.k(k) if q.dim() == k.dim() else torch.cat([k, self.k(q)], dim=-1)
+        v = self.v(v) if q.dim() == v.dim() else torch.cat([v, self.v(q)], dim=-2)
+
+        attention = q @ k * self.tau
+        if mask is not None:
+            attention.masked_fill_(mask=mask, value=-float('inf'))
+        attention = self.softmax(attention)
+
+        return self.o(attention @ v), q, k, v
+
+    def decode_src(self, q: Tensor, k: Tensor, v: Tensor,
+                   mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+        q = self.q(q)
+        k = self.k(k) if q.dim() == k.dim() else k
+        v = self.v(v) if q.dim() == v.dim() else v
+
+        attention = q @ k * self.tau
+        if mask is not None:
+            attention.masked_fill_(mask=mask, value=-float('inf'))
+        attention = self.softmax(attention)
+
+        return self.o(attention @ v), q, k, v
