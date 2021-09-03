@@ -65,6 +65,7 @@ class MultiHeadAttention(nn.Module):
 
         attention = q @ k * self.tau
         if mask is not None:
+            attention, mask = torch.broadcast_tensors(attention, mask)
             attention.masked_fill_(mask=mask, value=-float('inf'))
         attention = self.softmax(attention)
 
@@ -78,6 +79,7 @@ class MultiHeadAttention(nn.Module):
 
         attention = q @ k * self.tau
         if mask is not None:
+            attention, mask = torch.broadcast_tensors(attention, mask)
             attention.masked_fill_(mask=mask, value=-float('inf'))
         attention = self.softmax(attention)
 
@@ -91,6 +93,7 @@ class MultiHeadAttention(nn.Module):
 
         attention = q @ k * self.tau
         if mask is not None:
+            attention, mask = torch.broadcast_tensors(attention, mask)
             attention.masked_fill_(mask=mask, value=-float('inf'))
         attention = self.softmax(attention)
 
