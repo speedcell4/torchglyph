@@ -6,8 +6,21 @@ from torch import Tensor
 from torch import nn
 
 __all__ = [
+    'att_mask',
+    'cas_mask',
     'MultiHeadAttention',
 ]
+
+
+@torch.no_grad()
+def att_mask(mask: Optional[Tensor] = None) -> Optional[Tensor]:
+    return mask if mask is None else mask[..., None, None, :]
+
+
+@torch.no_grad()
+def cas_mask(tensor: Tensor, dim: int, mask: Optional[Tensor] = None) -> Optional[Tensor]:
+    cas = torch.ones((tensor.size()[dim], tensor.size()[dim]), device=tensor.device, dtype=torch.bool).triu(1)
+    return cas if mask is None else torch.logical_or(mask[..., None, None, :], cas)
 
 
 class MultiHeadAttention(nn.Module):

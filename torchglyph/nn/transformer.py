@@ -3,12 +3,13 @@ from typing import Optional, Type, Tuple, List
 from torch import nn, Tensor
 
 from torchglyph.nn.activation import Activations
-from torchglyph.nn.attention import MultiHeadAttention
+from torchglyph.nn.attention import MultiHeadAttention, att_mask, cas_mask
 
 __all__ = [
     'TransformerFfn',
     'TransformerEncoderLayer',
     'TransformerDecoderLayer',
+    'Transformer',
 ]
 
 
@@ -152,6 +153,9 @@ class Transformer(nn.Module):
     def forward(self, src: Tensor, tgt: Tensor,
                 src_mask: Optional[Tensor] = None,
                 tgt_mask: Optional[Tensor] = None) -> Tensor:
+        src_mask = att_mask(mask=src_mask)
+        tgt_mask = cas_mask(mask=tgt_mask, tensor=tgt, dim=-2)
+
         src = self.forward_encoder(src=src, src_mask=src_mask)
 
         for decoder_layer in self.decoder_layers:  # type: TransformerDecoderLayer
@@ -164,15 +168,16 @@ class Transformer(nn.Module):
 
     PREV = Tuple[List[Tensor], List[Tensor], List[Tensor], List[Tensor]]
 
-    def init_decoding(self, tgt: Tensor, src: Tensor, src_mask: Optional[Tensor] = None) -> PREV:
+    def init_decoding(self, tgt: Tensor, src: Tensor, src_mask: Optional[Tensor] = None):
+        src_mask = att_mask(mask=src_mask)
         src = self.forward_encoder(src=src, src_mask=src_mask)
 
-        prev_src_ks = [src for _ in self.decoder_layers]
-        prev_src_vs = [src for _ in self.decoder_layers]
-        prev_tgt_ks = [tgt for _ in self.decoder_layers]
-        prev_tgt_vs = [tgt for _ in self.decoder_layers]
+        src_ks = [src for _ in self.decoder_layers]
+        src_vs = [src for _ in self.decoder_layers]
+        tgt_ks = [tgt for _ in self.decoder_layers]
+        tgt_vs = [tgt for _ in self.decoder_layers]
 
-        return prev_src_ks, prev_src_vs, prev_tgt_ks, prev_tgt_vs
+        return (src_ks, src_vs, tgt_ks, tgt_vs), src_mask
 
     def decode(self, tgt: Tensor, prev: PREV, src_mask: Optional[Tensor] = None) -> Tuple[Tensor, PREV]:
         prev_src_ks, prev_src_vs, prev_tgt_ks, prev_tgt_vs = prev
