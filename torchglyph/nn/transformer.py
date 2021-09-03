@@ -69,6 +69,13 @@ class TransformerEncoderLayer(nn.Module):
         self.dropout = nn.Dropout(ffn_dropout)
 
     def forward(self, src: Tensor, src_mask: Optional[Tensor] = None) -> Tensor:
+        """
+        Args:
+            src: [..., s, x]
+            src_mask: [..., (h), (s), (s)]
+        Returns:
+            [..., s, o]
+        """
         src = self.norm1(src + self.dropout(self.att(q=src, k=src, v=src, mask=src_mask)))
         src = self.norm2(src + self.dropout(self.ffn(src)))
         return src
@@ -112,6 +119,16 @@ class TransformerDecoderLayer(nn.Module):
     def forward(self, src: Tensor, tgt: Tensor,
                 src_mask: Optional[Tensor] = None,
                 tgt_mask: Optional[Tensor] = None) -> Tensor:
+        """
+        Args:
+            src: [..., s, x]
+            tgt: [..., t, y]
+            src_mask: [..., (h), (t), (s)]
+            tgt_mask: [..., (h), (t), (t)]
+        Returns:
+            [..., s, o]
+        """
+
         tgt = self.norm1(tgt + self.dropout(self.tgt(q=tgt, k=tgt, v=tgt, mask=tgt_mask)))
         tgt = self.norm2(tgt + self.dropout(self.src(q=tgt, k=src, v=src, mask=src_mask)))
         tgt = self.norm3(tgt + self.dropout(self.ffn(tgt)))

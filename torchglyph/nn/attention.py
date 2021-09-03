@@ -14,11 +14,25 @@ __all__ = [
 
 @torch.no_grad()
 def att_mask(mask: Optional[Tensor] = None) -> Optional[Tensor]:
+    """
+    Args:
+        mask: [..., k]
+    Returns:
+        [..., (h), (q), k]
+    """
     return mask if mask is None else mask[..., None, None, :]
 
 
 @torch.no_grad()
-def cas_mask(tensor: Tensor, dim: int, mask: Optional[Tensor] = None) -> Optional[Tensor]:
+def cas_mask(tensor: Tensor, dim: int = -2, mask: Optional[Tensor] = None) -> Optional[Tensor]:
+    """
+        Args:
+            tensor: [..., k, ...]
+            dim: []
+            mask: [..., k]
+        Returns:
+            [..., (h), k, k]
+        """
     cas = torch.ones((tensor.size()[dim], tensor.size()[dim]), device=tensor.device, dtype=torch.bool).triu(1)
     return cas if mask is None else torch.logical_or(mask[..., None, None, :], cas)
 
@@ -70,8 +84,17 @@ class MultiHeadAttention(nn.Module):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.extra_repr()})'
 
-    def forward(self, q: Tensor, k: Tensor, v: Tensor,
-                mask: Optional[Tensor] = None) -> Tensor:
+    def forward(self, q: Tensor, k: Tensor, v: Tensor, mask: Optional[Tensor] = None) -> Tensor:
+        """
+        Args:
+            q: [..., q, x]
+            k: [..., k, y]
+            v: [..., k, z]
+            mask: [..., (h), (q), k]
+        Returns:
+            [..., q, o]
+        """
+
         q = self.q(q)
         k = self.k(k)
         v = self.v(v)
@@ -85,6 +108,15 @@ class MultiHeadAttention(nn.Module):
         return self.o(attention @ v)
 
     def decode_tgt(self, q: Tensor, k: Tensor, v: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
+        """
+        Args:
+            q: [..., q, x]
+            k: [..., k, y] or [..., h, t, k]
+            v: [..., k, z] or [..., h, k, t]
+        Returns:
+            [..., q, o], [..., h, t, k + 1], [..., h, k + 1, t]
+        """
+
         q = self.q(q)
         k = self.k(k) if q.dim() == k.dim() else torch.cat([k, self.k(q)], dim=-1)
         v = self.v(v) if q.dim() == v.dim() else torch.cat([v, self.v(q)], dim=-2)
@@ -95,6 +127,16 @@ class MultiHeadAttention(nn.Module):
 
     def decode_src(self, q: Tensor, k: Tensor, v: Tensor,
                    src_mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, Tensor]:
+        """
+        Args:
+            q: [..., h, q, s]
+            k: [..., k, y] or [..., h, s, k]
+            v: [..., k, z] or [..., h, k, s]
+            src_mask: [..., (h), (q), k]
+        Returns:
+            [..., q, o], [..., h, s, k], [..., h, k, s]
+        """
+
         q = self.q(q)
         k = self.k(k) if q.dim() != k.dim() else k
         v = self.v(v) if q.dim() != v.dim() else v
