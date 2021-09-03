@@ -124,7 +124,7 @@ class TransformerDecoderLayer(nn.Module):
         tgt, tgt_k, tgt_v = self.tgt.decode_tgt(q=tgt, k=tgt_k, v=tgt_v, mask=tgt_mask)
         tgt = self.norm1(tgt + self.dropout(tgt))
 
-        tgt, src_k, src_v = self.src.decode_src(q=tgt, k=src_k, v=src_v, mask=src_mask)
+        tgt, src_k, src_v = self.src.decode_src(q=tgt, k=src_k, v=src_v, src_mask=src_mask)
         tgt = self.norm2(tgt + self.dropout(tgt))
 
         tgt = self.norm3(tgt + self.dropout(self.ffn(tgt)))
