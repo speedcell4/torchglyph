@@ -54,11 +54,11 @@ class MultiHeadAttention(nn.Module):
 
         self.q = nn.Sequential(
             nn.Linear(q_dim, num_heads * head_dim, bias=bias),
-            Rearrange('... q (h x) -> h q x', h=num_heads),
+            Rearrange('... q (h x) -> ... h q x', h=num_heads),
         )
         self.k = nn.Sequential(
             nn.Linear(k_dim, num_heads * head_dim, bias=bias),
-            Rearrange('... k (h x) -> h x k', h=num_heads),
+            Rearrange('... k (h x) -> ... h x k', h=num_heads),
         )
         self.softmax = nn.Sequential(
             nn.Dropout(dropout, inplace=True),
@@ -67,18 +67,18 @@ class MultiHeadAttention(nn.Module):
 
         self.v = nn.Sequential(
             nn.Linear(v_dim, num_heads * head_dim, bias=bias),
-            Rearrange('... k (h x) -> h k x', h=num_heads),
+            Rearrange('... k (h x) -> ... h k x', h=num_heads),
         )
         self.o = nn.Sequential(
-            Rearrange('... h q x -> q (h x)', h=num_heads),
+            Rearrange('... h q x -> ... q (h x)'),
             nn.Linear(num_heads * head_dim, q_dim, bias=bias),
         )
 
     def extra_repr(self) -> str:
         return ', '.join([
-            f'{self.q_dim}', f'{self.k_dim}', f'{self.v_dim}',
-            f'{self.head_dim}(x{self.num_heads})',
-            f'{self.dropout}', f'{self.bias}',
+            f'q={self.q_dim}', f'k={self.k_dim}', f'v={self.v_dim}',
+            f'heads={self.head_dim}(x{self.num_heads})',
+            f'dropout={self.dropout}', f'bias={self.bias}',
         ])
 
     def __repr__(self) -> str:
@@ -95,9 +95,9 @@ class MultiHeadAttention(nn.Module):
             [..., q, o]
         """
 
-        q = self.q(q)
         k = self.k(k)
         v = self.v(v)
+        q = self.q(q)
 
         attention = q @ k * self.tau
         if mask is not None:
@@ -117,9 +117,9 @@ class MultiHeadAttention(nn.Module):
             [..., q, o], [..., h, t, k + 1], [..., h, k + 1, t]
         """
 
-        q = self.q(q)
         k = self.k(k) if q.dim() == k.dim() else torch.cat([k, self.k(q)], dim=-1)
         v = self.v(v) if q.dim() == v.dim() else torch.cat([v, self.v(q)], dim=-2)
+        q = self.q(q)
 
         attention = self.softmax(q @ k * self.tau)
 
@@ -129,7 +129,7 @@ class MultiHeadAttention(nn.Module):
                    src_mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, Tensor]:
         """
         Args:
-            q: [..., h, q, s]
+            q: [..., q, x]
             k: [..., k, y] or [..., h, s, k]
             v: [..., k, z] or [..., h, k, s]
             src_mask: [..., (h), (q), k]
@@ -137,11 +137,12 @@ class MultiHeadAttention(nn.Module):
             [..., q, o], [..., h, s, k], [..., h, k, s]
         """
 
+        k = self.k(k) if q.dim() == k.dim() else k
+        v = self.v(v) if q.dim() == v.dim() else v
         q = self.q(q)
-        k = self.k(k) if q.dim() != k.dim() else k
-        v = self.v(v) if q.dim() != v.dim() else v
 
         attention = q @ k * self.tau
+
         if src_mask is not None:
             attention, src_mask = torch.broadcast_tensors(attention, src_mask)
             attention.masked_fill_(mask=src_mask, value=-float('inf'))

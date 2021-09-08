@@ -138,11 +138,11 @@ class TransformerDecoderLayer(nn.Module):
                src_k: Tensor, src_v: Tensor,
                tgt_k: Tensor, tgt_v: Tensor,
                src_mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
-        tgt, tgt_k, tgt_v = self.tgt.decode_tgt(q=tgt, k=tgt_k, v=tgt_v)
-        tgt = self.norm1(tgt + self.dropout(tgt))
+        tgt_q, tgt_k, tgt_v = self.tgt.decode_tgt(q=tgt, k=tgt_k, v=tgt_v)
+        tgt = self.norm1(tgt + self.dropout(tgt_q))
 
-        tgt, src_k, src_v = self.src.decode_src(q=tgt, k=src_k, v=src_v, src_mask=src_mask)
-        tgt = self.norm2(tgt + self.dropout(tgt))
+        tgt_q, src_k, src_v = self.src.decode_src(q=tgt, k=src_k, v=src_v, src_mask=src_mask)
+        tgt = self.norm2(tgt + self.dropout(tgt_q))
 
         tgt = self.norm3(tgt + self.dropout(self.ffn(tgt)))
         return tgt, src_k, src_v, tgt_k, tgt_v
@@ -185,13 +185,13 @@ class Transformer(nn.Module):
 
     Prev = Tuple[List[Tensor], List[Tensor], List[Tensor], List[Tensor]]
 
-    def init_decoding(self, tgt: Tensor, src: Tensor, src_mask: Optional[Tensor] = None):
+    def init_decoding(self, bos: Tensor, src: Tensor, src_mask: Optional[Tensor] = None):
         src, src_mask = self.encode(src=src, src_mask=src_mask)
 
         src_ks = [src for _ in self.decoder_layers]
         src_vs = [src for _ in self.decoder_layers]
-        tgt_ks = [tgt for _ in self.decoder_layers]
-        tgt_vs = [tgt for _ in self.decoder_layers]
+        tgt_ks = [bos for _ in self.decoder_layers]
+        tgt_vs = [bos for _ in self.decoder_layers]
 
         return (src_ks, src_vs, tgt_ks, tgt_vs), src_mask
 
