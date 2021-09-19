@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
-from typing import Optional, Union, Any, List
+from typing import Optional, Union, Any, List, Set, Tuple
 
-from torchglyph.types import Tensors
+from torch import Tensor
 
 __all__ = [
     'compress', 'subs',
@@ -102,18 +102,22 @@ class Chain(Proc):
 
 
 class Map(Proc):
+    Container = Union[Set[Tensor], List[Tensor], Tuple[Tensor, ...]]
+
     def map(self, data: Any, **kwargs) -> Any:
         raise NotImplementedError
 
-    def __call__(self, data: Union[Any, Tensors], **kwargs) -> Union[Any, Tensors]:
+    def __call__(self, data: Union[Any, Container], **kwargs) -> Union[Any, Container]:
         if not isinstance(data, (set, list, tuple)):
             return self.map(data, **kwargs)
         return type(data)([self(datum, **kwargs) for datum in data])
 
 
 class Filter(Proc):
+    Container = Union[Set[Tensor], List[Tensor], Tuple[Tensor, ...]]
+
     def predicate(self, data: Any, **kwargs) -> bool:
         raise NotImplementedError
 
-    def __call__(self, *data: Tensors, **kwargs) -> Tensors:
+    def __call__(self, data: Container, **kwargs) -> Container:
         return type(data)([datum for datum in data if self.predicate(datum, **kwargs)])
