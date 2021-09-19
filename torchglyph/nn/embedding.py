@@ -44,6 +44,7 @@ class TokenEmbedding(nn.Embedding, metaclass=PackedMeta):
             args.append('frozen')
         return ', '.join(args)
 
+    @torch.no_grad()
     def padding_mask(self, indices: Tensor) -> Tensor:
         return indices == (self.padding_idx if self.padding_idx is None else -100)
 
@@ -83,7 +84,7 @@ class PositionalEmbedding(nn.Module):
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
 
-        self.weight = nn.Parameter(self.obtain_weight(dtype=dtype), requires_grad=not freeze)
+        self.weight = nn.Parameter(self.obtain_parameters(dtype=dtype), requires_grad=not freeze)
 
     def extra_repr(self) -> str:
         args = [
@@ -95,7 +96,7 @@ class PositionalEmbedding(nn.Module):
         return ', '.join(args)
 
     @torch.no_grad()
-    def obtain_weight(self, dtype: torch.dtype, **kwargs) -> Tensor:
+    def obtain_parameters(self, dtype: torch.dtype, **kwargs) -> Tensor:
         return bert_normal_(torch.empty((self.num_embeddings, self.embedding_dim), dtype=dtype))
 
     def forward(self, indices: Union[Tensor, PackedSequence], dim: int = -2) -> Union[Tensor, PackedSequence]:
@@ -117,7 +118,7 @@ class TriangularEmbedding(PositionalEmbedding):
         )
 
     @torch.no_grad()
-    def obtain_weight(self, dtype: torch.dtype, **kwargs) -> Tensor:
+    def obtain_parameters(self, dtype: torch.dtype, **kwargs) -> Tensor:
         token = torch.arange(self.num_embeddings, dtype=dtype)
         feature = torch.arange(self.embedding_dim // 2, dtype=dtype) * 2
 
