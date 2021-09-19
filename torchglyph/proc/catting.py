@@ -44,11 +44,10 @@ class CatPaddedSequence(CattingProc):
         self.batch_first = batch_first
 
     def extra_repr(self) -> str:
-        args = [
+        return ', '.join([
             f'batch_first={self.batch_first}',
             super(CatPaddedSequence, self).extra_repr()
-        ]
-        return ', '.join(args)
+        ])
 
     def __call__(self, data: PackedSequence, **kwargs) -> CattedSequence:
         data, token_sizes = data
