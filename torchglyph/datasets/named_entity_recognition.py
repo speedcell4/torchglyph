@@ -64,9 +64,9 @@ class CoNLL2003(Dataset):
         dev = cls(pipes=pipes, path=dev)
         test = cls(pipes=pipes, path=test)
 
-        word.build_vocab(train, name='word')
-        char.build_vocab(train, name='char')
-        tag.build_vocab(train, name='tag')
+        word.build_vocab_(train)
+        char.build_vocab_(train)
+        tag.build_vocab_(train)
 
         return DataLoader.new(
             (train, dev, test),
@@ -76,6 +76,8 @@ class CoNLL2003(Dataset):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     train, dev, test = CoNLL2003.new(
         batch_size=32, device=torch.device('cpu'),
     )

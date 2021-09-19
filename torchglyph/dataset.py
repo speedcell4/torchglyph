@@ -40,7 +40,7 @@ class Dataset(TorchDataset, DownloadMixin):
             for name, pipe in ps.items():
                 self.data.setdefault(name, []).extend(datum)
 
-    def transpose(self) -> None:
+    def transpose_(self) -> None:
         names, data = zip(*self.data.items())
         names, data = list(names), zip(*data)
         self.data = [self.Batch(**dict(zip(names, datum))) for datum in data]
@@ -104,10 +104,10 @@ class DataLoader(TorchDataLoader):
         )
         for dataset in datasets:
             for name, pipe in dataset.pipes.items():
-                pipe.postprocess_(dataset, name=name)
+                pipe.postprocess_(dataset)
                 iteration.update(1)
                 iteration.set_postfix_str(f'{name}')
-            dataset.transpose()
+            dataset.transpose_()
             iteration.update(1)
             iteration.set_postfix_str('transpose')
         iteration.close()
