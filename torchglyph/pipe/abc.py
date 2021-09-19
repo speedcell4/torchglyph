@@ -41,8 +41,9 @@ class Pipe(object, metaclass=ABCMeta):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(\n  {self.extra_repr()}\n)'
 
-    def preprocess_(self, *datasets) -> Counter:
-        counter = Counter()
+    def preprocess_(self, *datasets, counter: Optional[Counter] = None) -> Counter:
+        if counter is None:
+            counter = Counter()
 
         if not isinstance(self.pre_proc, Identity):
             for dataset in datasets:
