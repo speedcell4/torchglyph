@@ -7,12 +7,23 @@ import torch
 from torchglyph import data_dir
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.format import load_conll
-from torchglyph.pipe.abc import RawPipe
 from torchglyph.pipe.packing import PackListStrPipe, PackListListStrPipe
 
 __all__ = [
     'CoNLL2003',
 ]
+
+
+class WordPipe(PackListStrPipe):
+    pass
+
+
+class CharPipe(PackListListStrPipe):
+    pass
+
+
+class TagPipe(PackListStrPipe):
+    pass
 
 
 class CoNLL2003(Dataset):
@@ -33,14 +44,15 @@ class CoNLL2003(Dataset):
         yield from load_conll(path=path, config=cls.Config, sep=' ')
 
     @classmethod
-    def new(cls, batch_size: int, *, device: torch.device, root: Path = data_dir, **kwargs) -> Tuple['DataLoader', ...]:
-        WORD = PackListStrPipe(device=device, unk_token='<unk>')
-        CHAR = PackListListStrPipe(device=device, unk_token='<unk>')
-        TAG = PackListStrPipe(device=device, unk_token='O')
+    def new(cls, batch_size: int, *, device: torch.device,
+            root: Path = data_dir, **kwargs) -> Tuple['DataLoader', ...]:
+        word = WordPipe(device=device, unk_token='<unk>')
+        char = CharPipe(device=device, unk_token='<unk>')
+        tag = TagPipe(device=device, unk_token='O')
 
         pipes = [
-            dict(word=WORD, char=CHAR, raw_word=RawPipe()),
-            dict(tag=TAG, raw_tag=RawPipe()),
+            dict(word=word, char=char),
+            dict(tag=tag),
         ]
 
         for ps in pipes:
@@ -52,12 +64,21 @@ class CoNLL2003(Dataset):
         dev = cls(pipes=pipes, path=dev)
         test = cls(pipes=pipes, path=test)
 
-        WORD.build_vocab(train, dev, test, name='word')
-        CHAR.build_vocab(train, dev, test, name='char')
-        TAG.build_vocab(train, dev, test, name='tag')
+        word.build_vocab(train, name='word')
+        char.build_vocab(train, name='char')
+        tag.build_vocab(train, name='tag')
 
         return DataLoader.new(
             (train, dev, test),
             batch_size=batch_size,
             shuffle=True, drop_last=False,
         )
+
+
+if __name__ == '__main__':
+    train, dev, test = CoNLL2003.new(
+        batch_size=32, device=torch.device('cpu'),
+    )
+    print(f'train => {train}')
+    print(f'dev => {dev}')
+    print(f'test => {test}')
