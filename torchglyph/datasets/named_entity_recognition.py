@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Tuple, Iterable, NamedTuple
 
 import torch
+from torch.types import Device
 
 from torchglyph import data_dir
 from torchglyph.dataset import Dataset, DataLoader
@@ -15,15 +16,27 @@ __all__ = [
 
 
 class WordPipe(PackListStrPipe):
-    pass
+    def __init__(self, device: Device) -> None:
+        super(WordPipe, self).__init__(
+            device=device, dtype=torch.long,
+            unk_token='<unk>', special_tokens=(), threshold=10,
+        )
 
 
 class CharPipe(PackListListStrPipe):
-    pass
+    def __init__(self, device: Device) -> None:
+        super(CharPipe, self).__init__(
+            device=device, dtype=torch.long,
+            unk_token='<unk>', special_tokens=(), threshold=10,
+        )
 
 
 class TagPipe(PackListStrPipe):
-    pass
+    def __init__(self, device: Device) -> None:
+        super(TagPipe, self).__init__(
+            device=device, dtype=torch.long,
+            unk_token='O', special_tokens=(), threshold=120,
+        )
 
 
 class CoNLL2003(Dataset):
@@ -44,11 +57,11 @@ class CoNLL2003(Dataset):
         yield from load_conll(path=path, config=cls.Config, sep=' ')
 
     @classmethod
-    def new(cls, batch_size: int, *, device: torch.device,
+    def new(cls, batch_size: int, *, device: Device,
             root: Path = data_dir, **kwargs) -> Tuple['DataLoader', ...]:
-        word = WordPipe(device=device, unk_token='<unk>')
-        char = CharPipe(device=device, unk_token='<unk>')
-        tag = TagPipe(device=device, unk_token='O')
+        word = WordPipe(device=device)
+        char = CharPipe(device=device)
+        tag = TagPipe(device=device)
 
         pipes = [
             dict(word=word, char=char),
