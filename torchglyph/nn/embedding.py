@@ -21,20 +21,21 @@ __all__ = [
 
 class TokenEmbedding(nn.Embedding, metaclass=PackedMeta):
     def __init__(self, embedding_dim: int, freeze: bool = False, *, vocab: Vocab = None,
-                 num_embeddings: int = 0, padding_idx: int = None) -> None:
+                 num_embeddings: int = 0, padding_idx: int = None,
+                 dtype: torch.dtype = torch.float32) -> None:
         if vocab is not None:
             super(TokenEmbedding, self).__init__(
                 embedding_dim=embedding_dim,
                 num_embeddings=len(vocab),
                 padding_idx=vocab.pad_idx,
-                _weight=vocab.vectors,
+                _weight=vocab.vectors, dtype=dtype,
             )
         else:
             super(TokenEmbedding, self).__init__(
                 embedding_dim=embedding_dim,
                 num_embeddings=num_embeddings,
                 padding_idx=padding_idx,
-                _weight=None,
+                _weight=None, dtype=dtype,
             )
         self.weight.requires_grad = not freeze
 
@@ -52,7 +53,7 @@ class TokenEmbedding(nn.Embedding, metaclass=PackedMeta):
 class CharLstmEmbedding(nn.Module):
     def __init__(self, hidden_dim: int = 50, num_layers: int = 1,
                  bias: bool = True, bidirectional: bool = True, dropout: float = 0.5, *,
-                 char_embedding: TokenEmbedding) -> None:
+                 char_embedding: TokenEmbedding, dtype: torch.dtype = torch.float32) -> None:
         super(CharLstmEmbedding, self).__init__()
 
         self.embedding = PackedSequential(
@@ -65,6 +66,7 @@ class CharLstmEmbedding(nn.Module):
             hidden_size=hidden_dim,
             num_layers=num_layers, bias=bias,
             bidirectional=bidirectional,
+            dtype=dtype,
         )
 
         self.num_directions = 2 if self.rnn.bidirectional else 1
@@ -122,6 +124,6 @@ class TriangularEmbedding(PositionalEmbedding):
         token = torch.arange(self.num_embeddings, dtype=dtype)
         feature = torch.arange(self.embedding_dim // 2, dtype=dtype) * 2
 
-        indices = token[:, None] / (10000. ** (feature[None, :] / self.embedding_dim))
-        embedding = torch.cat([torch.sin(indices), torch.cos(indices)], dim=-1)
-        return rearrange(embedding, 'n (s x) -> n (x s)', s=2)
+        position = token[:, None] / (10000. ** (feature[None, :] / self.embedding_dim))
+        embedding = torch.stack([torch.sin(position), torch.cos(position)], dim=-1)
+        return torch.flatten(embedding, start_dim=-2)
