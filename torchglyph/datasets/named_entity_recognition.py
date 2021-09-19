@@ -94,6 +94,5 @@ if __name__ == '__main__':
     train, dev, test = CoNLL2003.new(
         batch_size=32, device=torch.device('cpu'),
     )
-    print(f'train => {train}')
-    print(f'dev => {dev}')
-    print(f'test => {test}')
+    for batch in train:
+        print(f'batch => {batch}')
