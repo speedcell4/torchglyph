@@ -76,7 +76,7 @@ class Dataset(TorchDataset, DownloadMixin):
 
         return destination
 
-    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> None:
+    def load_state_dict(self, state_dict: OrderedDict, strict: bool = True) -> None:
         field_names = set(self.field_names)
         for name, datum in state_dict.items():
             self.data[name] = datum
