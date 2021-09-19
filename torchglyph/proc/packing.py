@@ -45,7 +45,7 @@ class PackCattedSequence(PackingProc):
         if self.device is not None:
             data = data.to(device=self.device)
             token_sizes = token_sizes.to(device=self.device)
-        return pack_catted_sequence(sequence=data, token_sizes=token_sizes)
+        return pack_catted_sequence(sequence=data, token_sizes=token_sizes, device=self.device)
 
 
 class PackPaddedSequence(PackingProc):
@@ -65,8 +65,7 @@ class PackPaddedSequence(PackingProc):
         return pack_padded_sequence(
             sequence=data.to(device=self.device),
             token_sizes=token_sizes.to(device=self.device),
-            batch_first=self.batch_first,
-
+            batch_first=self.batch_first, device=self.device,
         )
 
 

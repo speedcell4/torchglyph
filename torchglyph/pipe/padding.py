@@ -5,7 +5,7 @@ from torch import Tensor
 
 from torchglyph.pipe.abc import Pipe
 from torchglyph.proc.collating import ToTensor, ToDevice
-from torchglyph.proc.padding import PadSequences
+from torchglyph.proc.padding import PadSequence
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering, THRESHOLD
 
 __all__ = [
@@ -54,7 +54,7 @@ class PadListNumPipe(Pipe):
             pre=None,
             vocab=None,
             post=ToTensor(dtype=dtype),
-            batch=PadSequences(batch_first=batch_first, padding_value=padding_value, device=device),
+            batch=PadSequence(batch_first=batch_first, padding_value=padding_value, device=device),
         )
 
     def inv(self, data: Tensor, token_sizes: Tensor) -> List[List[Tuple[int, bool, float]]]:

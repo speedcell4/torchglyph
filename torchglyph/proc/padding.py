@@ -10,7 +10,7 @@ from torchglyph.proc.abc import Proc
 
 __all__ = [
     'PaddingProc',
-    'PadSequences',
+    'PadSequence',
     'PadCattedSequence',
     'PadPackedSequence',
 ]
@@ -35,7 +35,7 @@ class PaddingProc(Proc, metaclass=ABCMeta):
         raise NotImplementedError
 
 
-class PadSequences(PaddingProc):
+class PadSequence(PaddingProc):
     def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
         return pad_sequence(
             sequences=data, batch_first=self.batch_first,
@@ -46,9 +46,8 @@ class PadSequences(PaddingProc):
 class PadPackedSequence(PaddingProc):
     def __call__(self, data: PackedSequence, **kwargs) -> Tensor:
         data, _ = pad_packed_sequence(
-            sequence=data,
-            batch_first=self.batch_first,
-            padding_value=self.padding_value,
+            sequence=data, batch_first=self.batch_first,
+            padding_value=self.padding_value, device=self.device,
         )
         return data
 
@@ -57,7 +56,6 @@ class PadCattedSequence(PaddingProc):
     def __call__(self, data: CattedSequence, **kwargs) -> Tensor:
         data, token_sizes = data
         return pad_catted_sequence(
-            sequence=data, token_sizes=token_sizes,
-            batch_first=self.batch_first,
-            padding_value=self.padding_value,
+            sequence=data, token_sizes=token_sizes, batch_first=self.batch_first,
+            padding_value=self.padding_value, device=self.device,
         )
