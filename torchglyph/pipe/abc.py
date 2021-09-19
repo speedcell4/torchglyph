@@ -2,15 +2,11 @@ from abc import ABCMeta
 from collections import Counter
 from typing import Optional, Union, List, Any, Tuple
 
-from torch.types import Device
-
-from torchglyph.proc import PackSequence
 from torchglyph.proc import Proc, Processors, compress, subs, Identity
 from torchglyph.vocab import Vocab
 
 __all__ = [
     'Pipe', 'RawPipe',
-    'PackedListTensorPipe',
 ]
 
 
@@ -115,15 +111,3 @@ class RawPipe(Pipe):
             post=None,
             batch=None,
         )
-
-
-class PackedListTensorPipe(Pipe):
-    def __init__(self, device: Device = None) -> None:
-        super(PackedListTensorPipe, self).__init__(
-            pre=None,
-            vocab=None,
-            post=None,
-            batch=PackSequence(device=device)
-        )
-
-

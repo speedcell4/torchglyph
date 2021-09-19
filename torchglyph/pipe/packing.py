@@ -2,6 +2,7 @@ from typing import Optional, Tuple, List
 
 import torch
 from torch.nn.utils.rnn import PackedSequence
+from torch.types import Device
 from torchrua.padding import pad_packed_sequence
 
 from torchglyph.pipe.abc import Pipe
@@ -13,18 +14,26 @@ from torchglyph.proc.packing import PackSequence, ReduceCattedSequences
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering, THRESHOLD
 
 __all__ = [
-    'PackListNumPipe', 'PackListListNumPipe',
-    'PackListStrPipe', 'PackListListStrPipe',
+    'PackedListTensorPipe', 'PackListNumPipe', 'PackListStrPipe',
+    'PackListListNumPipe', 'PackListListStrPipe',
 ]
 
 
-class PackListNumPipe(Pipe):
-    def __init__(self, device: torch.device, dtype: torch.dtype = torch.long) -> None:
-        super(PackListNumPipe, self).__init__(
+class PackedListTensorPipe(Pipe):
+    def __init__(self, device: Device = None) -> None:
+        super(PackedListTensorPipe, self).__init__(
             pre=None,
             vocab=None,
+            post=None,
+            batch=PackSequence(device=device)
+        )
+
+
+class PackListNumPipe(PackedListTensorPipe):
+    def __init__(self, device: Device, dtype: torch.dtype = torch.long) -> None:
+        super(PackListNumPipe, self).__init__(device=device)
+        self.with_(
             post=ToTensor(dtype=dtype),
-            batch=PackSequence(device=device),
         )
 
     def inv(self, sequence: PackedSequence) -> List[List[Tuple[int, bool, float]]]:
@@ -40,7 +49,7 @@ class PackListNumPipe(Pipe):
 
 
 class PackListStrPipe(PackListNumPipe):
-    def __init__(self, device: torch.device,
+    def __init__(self, device: Device,
                  unk_token: Optional[str], special_tokens: Tuple[Optional[str], ...] = (),
                  threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
         super(PackListStrPipe, self).__init__(device=device, dtype=dtype)
@@ -63,7 +72,7 @@ class PackListStrPipe(PackListNumPipe):
 
 
 class PackListListNumPipe(Pipe):
-    def __init__(self, device: torch.device, dtype: torch.dtype = torch.long) -> None:
+    def __init__(self, device: Device, dtype: torch.dtype = torch.long) -> None:
         super(PackListListNumPipe, self).__init__(
             pre=None,
             vocab=None,
@@ -73,7 +82,7 @@ class PackListListNumPipe(Pipe):
 
 
 class PackListListStrPipe(PackListListNumPipe):
-    def __init__(self, device: torch.device,
+    def __init__(self, device: Device,
                  unk_token: Optional[str], special_tokens: Tuple[Optional[str], ...] = (),
                  threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
         super(PackListListStrPipe, self).__init__(device=device, dtype=dtype)
