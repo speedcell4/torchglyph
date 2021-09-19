@@ -2,11 +2,17 @@ from abc import ABCMeta
 from collections import Counter
 from typing import Optional, Union, List, Any, Tuple
 
+from torch.types import Device
+
+from torchglyph.proc import PackSequence, PadSequence, CatSequence
 from torchglyph.proc import Proc, Processors, compress, subs, Identity
 from torchglyph.vocab import Vocab
 
 __all__ = [
     'Pipe', 'RawPipe',
+    'PaddedListTensorPipe',
+    'PackedListTensorPipe',
+    'CattedListTensorPipe',
 ]
 
 
@@ -110,4 +116,34 @@ class RawPipe(Pipe):
             vocab=None,
             post=None,
             batch=None,
+        )
+
+
+class PaddedListTensorPipe(Pipe):
+    def __init__(self, device: Device = None) -> None:
+        super(PaddedListTensorPipe, self).__init__(
+            pre=None,
+            vocab=None,
+            post=None,
+            batch=PadSequence(device=device)
+        )
+
+
+class PackedListTensorPipe(Pipe):
+    def __init__(self, device: Device = None) -> None:
+        super(PackedListTensorPipe, self).__init__(
+            pre=None,
+            vocab=None,
+            post=None,
+            batch=PackSequence(device=device)
+        )
+
+
+class CattedListTensorPipe(Pipe):
+    def __init__(self, device: Device = None) -> None:
+        super(CattedListTensorPipe, self).__init__(
+            pre=None,
+            vocab=None,
+            post=None,
+            batch=CatSequence(device=device)
         )
