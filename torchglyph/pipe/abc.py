@@ -2,7 +2,7 @@ from abc import ABCMeta
 from collections import Counter
 from typing import Optional, Union, List, Any, Tuple
 
-from torchglyph.proc import Proc, ProcList, compress, subs, Identity
+from torchglyph.proc import Proc, Processors, compress, subs, Identity
 from torchglyph.vocab import Vocab
 
 __all__ = [
@@ -11,8 +11,8 @@ __all__ = [
 
 
 class Pipe(object, metaclass=ABCMeta):
-    def __init__(self, pre: ProcList = None, vocab: ProcList = None,
-                 post: ProcList = None, batch: ProcList = None) -> None:
+    def __init__(self, pre: Processors = None, vocab: Processors = None,
+                 post: Processors = None, batch: Processors = None) -> None:
         super(Pipe, self).__init__()
 
         self.vocab: Optional[Union[Vocab]] = None
@@ -22,8 +22,8 @@ class Pipe(object, metaclass=ABCMeta):
         self.post_proc = Proc.from_list(compress(processors=post))
         self.batch_proc = Proc.from_list(compress(processors=batch))
 
-    def with_(self, pre: ProcList = ..., vocab: ProcList = ...,
-              post: ProcList = ..., batch: ProcList = ...) -> 'Pipe':
+    def with_(self, pre: Processors = ..., vocab: Processors = ...,
+              post: Processors = ..., batch: Processors = ...) -> 'Pipe':
         self.pre_proc = Proc.from_list(subs(processors=pre, repl=self.pre_proc))
         self.vocab_proc = Proc.from_list(subs(processors=vocab, repl=self.vocab_proc))
         self.post_proc = Proc.from_list(subs(processors=post, repl=self.post_proc))
