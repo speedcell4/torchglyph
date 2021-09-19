@@ -25,4 +25,5 @@ def dumps_freq(token: str, freq: int, *, sep: str = '\t') -> str:
 
 def dump_freq(obj: Sequence[Tuple[str, int]], fp: IO, *, sep: str = '\t') -> None:
     for token, freq in obj:
-        fp.write(dumps_freq(token=token, freq=freq, sep=sep))
+        fp.write(dumps_freq(token, freq, sep=sep))
+        fp.write('\n')
