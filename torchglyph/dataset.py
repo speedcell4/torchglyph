@@ -1,5 +1,5 @@
 import itertools
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from pathlib import Path
 from typing import Iterable, Any, Type
 from typing import Union, List, Tuple, NamedTuple, Dict
@@ -64,6 +64,27 @@ class Dataset(TorchDataset, DownloadMixin):
 
     def dump(self, fp, batch: NamedTuple, prediction: Any, *args, **kwargs) -> None:
         raise NotImplementedError
+
+    def state_dict(self, destination: OrderedDict = None, prefix: str = '',
+                   keep_vars: bool = False) -> OrderedDict:
+        if destination is None:
+            destination = OrderedDict()
+            destination._metadata = OrderedDict()
+
+        for name, datum in self.data.items():
+            destination[prefix + name] = datum
+
+        return destination
+
+    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> None:
+        field_names = set(self.field_names)
+        for name, datum in state_dict.items():
+            self.data[name] = datum
+            if strict:
+                field_names.remove(name)
+
+        if strict:
+            assert len(field_names) == 0
 
     def eval(self, path: Path, **kwargs):
         raise NotImplementedError
