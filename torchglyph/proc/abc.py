@@ -1,19 +1,17 @@
 from abc import ABCMeta, abstractmethod
-from typing import Optional, Union, Any, List
-
-from torchglyph.types import Tensors
+from typing import Optional, Union, Any, List, Set, Tuple
 
 __all__ = [
     'compress', 'subs',
-    'Proc', 'Identity', 'Lift',
-    'ProcList', 'Chain',
+    'Proc', 'Processors',
+    'Identity', 'Lift', 'Chain',
     'Map', 'Filter',
 ]
 
-ProcList = Union[Optional['Proc'], List[Optional['Proc']]]
+Processors = Union[Optional['Proc'], List[Optional['Proc']]]
 
 
-def compress(processors: ProcList, allow_ellipsis: bool = True) -> List['Proc']:
+def compress(processors: Processors, allow_ellipsis: bool = True) -> List['Proc']:
     if processors is None or isinstance(processors, Identity):
         return []
     if processors is ...:
@@ -28,7 +26,7 @@ def compress(processors: ProcList, allow_ellipsis: bool = True) -> List['Proc']:
     return [p for proc in processors for p in compress(proc, allow_ellipsis=allow_ellipsis)]
 
 
-def subs(processors: ProcList, repl: ProcList) -> ProcList:
+def subs(processors: Processors, repl: Processors) -> Processors:
     return [repl if proc is ... else proc for proc in compress(processors, allow_ellipsis=True)]
 
 
@@ -47,11 +45,11 @@ class Proc(object, metaclass=ABCMeta):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.extra_repr()})'
 
-    def __add__(self, other: ProcList) -> 'Proc':
-        return self.from_list([self] + compress(other))
+    def __add__(self, processors: Processors) -> 'Proc':
+        return self.from_list([self] + compress(processors))
 
-    def __radd__(self, other: ProcList) -> 'Proc':
-        return self.from_list(compress(other) + [self])
+    def __radd__(self, processors: Processors) -> 'Proc':
+        return self.from_list(compress(processors) + [self])
 
     @abstractmethod
     def __call__(self, data: Any, **kwargs) -> Any:
@@ -67,6 +65,8 @@ class Identity(Proc):
 
 
 class Lift(Proc):
+    Sequence = Union[Set[Any], List[Any], Tuple[Any, ...]]
+
     def __init__(self, proc: Proc) -> None:
         super(Lift, self).__init__()
         self.proc = proc
@@ -74,12 +74,12 @@ class Lift(Proc):
     def __repr__(self) -> str:
         return f'[{self.proc.__repr__()}]'
 
-    def __call__(self, data: Any, **kwargs) -> Any:
-        return type(data)([self.proc(datum, **kwargs) for datum in data])
+    def __call__(self, sequence: Sequence, **kwargs) -> Sequence:
+        return type(sequence)([self.proc(item, **kwargs) for item in sequence])
 
 
 class Chain(Proc):
-    def __init__(self, processors: ProcList) -> None:
+    def __init__(self, processors: Processors) -> None:
         super(Chain, self).__init__()
         self.proc = compress(processors)
 
@@ -87,13 +87,13 @@ class Chain(Proc):
         return ' + '.join([str(proc) for proc in self.proc])
 
     def __repr__(self) -> str:
-        return f'{self.extra_repr()}'
+        return self.extra_repr()
 
-    def __add__(self, other: ProcList) -> 'Proc':
-        return self.from_list(self.proc + compress(other))
+    def __add__(self, processors: Processors) -> 'Proc':
+        return self.from_list(self.proc + compress(processors))
 
-    def __radd__(self, other: ProcList) -> 'Proc':
-        return self.from_list(compress(other) + self.proc)
+    def __radd__(self, processors: Processors) -> 'Proc':
+        return self.from_list(compress(processors) + self.proc)
 
     def __call__(self, data: Any, **kwargs) -> Any:
         for proc in self.proc:
@@ -102,18 +102,22 @@ class Chain(Proc):
 
 
 class Map(Proc):
+    Sequence = Union[Any, Set[Any], List[Any], Tuple[Any, ...]]
+
     def map(self, data: Any, **kwargs) -> Any:
         raise NotImplementedError
 
-    def __call__(self, data: Union[Any, Tensors], **kwargs) -> Union[Any, Tensors]:
-        if not isinstance(data, (set, list, tuple)):
-            return self.map(data, **kwargs)
-        return type(data)([self(datum, **kwargs) for datum in data])
+    def __call__(self, sequence: Sequence, **kwargs) -> Sequence:
+        if not isinstance(sequence, (set, list, tuple)):
+            return self.map(sequence, **kwargs)
+        return type(sequence)([self(data, **kwargs) for data in sequence])
 
 
 class Filter(Proc):
-    def predicate(self, data: Any, **kwargs) -> bool:
+    Sequence = Union[Any, Set[Any], List[Any], Tuple[Any, ...]]
+
+    def filter(self, data: Any, **kwargs) -> bool:
         raise NotImplementedError
 
-    def __call__(self, *data: Tensors, **kwargs) -> Tensors:
-        return type(data)([datum for datum in data if self.predicate(datum, **kwargs)])
+    def __call__(self, sequence: Sequence, **kwargs) -> Sequence:
+        return type(sequence)([data for data in sequence if self.filter(data, **kwargs)])

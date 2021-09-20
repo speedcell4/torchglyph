@@ -1,21 +1,23 @@
-from typing import Any, List
+from typing import Any, List, Union, Set, Tuple
 
 import numpy as np
 import torch
 from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence
+from torch.types import Device
 
-from torchglyph.types import DType, Device, Tensors
 from torchglyph.proc.abc import Proc
 
 __all__ = [
-    'ToTensor', 'ToDevice',
-    'Cat', 'Stack',
+    'ToTensor',
+    'ToDevice',
+    'CatTensors',
+    'StackTensors',
 ]
 
 
 class ToTensor(Proc):
-    def __init__(self, dtype: DType = None) -> None:
+    def __init__(self, dtype: torch.dtype = None) -> None:
         super(ToTensor, self).__init__()
         self.dtype = dtype
 
@@ -40,26 +42,26 @@ class ToTensor(Proc):
 
 
 class ToDevice(Proc):
+    Tensors = Union[Tensor, PackedSequence, Set[Tensor], List[Tensor], Tuple[Tensor, ...]]
+
     def __init__(self, device: Device = None) -> None:
         super(ToDevice, self).__init__()
         self.device = device
 
     def extra_repr(self) -> str:
-        if self.device is not None:
-            return f'{self.device}'
-        return ''
+        return f'{self.device}'
 
-    def __call__(self, data: Tensors, **kwargs) -> Tensors:
-        if isinstance(data, (Tensor, PackedSequence)):
-            return data.to(device=self.device)
-        if isinstance(data, (set, list, tuple)):
-            return type(data)([self(datum, **kwargs) for datum in data])
-        return data
+    def __call__(self, tensors: Tensors, **kwargs) -> Tensors:
+        if isinstance(tensors, (Tensor, PackedSequence)):
+            return tensors.to(device=self.device)
+        if isinstance(tensors, (set, list, tuple)):
+            return type(tensors)([self(tensor, **kwargs) for tensor in tensors])
+        return tensors
 
 
-class Cat(Proc):
+class CatTensors(Proc):
     def __init__(self, dim: int) -> None:
-        super(Cat, self).__init__()
+        super(CatTensors, self).__init__()
         self.dim = dim
 
     def extra_repr(self) -> str:
@@ -69,9 +71,9 @@ class Cat(Proc):
         return torch.cat(tensors, dim=self.dim)
 
 
-class Stack(Proc):
+class StackTensors(Proc):
     def __init__(self, dim: int) -> None:
-        super(Stack, self).__init__()
+        super(StackTensors, self).__init__()
         self.dim = dim
 
     def extra_repr(self) -> str:

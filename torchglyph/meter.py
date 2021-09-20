@@ -1,12 +1,13 @@
 from abc import ABCMeta
 from datetime import datetime
 
-from torchglyph.types import Number
+from torch.types import Number
 
 __all__ = [
     'Meter',
     'AverageMeter', 'ClassificationMeter', 'TimeMeter',
 ]
+
 
 
 class Meter(object, metaclass=ABCMeta):
