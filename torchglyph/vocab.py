@@ -1,5 +1,5 @@
 import logging
-from collections import Counter, defaultdict, OrderedDict
+from collections import Counter, OrderedDict
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict
 
@@ -28,7 +28,7 @@ class Vocab(object):
         super(Vocab, self).__init__()
 
         self.freq = counter
-        self.itos: List[str] = []
+        self.itos: Dict[int, str] = {}
         self.stoi: Dict[str, int] = {}
         self.vectors: Optional[Tensor] = None
 
@@ -45,7 +45,7 @@ class Vocab(object):
 
         self.unk_token = unk_token
         self.pad_token = pad_token
-        self.special_tokens = tuple(self.itos[::])
+        self.special_tokens = tuple(self.stoi.keys())
 
         for token, freq in self.freq.most_common(n=max_size):
             if freq < min_freq:
@@ -58,14 +58,15 @@ class Vocab(object):
         return self.stoi.get(token, self.unk_idx)
 
     def inv(self, index: int) -> str:
-        return self.itos[index]
+        return self.itos.get(index, self.unk_token)
 
-    def add_token_(self, token) -> int:
+    def add_token_(self, token: str) -> int:
         assert token is not None
 
         if token not in self.stoi:
-            self.stoi[token] = len(self.stoi)
-            self.itos.append(token)
+            index = len(self.stoi)
+            self.stoi[token] = index
+            self.itos[index] = token
 
         return self.stoi[token]
 

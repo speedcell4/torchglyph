@@ -66,8 +66,8 @@ class PackListStrPipe(PackListNumPipe):
         assert sequence.data.dim() == 1, f'{sequence.data.dim()} != 1'
 
         return [
-            [self.vocab.itos[datum] for datum in data]
-            for data in super(PackListStrPipe, self).inv(sequence)
+            [self.vocab.inv(index) for index in indices]
+            for indices in super(PackListStrPipe, self).inv(sequence)
         ]
 
 

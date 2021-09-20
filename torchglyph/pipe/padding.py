@@ -45,7 +45,7 @@ class PadStrPipe(PadNumPipe):
         )
 
     def inv(self, data: Tensor) -> List[str]:
-        return [self.vocab.itos[datum] for datum in super(PadStrPipe, self).inv(data=data)]
+        return [self.vocab.inv(index) for index in super(PadStrPipe, self).inv(data=data)]
 
 
 class PaddedListTensorPipe(Pipe):
@@ -105,6 +105,6 @@ class PadListStrPipe(PadListNumPipe):
         assert token_sizes.dim() == 1, f'{token_sizes.dim()} == {1}'
 
         return [
-            [self.vocab.itos[index] for index in indices]
+            [self.vocab.inv(index) for index in indices]
             for indices in super(PadListStrPipe, self).inv(data=data, token_sizes=token_sizes)
         ]
