@@ -4,10 +4,11 @@ from typing import Tuple, Iterable, NamedTuple
 
 import torch
 from torch.types import Device
+from tqdm import tqdm
 
 from torchglyph import data_dir
 from torchglyph.dataset import Dataset, DataLoader
-from torchglyph.format import load_conll
+from torchglyph.formats.conll import iter_sentence
 from torchglyph.pipe.packing import PackListStrPipe, PackListListStrPipe
 
 __all__ = [
@@ -54,7 +55,9 @@ class CoNLL2003(Dataset):
 
     @classmethod
     def load(cls, path: Path, **kwargs) -> Iterable[NamedTuple]:
-        yield from load_conll(path=path, config=cls.Config, sep=' ')
+        with tqdm(path.open(mode='r', encoding='Utf-8'), desc=f'loading {path}') as fp:
+            for item in iter_sentence(fp, config=cls.Config, sep=' '):
+                yield item
 
     @classmethod
     def new(cls, batch_size: int, *, device: Device,
@@ -94,5 +97,6 @@ if __name__ == '__main__':
     train, dev, test = CoNLL2003.new(
         batch_size=32, device=torch.device('cpu'),
     )
-    for batch in train:
-        print(f'batch => {batch}')
+    print(f'train.vocabs.word => {train.vocabs.word}')
+    print(f'train.vocabs.char => {train.vocabs.char}')
+    print(f'train.vocabs.tag => {train.vocabs.tag}')

@@ -22,7 +22,7 @@ def loads_type(s: str, *, tp: Type) -> Any:
 
 
 def dumps_bool(v: bool) -> str:
-    return f'{v}'.lower()
+    return f'{v}'
 
 
 def dumps_type(v: Any) -> str:
