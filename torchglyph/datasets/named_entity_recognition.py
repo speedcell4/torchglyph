@@ -89,16 +89,3 @@ class CoNLL2003(Dataset):
             batch_size=batch_size,
             shuffle=True, drop_last=False,
         )
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-
-    train, dev, test = CoNLL2003.new(
-        batch_size=32, device=torch.device('cpu'),
-    )
-    print(f'train.vocabs.word => {train.vocabs.word}')
-    print(f'train.vocabs.char => {train.vocabs.char}')
-    print(f'train.vocabs.tag => {train.vocabs.tag}')
-    print(train.vocabs.word.stoi.__len__())
-    print(train.vocabs.word.itos.__len__())

@@ -10,8 +10,8 @@ from torchglyph.proc.padding import PadSequence
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [
-    'PadNumPipe', 'PadStrPipe',
-    'PaddedListTensorPipe', 'PadListNumPipe', 'PadListStrPipe',
+    'PadNumPipe', 'PadListNumPipe',
+    'PadStrPipe', 'PadListStrPipe',
 ]
 
 
@@ -45,30 +45,20 @@ class PadStrPipe(PadNumPipe):
         )
 
     def inv(self, data: Tensor) -> List[str]:
-        return [self.vocab.inv(index) for index in super(PadStrPipe, self).inv(data=data)]
+        return [
+            self.vocab.inv(index)
+            for index in super(PadStrPipe, self).inv(data=data)
+        ]
 
 
-class PaddedListTensorPipe(Pipe):
-    def __init__(self, batch_first: bool, padding_value: Union[int, bool, float],
-                 device: Device = None) -> None:
-        super(PaddedListTensorPipe, self).__init__(
-            pre=None,
-            vocab=None,
-            post=None,
-            batch=PadSequence(batch_first=batch_first, padding_value=padding_value, device=device),
-        )
-
-
-class PadListNumPipe(PaddedListTensorPipe):
+class PadListNumPipe(Pipe):
     def __init__(self, batch_first: bool, padding_value: Union[int, bool, float],
                  device: Device, dtype: torch.dtype = torch.long) -> None:
         super(PadListNumPipe, self).__init__(
-            batch_first=batch_first,
-            padding_value=padding_value,
-            device=device,
-        )
-        self.with_(
+            pre=None,
+            vocab=None,
             post=ToTensor(dtype=dtype),
+            batch=PadSequence(batch_first=batch_first, padding_value=padding_value, device=device),
         )
 
     def inv(self, data: Tensor, token_sizes: Tensor) -> List[List[Tuple[int, bool, float]]]:

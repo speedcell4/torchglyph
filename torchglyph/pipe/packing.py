@@ -14,26 +14,17 @@ from torchglyph.proc.packing import PackSequence, ReduceCattedSequences
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [
-    'PackedListTensorPipe', 'PackListNumPipe', 'PackListStrPipe',
-    'PackListListNumPipe', 'PackListListStrPipe',
+    'PackListNumPipe', 'PackListListNumPipe',
+    'PackListStrPipe', 'PackListListStrPipe',
 ]
 
 
-class PackedListTensorPipe(Pipe):
-    def __init__(self, device: Device = None) -> None:
-        super(PackedListTensorPipe, self).__init__(
-            pre=None,
-            vocab=None,
-            post=None,
-            batch=PackSequence(device=device)
-        )
-
-
-class PackListNumPipe(PackedListTensorPipe):
+class PackListNumPipe(Pipe):
     def __init__(self, device: Device, dtype: torch.dtype = torch.long) -> None:
-        super(PackListNumPipe, self).__init__(device=device)
+        super(PackListNumPipe, self).__init__()
         self.with_(
             post=ToTensor(dtype=dtype),
+            batch=PackSequence(device=device),
         )
 
     def inv(self, sequence: PackedSequence) -> List[List[Tuple[int, bool, float]]]:
