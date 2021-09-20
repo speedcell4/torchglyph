@@ -2,7 +2,7 @@ from typing import Optional, Tuple, List
 
 import torch
 from torch.nn.utils.rnn import PackedSequence
-from torch.types import Device
+from torch.types import Device, Number
 from torchrua.padding import pad_packed_sequence
 
 from torchglyph.pipe.abc import Pipe
@@ -27,7 +27,7 @@ class PackListNumPipe(Pipe):
             batch=PackSequence(device=device),
         )
 
-    def inv(self, sequence: PackedSequence) -> List[List[Tuple[int, bool, float]]]:
+    def inv(self, sequence: PackedSequence) -> List[List[Number]]:
         data, token_sizes = pad_packed_sequence(sequence=sequence, batch_first=True)
 
         data = data.detach().cpu().tolist()
