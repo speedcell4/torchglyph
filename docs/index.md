@@ -45,7 +45,7 @@ or you can simply manipulate existing `Pipe`s by calling `.with_` method.
 ```python
 class PackedTokSeqPipe(PackedIdxSeqPipe):
     def __init__(self, device, unk_token, special_tokens=(),
-                 threshold=THRESHOLD, dtype=torch.long) -> None:
+                 threshold=10, dtype=torch.long) -> None:
         super(PackedTokSeqPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=UpdateCounter(),

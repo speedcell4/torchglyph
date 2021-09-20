@@ -7,7 +7,7 @@ from torch.types import Device
 from torchglyph.pipe.abc import Pipe
 from torchglyph.proc.collating import ToTensor, ToDevice
 from torchglyph.proc.padding import PadSequence
-from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering, THRESHOLD
+from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [
     'PadNumPipe', 'PadStrPipe',
@@ -32,7 +32,7 @@ class PadStrPipe(PadNumPipe):
     def __init__(self, device: Device,
                  unk_token: Optional[str], pad_token: str = '<pad>',
                  special_tokens: Tuple[Optional[str], ...] = (),
-                 threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
+                 threshold: int = 10, dtype: torch.dtype = torch.long) -> None:
         super(PadStrPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=UpdateCounter(),
@@ -85,7 +85,7 @@ class PadListStrPipe(PadListNumPipe):
     def __init__(self, batch_first: bool, device: Device,
                  unk_token: Optional[str], pad_token: str = '<pad>',
                  special_tokens: Tuple[Optional[str], ...] = (),
-                 threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
+                 threshold: int = 10, dtype: torch.dtype = torch.long) -> None:
         super(PadListStrPipe, self).__init__(
             batch_first=batch_first,
             padding_value=0,  # TODO: fix padding_value

@@ -9,7 +9,6 @@ __all__ = [
 ]
 
 
-
 class Meter(object, metaclass=ABCMeta):
     def __init__(self, **kwargs):
         super(Meter, self).__init__()

@@ -9,12 +9,9 @@ from torchglyph.vocab import Vocab, Vectors, Glove, FastText
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    'THRESHOLD',
     'UpdateCounter', 'Numbering', 'BuildVocab', 'StatsVocab',
     'LoadVectors', 'LoadGlove', 'LoadFastText',
 ]
-
-THRESHOLD = 10
 
 
 class UpdateCounter(Map):
@@ -51,7 +48,7 @@ class BuildVocab(Proc):
 
 
 class StatsVocab(Proc):
-    def __init__(self, threshold: int = THRESHOLD) -> None:
+    def __init__(self, threshold: int) -> None:
         super(StatsVocab, self).__init__()
         self.threshold = threshold
 

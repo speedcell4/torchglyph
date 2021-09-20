@@ -11,7 +11,7 @@ from torchglyph.proc.basic import ToList
 from torchglyph.proc.catting import CatSequence
 from torchglyph.proc.collating import ToTensor
 from torchglyph.proc.packing import PackSequence, ReduceCattedSequences
-from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering, THRESHOLD
+from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [
     'PackedListTensorPipe', 'PackListNumPipe', 'PackListStrPipe',
@@ -51,7 +51,7 @@ class PackListNumPipe(PackedListTensorPipe):
 class PackListStrPipe(PackListNumPipe):
     def __init__(self, device: Device,
                  unk_token: Optional[str], special_tokens: Tuple[Optional[str], ...] = (),
-                 threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
+                 threshold: int = 10, dtype: torch.dtype = torch.long) -> None:
         super(PackListStrPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=UpdateCounter(),
@@ -84,7 +84,7 @@ class PackListListNumPipe(Pipe):
 class PackListListStrPipe(PackListListNumPipe):
     def __init__(self, device: Device,
                  unk_token: Optional[str], special_tokens: Tuple[Optional[str], ...] = (),
-                 threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
+                 threshold: int = 10, dtype: torch.dtype = torch.long) -> None:
         super(PackListListStrPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=Lift(ToList() + UpdateCounter()),
