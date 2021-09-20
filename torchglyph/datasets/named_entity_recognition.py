@@ -100,3 +100,5 @@ if __name__ == '__main__':
     print(f'train.vocabs.word => {train.vocabs.word}')
     print(f'train.vocabs.char => {train.vocabs.char}')
     print(f'train.vocabs.tag => {train.vocabs.tag}')
+    print(train.vocabs.word.stoi.__len__())
+    print(train.vocabs.word.itos.__len__())

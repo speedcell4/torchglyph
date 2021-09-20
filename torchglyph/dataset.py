@@ -23,12 +23,12 @@ class Dataset(TorchDataset, DownloadMixin):
         super(Dataset, self).__init__()
 
         self.pipes = {}
-        self.field_names = []
+        self.names = []
 
         for ps in pipes:
             for name, pipe in ps.items():
                 self.pipes[name] = pipe
-                self.field_names.append(name)
+                self.names.append(name)
 
         self.data = {}
         for datum, ps in zip(zip(*self.load(**kwargs)), pipes):
@@ -36,14 +36,14 @@ class Dataset(TorchDataset, DownloadMixin):
                 self.data.setdefault(name, []).extend(datum)
 
     def __getitem__(self, index: int) -> Dict[str, Any]:
-        return {name: self.data[name][index] for name in self.field_names}
+        return {name: self.data[name][index] for name in self.names}
 
     def __len__(self) -> int:
         return len(next(iter(self.data.values())))
 
     @lazy_property
     def named_tuple(self) -> Type:
-        return namedtuple(f'{self.__class__.__name__}Batch', field_names=self.field_names)
+        return namedtuple(f'{self.__class__.__name__}Batch', field_names=self.names)
 
     @property
     def vocabs(self) -> NamedTuple:
@@ -77,14 +77,14 @@ class Dataset(TorchDataset, DownloadMixin):
         return destination
 
     def load_state_dict(self, state_dict: OrderedDict, strict: bool = True) -> None:
-        field_names = set(self.field_names)
+        names = set(self.names)
         for name, datum in state_dict.items():
             self.data[name] = datum
             if strict:
-                field_names.remove(name)
+                names.remove(name)
 
         if strict:
-            assert len(field_names) == 0
+            assert len(names) == 0
 
     def eval(self, path: Path, **kwargs):
         raise NotImplementedError

@@ -29,7 +29,7 @@ class Vocab(object):
 
         self.freq = counter
         self.itos: List[str] = []
-        self.stoi: Dict[str, int] = defaultdict(self._default_factory)
+        self.stoi: Dict[str, int] = {}
         self.vectors: Optional[Tensor] = None
 
         self.unk_idx = None
@@ -45,7 +45,7 @@ class Vocab(object):
 
         self.unk_token = unk_token
         self.pad_token = pad_token
-        self.special_tokens = self.itos[::]
+        self.special_tokens = tuple(self.itos[::])
 
         for token, freq in self.freq.most_common(n=max_size):
             if freq < min_freq:
@@ -54,10 +54,11 @@ class Vocab(object):
 
         assert len(self.stoi) == len(self.itos)
 
-    def _default_factory(self) -> Optional[int]:
-        if self.unk_idx is not None:
-            return self.unk_idx
-        raise KeyError
+    def __getitem__(self, token: str) -> int:
+        return self.stoi.get(token, self.unk_idx)
+
+    def inv(self, index: int) -> str:
+        return self.itos[index]
 
     def add_token_(self, token) -> int:
         assert token is not None
@@ -99,8 +100,7 @@ class Vocab(object):
 
         return tok, occ
 
-    def state_dict(self, destination: OrderedDict = None, prefix: str = '',
-                   keep_vars: bool = False) -> OrderedDict:
+    def state_dict(self, destination: OrderedDict = None, prefix: str = '', **kwargs) -> OrderedDict:
         if destination is None:
             destination = OrderedDict()
             destination._metadata = OrderedDict()
@@ -118,7 +118,7 @@ class Vocab(object):
 
         return destination
 
-    def load_state_dict(self, state_dict: OrderedDict, strict: bool = True) -> None:
+    def load_state_dict(self, state_dict: OrderedDict, strict: bool = True, **kwargs) -> None:
         self.unk_idx = state_dict.pop('unk_idx')
         self.pad_idx = state_dict.pop('pad_idx')
         self.unk_token = state_dict.pop('unk_token')

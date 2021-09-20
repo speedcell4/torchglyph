@@ -24,7 +24,7 @@ class UpdateCounter(Map):
 
 class Numbering(Map):
     def map(self, token: str, *, vocab: Vocab, **kwargs) -> int:
-        return vocab.stoi[token]
+        return vocab[token]
 
 
 class BuildVocab(Proc):
