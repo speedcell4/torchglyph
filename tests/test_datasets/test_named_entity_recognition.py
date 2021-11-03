@@ -1,7 +1,7 @@
 import torch
+from torch.nn.utils.rnn import PackedSequence
 
-from torchglyph.types import PackedSequence
-from torchglyph.datasets.conll2003 import CoNLL2003
+from torchglyph.datasets.named_entity_recognition import CoNLL2003
 
 
 def test_conll2003():

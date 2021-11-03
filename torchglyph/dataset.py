@@ -1,10 +1,10 @@
 import itertools
-import uuid
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from pathlib import Path
 from typing import Iterable, Any, Type
 from typing import Union, List, Tuple, NamedTuple, Dict
 
+from torch.distributions.utils import lazy_property
 from torch.utils.data import DataLoader as TorchDataLoader
 from torch.utils.data import Dataset as TorchDataset
 from tqdm import tqdm
@@ -22,48 +22,41 @@ class Dataset(TorchDataset, DownloadMixin):
     def __init__(self, pipes: List[Dict[str, Pipe]], **kwargs) -> None:
         super(Dataset, self).__init__()
 
-        self.pipes: Dict[str, Pipe] = {
-            name: pipe
-            for ps in pipes
-            for name, pipe in ps.items()
-        }
-        self.Batch: Type = namedtuple(
-            typename=f'Batch_{str(uuid.uuid4())[:8]}',
-            field_names=list(self.pipes.keys()),
-        )
-        if self.Batch.__name__ not in globals():
-            globals()[self.Batch.__name__] = self.Batch
+        self.pipes = {}
+        self.names = []
 
-        self.data: Dict[str, List[Any]] = {}
+        for ps in pipes:
+            for name, pipe in ps.items():
+                self.pipes[name] = pipe
+                self.names.append(name)
 
+        self.data = {}
         for datum, ps in zip(zip(*self.load(**kwargs)), pipes):
             for name, pipe in ps.items():
                 self.data.setdefault(name, []).extend(datum)
 
-    def transpose(self) -> None:
-        names, data = zip(*self.data.items())
-        names, data = list(names), zip(*data)
-        self.data = [self.Batch(**dict(zip(names, datum))) for datum in data]
-
-    def __getitem__(self, index: int) -> NamedTuple:
-        return self.data[index]
+    def __getitem__(self, index: int) -> Dict[str, Any]:
+        return {name: self.data[name][index] for name in self.names}
 
     def __len__(self) -> int:
-        return len(self.data)
+        return len(next(iter(self.data.values())))
+
+    @lazy_property
+    def named_tuple(self) -> Type:
+        return namedtuple(f'{self.__class__.__name__}Batch', field_names=self.names)
 
     @property
     def vocabs(self) -> NamedTuple:
-        return self.Batch(**{
+        return self.named_tuple(**{
             name: pipe.vocab
             for name, pipe in self.pipes.items()
         })
 
-    def collate_fn(self, batch: List[NamedTuple]) -> NamedTuple:
-        data = self.Batch(*zip(*batch))
-        return self.Batch(*[
-            self.pipes[name].collate_fn(datum)
-            for name, datum in zip(self.Batch._fields, data)
-        ])
+    def collate_fn(self, batch: List[Dict[str, Any]]) -> NamedTuple:
+        return self.named_tuple(**{
+            name: pipe.collate_fn([data[name] for data in batch])
+            for name, pipe in self.pipes.items()
+        })
 
     @classmethod
     def load(cls, **kwargs) -> Iterable[Any]:
@@ -72,10 +65,28 @@ class Dataset(TorchDataset, DownloadMixin):
     def dump(self, fp, batch: NamedTuple, prediction: Any, *args, **kwargs) -> None:
         raise NotImplementedError
 
-    def eval(self, path: Path, **kwargs):
-        raise NotImplementedError
+    def state_dict(self, destination: OrderedDict = None, prefix: str = '',
+                   keep_vars: bool = False) -> OrderedDict:
+        if destination is None:
+            destination = OrderedDict()
+            destination._metadata = OrderedDict()
 
-    def viz(self, path: Path, **kwargs):
+        for name, datum in self.data.items():
+            destination[prefix + name] = datum
+
+        return destination
+
+    def load_state_dict(self, state_dict: OrderedDict, strict: bool = True) -> None:
+        names = set(self.names)
+        for name, datum in state_dict.items():
+            self.data[name] = datum
+            if strict:
+                names.remove(name)
+
+        if strict:
+            assert len(names) == 0
+
+    def eval(self, path: Path, **kwargs):
         raise NotImplementedError
 
     @classmethod
@@ -84,6 +95,8 @@ class Dataset(TorchDataset, DownloadMixin):
 
 
 class DataLoader(TorchDataLoader):
+    dataset: Dataset
+
     @property
     def vocabs(self) -> NamedTuple:
         return self.dataset.vocabs
@@ -98,19 +111,12 @@ class DataLoader(TorchDataLoader):
         if isinstance(batch_size, int):
             batch_sizes = itertools.repeat(batch_size)
 
-        iteration = tqdm(
-            desc='processing datasets',
-            total=len(datasets) * (len(datasets[0].pipes) + 1),
-        )
-        for dataset in datasets:
-            for name, pipe in dataset.pipes.items():
-                pipe.postprocess_(dataset, name=name)
-                iteration.update(1)
-                iteration.set_postfix_str(f'{name}')
-            dataset.transpose()
-            iteration.update(1)
-            iteration.set_postfix_str('transpose')
-        iteration.close()
+        with tqdm(desc='post-processing', total=sum(len(dataset.pipes) for dataset in datasets)) as progress:
+            for index, dataset in enumerate(datasets):
+                for name, pipe in dataset.pipes.items():
+                    progress.set_postfix_str(f'{index}.{name}')
+                    pipe.postprocess_(dataset)
+                    progress.update(1)
 
         return tuple(
             DataLoader(

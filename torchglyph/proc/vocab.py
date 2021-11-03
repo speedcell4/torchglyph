@@ -1,3 +1,4 @@
+import heapq
 import logging
 from collections import Counter
 from typing import Tuple, Optional
@@ -8,12 +9,9 @@ from torchglyph.vocab import Vocab, Vectors, Glove, FastText
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    'THRESHOLD',
     'UpdateCounter', 'Numbering', 'BuildVocab', 'StatsVocab',
     'LoadVectors', 'LoadGlove', 'LoadFastText',
 ]
-
-THRESHOLD = 10
 
 
 class UpdateCounter(Map):
@@ -24,7 +22,7 @@ class UpdateCounter(Map):
 
 class Numbering(Map):
     def map(self, token: str, *, vocab: Vocab, **kwargs) -> int:
-        return vocab.stoi[token]
+        return vocab[token]
 
 
 class BuildVocab(Proc):
@@ -50,7 +48,7 @@ class BuildVocab(Proc):
 
 
 class StatsVocab(Proc):
-    def __init__(self, threshold: int = THRESHOLD) -> None:
+    def __init__(self, threshold: int) -> None:
         super(StatsVocab, self).__init__()
         self.threshold = threshold
 
@@ -58,25 +56,25 @@ class StatsVocab(Proc):
         return f'{self.threshold}'
 
     def __call__(self, vocab: Vocab, name: str, *args, **kwargs) -> Vocab:
-        assert vocab is not None
-        assert name is not None
+        num_tokens = len(vocab.freq)
+        avg_freq = sum(vocab.freq.values()) / max(1, num_tokens)
 
-        min_tok, min_occ = min(vocab.freq.items(), key=lambda x: x[1])
-        max_tok, max_occ = max(vocab.freq.items(), key=lambda x: x[1])
-        cnt_tok = len(vocab.freq.values())
-        avg_occ = sum(vocab.freq.values()) / max(1, cnt_tok)
+        if num_tokens <= self.threshold:
+            xs = vocab.freq.most_common()
+            xs = ', '.join([f"'{token}'({freq})" for token, freq in xs])
 
-        name = f"{vocab.__class__.__name__} '{name}'"
-        logger.info(f"{name} has {cnt_tok} token(s) => "
-                    f"{avg_occ:.1f} times/token ["
-                    f"{max_occ} :: '{max_tok}', "
-                    f"{min_occ} :: '{min_tok}']")
-        if cnt_tok <= self.threshold:
-            logger.info(f'{name} => [{", ".join(vocab.itos)}]')
+            logger.info(f"{name}.vocab => {vocab} :: {avg_freq:.1f} times/token")
+            logger.info(f"{name}.tokens => [{xs}]")
+
         else:
-            logger.info(f'{name} => ['
-                        f'{", ".join(vocab.itos[:self.threshold // 2])}, ..., '
-                        f'{", ".join(vocab.itos[-self.threshold // 2:])}]')
+            n, m = self.threshold // 2, (self.threshold + 1) // 2
+            xs = heapq.nlargest(n, vocab.freq.items(), key=lambda x: x[1])
+            ys = heapq.nsmallest(m, vocab.freq.items(), key=lambda x: x[1])
+            xs = ', '.join([f"'{token}'({freq})" for token, freq in xs])
+            ys = ', '.join([f"'{token}'({freq})" for token, freq in ys[::-1]])
+
+            logger.info(f"{name}.vocab => {vocab} :: {avg_freq:.1f} times/token")
+            logger.info(f"{name}.tokens => [{xs}, ..., {ys}]")
 
         return vocab
 
