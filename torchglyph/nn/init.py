@@ -2,12 +2,13 @@ import torch
 from torch import Tensor
 from torch.nn import init
 
-from torch.nn.init import calculate_gain
+from torch.nn.init import calculate_gain, constant_, orthogonal_
 
 __all__ = [
     'xavier_normal_', 'xavier_uniform_',
     'kaiming_normal_', 'kaiming_uniform_',
     'bert_normal_',
+    'constant_', 'orthogonal_',
 ]
 
 
