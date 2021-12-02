@@ -82,3 +82,10 @@ class ConjugatedLinear(nn.Module):
         if self.bias is not None:
             out = out + self.bias
         return out
+
+
+class ConjugatedProjector(ConjugatedLinear):
+    def reset_parameters(self) -> None:
+        init.kaiming_uniform_(self.weight, fan=self.in_features, nonlinearity='relu')
+        if self.bias is not None:
+            init.constant_(self.bias, 0.)
