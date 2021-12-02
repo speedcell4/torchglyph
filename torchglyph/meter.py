@@ -13,6 +13,10 @@ __all__ = [
 ]
 
 
+def join(*names: str, sep: str = '.') -> str:
+    return sep.join(name for name in names if len(name) > 0)
+
+
 class Meter(object, metaclass=ABCMeta):
     def __init__(self) -> None:
         super(Meter, self).__init__()
@@ -168,9 +172,9 @@ class ClassificationMeter(Meter):
         if destination is None:
             destination = {}
 
-        destination[f'{prefix}.precision'] = self.precision
-        destination[f'{prefix}.recall'] = self.recall
-        destination[f'{prefix}.f1'] = self.f1
+        destination[join(prefix, 'precision')] = self.precision
+        destination[join(prefix, 'recall')] = self.recall
+        destination[join(prefix, 'f1')] = self.f1
         return destination
 
 
@@ -232,6 +236,6 @@ class TimeMeter(Meter):
         if destination is None:
             destination = {}
 
-        destination[f'{prefix}.units_per_second'] = self.units_per_second
-        destination[f'{prefix}.seconds_per_unit'] = self.seconds_per_unit
+        destination[join(prefix, 'units_per_second')] = self.units_per_second
+        destination[join(prefix, 'seconds_per_unit')] = self.seconds_per_unit
         return destination
