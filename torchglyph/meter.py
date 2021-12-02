@@ -59,12 +59,16 @@ class AverageMeter(Meter):
         self.weight += weight
 
     @property
-    def merit(self) -> float:
+    def average(self) -> float:
         try:
             return round(self.value / self.weight, ndigits=self.num_digits)
         except ZeroDivisionError:
             logger.warning(f'weight is zero')
             return 0.
+
+    @property
+    def merit(self) -> float:
+        return self.average
 
     def state_dict(self, name: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
         if destination is None:
@@ -74,8 +78,21 @@ class AverageMeter(Meter):
         return destination
 
 
+class AccuracyMeter(AverageMeter):
+    def __init__(self, num_digits: int = 2) -> None:
+        super(AccuracyMeter, self).__init__(num_digits=num_digits)
+
+    @property
+    def average(self) -> float:
+        try:
+            return round(self.value * 100 / self.weight, ndigits=self.num_digits)
+        except ZeroDivisionError:
+            logger.warning(f'weight is zero')
+            return 0.
+
+
 class ClassificationMeter(Meter):
-    def __init__(self, num_digits: int = 6) -> None:
+    def __init__(self, num_digits: int = 2) -> None:
         super(ClassificationMeter, self).__init__()
         self.num_digits = num_digits
 
@@ -95,7 +112,7 @@ class ClassificationMeter(Meter):
     @property
     def precision(self) -> float:
         try:
-            return round(self.value / self.prediction_weight, ndigits=self.num_digits)
+            return round(self.value * 100 / self.prediction_weight, ndigits=self.num_digits)
         except ZeroDivisionError:
             logger.warning(f'prediction_weight is zero')
             return 0.
@@ -103,7 +120,7 @@ class ClassificationMeter(Meter):
     @property
     def recall(self) -> float:
         try:
-            return round(self.value / self.target_weight, ndigits=self.num_digits)
+            return round(self.value * 100 / self.target_weight, ndigits=self.num_digits)
         except ZeroDivisionError:
             logger.warning(f'target_weight is zero')
             return 0.
@@ -111,7 +128,7 @@ class ClassificationMeter(Meter):
     @property
     def f1(self) -> float:
         try:
-            return round(self.value * 2 / (self.prediction_weight + self.target_weight), ndigits=self.num_digits)
+            return round(self.value * 200 / (self.prediction_weight + self.target_weight), ndigits=self.num_digits)
         except ZeroDivisionError:
             logger.warning(f'prediction_weight + target_weight is zero')
             return 0.
