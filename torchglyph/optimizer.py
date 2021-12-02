@@ -1,9 +1,8 @@
-from typing import Iterable, Union, Type
+from typing import Iterable
 
 from torch import nn, optim
 
 __all__ = [
-    'Optimizers',
     'SGD', 'Adam',
 ]
 
@@ -27,9 +26,3 @@ class Adam(optim.AdamW):
             params=params, lr=lr, betas=(beta1, beta2),
             weight_decay=weight_decay, amsgrad=amsgrad,
         )
-
-
-Optimizers = Union[
-    Type[SGD],
-    Type[Adam],
-]

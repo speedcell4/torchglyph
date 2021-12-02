@@ -1,12 +1,11 @@
 from logging import getLogger
-from typing import Union, Type
 
 from torch import optim
 
 logger = getLogger(__name__)
 
 __all__ = [
-    'Schedulers', 'SchedulerMixin',
+    'SchedulerMixin',
     'Fixed', 'InverseDecay',
 ]
 
@@ -59,9 +58,3 @@ class InverseDecay(optim.lr_scheduler.LambdaLR, SchedulerMixin):
         self.step()
         self.epoch += 1
         self.report_learning_rate()
-
-
-Schedulers = Union[
-    Type[Fixed],
-    Type[InverseDecay],
-]
