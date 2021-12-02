@@ -6,6 +6,10 @@ from typing import Any, Dict
 logger = getLogger(__name__)
 
 __all__ = [
+    'Meter',
+    'AverageMeter', 'AccuracyMeter',
+    'ClassificationMeter',
+    'TimeMeter',
 ]
 
 
@@ -39,8 +43,15 @@ class Meter(object, metaclass=ABCMeta):
     def __gt__(self, other: 'Meter') -> bool:
         return self.merit > other.merit
 
-    def state_dict(self, name: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
+    def state_dict(self, prefix: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
         raise NotImplementedError
+
+    def flush(self, prefix: str, reset_buffers: bool = True) -> None:
+        for key, value in self.state_dict(prefix=prefix, destination=None):
+            logger.info(f'{key} => {value}')
+
+        if reset_buffers:
+            self.reset_buffers()
 
 
 class AverageMeter(Meter):
@@ -64,18 +75,18 @@ class AverageMeter(Meter):
         try:
             return round(self.total / self.weight, ndigits=self.num_digits)
         except ZeroDivisionError:
-            logger.warning(f'weight is zero')
+            logger.warning(f'{self.weight} is zero')
             return 0.
 
     @property
     def merit(self) -> float:
         return self.average
 
-    def state_dict(self, name: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
+    def state_dict(self, prefix: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
         if destination is None:
             destination = {}
 
-        destination[name] = self.merit
+        destination[prefix] = self.merit
         return destination
 
 
@@ -88,7 +99,7 @@ class AccuracyMeter(AverageMeter):
         try:
             return round(self.total * 100 / self.weight, ndigits=self.num_digits)
         except ZeroDivisionError:
-            logger.warning(f'weight is zero')
+            logger.warning(f'{self.weight} is zero')
             return 0.
 
 
@@ -115,7 +126,7 @@ class ClassificationMeter(Meter):
         try:
             return round(self.total * 100 / self.prediction_weight, ndigits=self.num_digits)
         except ZeroDivisionError:
-            logger.warning(f'prediction_weight is zero')
+            logger.warning(f'{self.prediction_weight} is zero')
             return 0.
 
     @property
@@ -123,7 +134,7 @@ class ClassificationMeter(Meter):
         try:
             return round(self.total * 100 / self.target_weight, ndigits=self.num_digits)
         except ZeroDivisionError:
-            logger.warning(f'target_weight is zero')
+            logger.warning(f'{self.target_weight} is zero')
             return 0.
 
     @property
@@ -131,20 +142,20 @@ class ClassificationMeter(Meter):
         try:
             return round(self.total * 200 / (self.prediction_weight + self.target_weight), ndigits=self.num_digits)
         except ZeroDivisionError:
-            logger.warning(f'prediction_weight + target_weight is zero')
+            logger.warning(f'{self.prediction_weight + self.target_weight} is zero')
             return 0.
 
     @property
     def merit(self) -> float:
         return self.f1
 
-    def state_dict(self, name: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
+    def state_dict(self, prefix: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
         if destination is None:
             destination = {}
 
-        destination[f'{name}.precision'] = self.precision
-        destination[f'{name}.recall'] = self.recall
-        destination[f'{name}.f1'] = self.f1
+        destination[f'{prefix}.precision'] = self.precision
+        destination[f'{prefix}.recall'] = self.recall
+        destination[f'{prefix}.f1'] = self.f1
         return destination
 
 
@@ -154,20 +165,20 @@ class TimeMeter(Meter):
         self.num_digits = num_digits
 
     def reset_buffers(self) -> None:
-        self.total_seconds = 0
+        self.seconds = 0
         self.num_units = 0
 
     def update(self, seconds: float, num_units: float) -> None:
-        self.total_seconds += seconds
+        self.seconds += seconds
         self.num_units += num_units
 
     def tik(self) -> None:
-        self.start_tm = datetime.now()
+        self.start_datetime = datetime.now()
 
     def tok(self, num_units: float = 1.) -> None:
-        self.total_seconds += (datetime.now() - self.start_tm).total_seconds()
+        self.seconds += (datetime.now() - self.start_datetime).total_seconds()
         self.num_units += num_units
-        del self.start_tm
+        del self.start_datetime
 
     def __enter__(self):
         self.tik()
@@ -179,15 +190,15 @@ class TimeMeter(Meter):
     @property
     def units_per_second(self) -> float:
         try:
-            return round(self.num_units / self.total_seconds, ndigits=self.num_digits)
+            return round(self.num_units / self.seconds, ndigits=self.num_digits)
         except ZeroDivisionError:
-            logger.info(f'{self.total_seconds} is zero')
+            logger.info(f'{self.seconds} is zero')
             return 0.
 
     @property
     def seconds_per_unit(self) -> float:
         try:
-            return round(self.total_seconds / self.num_units, ndigits=self.num_digits)
+            return round(self.seconds / self.num_units, ndigits=self.num_digits)
         except ZeroDivisionError:
             logger.info(f'{self.num_units} is zero')
             return 0.
@@ -196,10 +207,10 @@ class TimeMeter(Meter):
     def merit(self) -> float:
         return self.units_per_second
 
-    def state_dict(self, name: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
+    def state_dict(self, prefix: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
         if destination is None:
             destination = {}
 
-        destination[f'{name}.units_per_second'] = self.units_per_second
-        destination[f'{name}.seconds_per_unit'] = self.seconds_per_unit
+        destination[f'{prefix}.units_per_second'] = self.units_per_second
+        destination[f'{prefix}.seconds_per_unit'] = self.seconds_per_unit
         return destination
