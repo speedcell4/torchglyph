@@ -43,6 +43,9 @@ class Meter(object, metaclass=ABCMeta):
     def __gt__(self, other: 'Meter') -> bool:
         return self.merit > other.merit
 
+    def __add__(self, other: 'Meter') -> 'Meter':
+        raise NotImplementedError
+
     def state_dict(self, prefix: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
         raise NotImplementedError
 
@@ -69,6 +72,12 @@ class AverageMeter(Meter):
     def update(self, value: float, weight: float) -> None:
         self.total += value
         self.weight += weight
+
+    def __add__(self, other: 'AverageMeter') -> 'AverageMeter':
+        meter = self.__class__(num_digits=self.num_digits)
+        meter.update(value=self.total, weight=self.weight)
+        meter.update(value=other.total, weight=other.weight)
+        return meter
 
     @property
     def average(self) -> float:
@@ -121,6 +130,12 @@ class ClassificationMeter(Meter):
         self.prediction_weight += prediction_weight
         self.target_weight += target_weight
 
+    def __add__(self, other: 'ClassificationMeter') -> 'ClassificationMeter':
+        meter = self.__class__(num_digits=self.num_digits)
+        meter.update(value=self.total, prediction_weight=self.prediction_weight, target_weight=self.target_weight)
+        meter.update(value=other.total, prediction_weight=other.prediction_weight, target_weight=other.target_weight)
+        return meter
+
     @property
     def precision(self) -> float:
         try:
@@ -160,7 +175,7 @@ class ClassificationMeter(Meter):
 
 
 class TimeMeter(Meter):
-    def __init__(self, num_digits: int = 5) -> None:
+    def __init__(self, num_digits: int = 6) -> None:
         super(TimeMeter, self).__init__()
         self.num_digits = num_digits
 
@@ -171,6 +186,12 @@ class TimeMeter(Meter):
     def update(self, seconds: float, num_units: float) -> None:
         self.seconds += seconds
         self.num_units += num_units
+
+    def __add__(self, other: 'TimeMeter') -> 'TimeMeter':
+        meter = self.__class__(num_digits=self.num_digits)
+        meter.update(seconds=self.seconds, num_units=self.num_units)
+        meter.update(seconds=other.seconds, num_units=other.num_units)
+        return meter
 
     def tik(self) -> None:
         self.start_datetime = datetime.now()
