@@ -1,7 +1,6 @@
 import torch
 from torch import Tensor
 from torch import nn
-from torch.nn import functional as F
 from torch.nn import init
 
 from torchglyph.nn import init
@@ -13,11 +12,11 @@ __all__ = [
 
 
 class Projector(nn.Linear):
-    def __init__(self, bias: bool = False, *, in_features: int, out_features: int) -> None:
+    def __init__(self, bias: bool = False, *,
+                 in_features: int, out_features: int, dtype: torch.dtype = torch.float32) -> None:
         super(Projector, self).__init__(
-            in_features=in_features,
-            out_features=out_features,
-            bias=bias,
+            in_features=in_features, out_features=out_features,
+            bias=bias, dtype=dtype,
         )
 
     def reset_parameters(self) -> None:
@@ -27,11 +26,11 @@ class Projector(nn.Linear):
 
 
 class CosineProjector(Projector):
-    def __init__(self, bias: bool = False, tau: float = 0.1, *, in_features: int, out_features: int) -> None:
+    def __init__(self, bias: bool = False, tau: float = 0.1, *,
+                 in_features: int, out_features: int, dtype: torch.dtype = torch.float32) -> None:
         super(CosineProjector, self).__init__(
-            in_features=in_features,
-            out_features=out_features,
-            bias=bias,
+            in_features=in_features, out_features=out_features,
+            bias=bias, dtype=dtype,
         )
         self.tau = tau
 
@@ -49,16 +48,17 @@ class CosineProjector(Projector):
 
 
 class ConjugatedLinear(nn.Module):
-    def __init__(self, bias: bool = True, *, in_features: int, num_conjugates: int, out_features: int) -> None:
+    def __init__(self, bias: bool = True, *,
+                 in_features: int, num_conjugates: int, out_features: int, dtype: torch.dtype = torch.float32) -> None:
         super(ConjugatedLinear, self).__init__()
 
         self.in_features = in_features
         self.num_conjugates = num_conjugates
         self.out_features = out_features
 
-        self.weight = nn.Parameter(torch.empty((num_conjugates, out_features, in_features)))
+        self.weight = nn.Parameter(torch.empty((num_conjugates, out_features, in_features), dtype=dtype))
         if bias:
-            self.bias = nn.Parameter(torch.empty((num_conjugates, out_features)))
+            self.bias = nn.Parameter(torch.empty((num_conjugates, out_features), dtype=dtype))
         else:
             self.register_parameter('bias', None)
 
