@@ -1,103 +1,74 @@
 from abc import ABCMeta
-from datetime import datetime
+from logging import getLogger
+from typing import Any, Dict
 
-from torch.types import Number
+logger = getLogger(__name__)
 
 __all__ = [
-    'Meter',
-    'AverageMeter', 'ClassificationMeter', 'TimeMeter',
 ]
 
 
 class Meter(object, metaclass=ABCMeta):
-    def __init__(self, **kwargs):
+    def __init__(self) -> None:
         super(Meter, self).__init__()
-        self.reset(**kwargs)
+        self.reset_buffers()
 
-    def reset(self, **kwargs) -> None:
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.extra_repr()})'
+
+    def extra_repr(self) -> str:
+        return ''
+
+    def reset_buffers(self) -> None:
+        raise NotImplementedError
+
+    def update(self, *args, **kwargs) -> None:
+        raise NotImplementedError
+
+    @property
+    def merit(self):
+        raise NotImplementedError
+
+    def __eq__(self, other: 'Meter') -> bool:
+        return self.merit == other.merit
+
+    def __le__(self, other: 'Meter') -> bool:
+        return self.merit < other.merit
+
+    def __gt__(self, other: 'Meter') -> bool:
+        return self.merit > other.merit
+
+    def state_dict(self, name: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
         raise NotImplementedError
 
 
 class AverageMeter(Meter):
-    def reset(self, value: Number = 0, weight: Number = None) -> None:
-        self.value = value
-        self.weight = weight
+    def __init__(self, num_digits: int = 6) -> None:
+        super(AverageMeter, self).__init__()
+        self.num_digits = num_digits
 
-    def update(self, value: Number, weight: Number = 1.) -> None:
-        self.value += value
+    def extra_repr(self) -> str:
+        return f'num_digits={self.num_digits}'
 
-        if self.weight is None:
-            self.weight = 0
+    def reset_buffers(self) -> None:
+        self.accumulation = 0.
+        self.weight = 0.
+
+    def update(self, value: float, weight: float) -> None:
+        self.accumulation += value
         self.weight += weight
 
     @property
-    def average(self) -> float:
-        if self.weight is None:
-            raise ValueError
-        return self.value / self.weight
+    def merit(self) -> float:
+        try:
+            return round(self.accumulation / self.weight, ndigits=self.num_digits)
+        except ZeroDivisionError:
+            logger.warning(f'{self} is empty')
+            return 0.
 
+    def state_dict(self, name: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
+        if destination is None:
+            destination = {}
 
-class ClassificationMeter(Meter):
-    def reset(self, value: Number = 0, tgt_weight: Number = None, prd_weight: Number = None) -> None:
-        self.value = value
-        self.tgt_weight = tgt_weight
-        self.prd_weight = prd_weight
-
-    def update(self, value: Number, tgt_weight: Number, prd_weight: Number) -> None:
-        self.value += value
-
-        if self.tgt_weight is None:
-            self.tgt_weight = 0
-        self.tgt_weight += tgt_weight
-
-        if self.prd_weight is None:
-            self.prd_weight = 0
-        self.prd_weight += prd_weight
-
-    @property
-    def precision(self) -> float:
-        if self.prd_weight is None:
-            raise ValueError
-        return self.value / self.prd_weight
-
-    @property
-    def recall(self) -> float:
-        if self.tgt_weight is None:
-            raise ValueError
-        return self.value / self.tgt_weight
-
-    @property
-    def f1(self) -> float:
-        if self.prd_weight is None or self.tgt_weight is None:
-            raise ValueError
-        return self.value * 2 / (self.prd_weight + self.tgt_weight)
-
-
-class TimeMeter(Meter):
-    def reset(self, seconds: float = 0, count: int = None) -> None:
-        self.seconds = seconds
-        self.count = count
-
-    def tik(self) -> None:
-        self.start_tm = datetime.now()
-
-    def tok(self, count: int = 1) -> None:
-        self.seconds += (datetime.now() - self.start_tm).total_seconds()
-        del self.start_tm
-
-        if self.count is None:
-            self.count = 0
-        self.count += count
-
-    def __enter__(self):
-        self.tik()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.tok(count=1)
-
-    @property
-    def average(self) -> float:
-        if self.count is None:
-            raise ValueError
-        return self.seconds / self.count
+        destination[name] = self.merit
+        return destination
