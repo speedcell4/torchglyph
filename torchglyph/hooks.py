@@ -19,7 +19,7 @@ CHECKPOINT_PT = 'checkpoint.pt'
 def save_kwargs(name: str, *, out_dir: Path, **kwargs) -> None:
     if (out_dir / name).exists():
         with (out_dir / name).open(mode='r', encoding='utf-8') as fp:
-            kwargs = {**kwargs, **json.load(fp=fp)}
+            kwargs = {**json.load(fp=fp), **kwargs}
 
     with (out_dir / name).open(mode='w', encoding='utf-8') as fp:
         json.dump(kwargs, fp=fp, indent=2, sort_keys=True)
