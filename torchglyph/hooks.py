@@ -34,23 +34,23 @@ def save_sota(*, out_dir: Path, **kwargs) -> None:
 
 
 def save_checkpoint(name: str = CHECKPOINT_PT, *, out_dir: Path, **kwargs) -> None:
-    logger.info(f'saving checkpoint to {out_dir / name}')
+    logger.info(f'saving checkpoint ({", ".join(kwargs.keys())}) to {out_dir / name}')
     return torch.save({name: module.state_dict() for name, module in kwargs.items()}, f=out_dir / name)
 
 
 def load_checkpoint(name: str = CHECKPOINT_PT, strict: bool = True, *, out_dir: Path, **kwargs) -> None:
     state_dict = torch.load(out_dir / name, map_location=torch.device('cpu'))
 
-    logger.info(f'loading checkpoint from {out_dir / name}')
     for name, module in kwargs.items():  # type: str, nn.Module
+        logger.info(f'loading {name}.checkpoint from {out_dir / name}')
         missing_keys, unexpected_keys = module.load_state_dict(state_dict=state_dict[name], strict=strict)
 
         if not strict:
             for missing_key in missing_keys:
-                logger.warning(f'{missing_key} is missing')
+                logger.warning(f'{name}.{missing_key} is missing')
 
             for unexpected_key in unexpected_keys:
-                logger.warning(f'{unexpected_key} is unexpected')
+                logger.warning(f'{name}.{unexpected_key} is unexpected')
 
 
 def fetch(out_dir: Path) -> Tuple[Dict[str, Any], Dict[str, Any]]:
