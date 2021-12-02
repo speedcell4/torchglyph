@@ -26,7 +26,7 @@ class Meter(object, metaclass=ABCMeta):
         raise NotImplementedError
 
     @property
-    def merit(self):
+    def merit(self) -> float:
         raise NotImplementedError
 
     def __eq__(self, other: 'Meter') -> bool:
@@ -51,19 +51,19 @@ class AverageMeter(Meter):
         return f'num_digits={self.num_digits}'
 
     def reset_buffers(self) -> None:
-        self.accumulation = 0.
+        self.value = 0.
         self.weight = 0.
 
     def update(self, value: float, weight: float) -> None:
-        self.accumulation += value
+        self.value += value
         self.weight += weight
 
     @property
     def merit(self) -> float:
         try:
-            return round(self.accumulation / self.weight, ndigits=self.num_digits)
+            return round(self.value / self.weight, ndigits=self.num_digits)
         except ZeroDivisionError:
-            logger.warning(f'{self} is empty')
+            logger.warning(f'weight is zero')
             return 0.
 
     def state_dict(self, name: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
@@ -71,4 +71,60 @@ class AverageMeter(Meter):
             destination = {}
 
         destination[name] = self.merit
+        return destination
+
+
+class ClassificationMeter(Meter):
+    def __init__(self, num_digits: int = 6) -> None:
+        super(ClassificationMeter, self).__init__()
+        self.num_digits = num_digits
+
+    def extra_repr(self) -> str:
+        return f'num_digits={self.num_digits}'
+
+    def reset_buffers(self) -> None:
+        self.value = 0.
+        self.prediction_weight = 0.
+        self.target_weight = 0.
+
+    def update(self, value: float, prediction_weight: float, target_weight: float) -> None:
+        self.value += value
+        self.prediction_weight += prediction_weight
+        self.target_weight += target_weight
+
+    @property
+    def precision(self) -> float:
+        try:
+            return round(self.value / self.prediction_weight, ndigits=self.num_digits)
+        except ZeroDivisionError:
+            logger.warning(f'prediction_weight is zero')
+            return 0.
+
+    @property
+    def recall(self) -> float:
+        try:
+            return round(self.value / self.target_weight, ndigits=self.num_digits)
+        except ZeroDivisionError:
+            logger.warning(f'target_weight is zero')
+            return 0.
+
+    @property
+    def f1(self) -> float:
+        try:
+            return round(self.value * 2 / (self.prediction_weight + self.target_weight), ndigits=self.num_digits)
+        except ZeroDivisionError:
+            logger.warning(f'prediction_weight + target_weight is zero')
+            return 0.
+
+    @property
+    def merit(self) -> float:
+        return self.f1
+
+    def state_dict(self, name: str, *, destination: Dict[str, Any] = None) -> Dict[str, Any]:
+        if destination is None:
+            destination = {}
+
+        destination[f'{name}.precision'] = self.precision
+        destination[f'{name}.recall'] = self.recall
+        destination[f'{name}.f1'] = self.f1
         return destination
