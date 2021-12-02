@@ -1,13 +1,17 @@
 import torch
 from torch import Tensor
 from torch import nn
+from torch.nn import functional as F
 from torch.nn import init
 
 from torchglyph.nn import init
 
 __all__ = [
     'Projector',
-    'CosineProjector',
+    'CosProjector',
+    'ConjugatedLinear',
+    'ConjugatedProjector',
+    'CosConjugatedProjector',
 ]
 
 
@@ -25,10 +29,10 @@ class Projector(nn.Linear):
             init.constant_(self.bias, 0.)
 
 
-class CosineProjector(Projector):
+class CosProjector(Projector):
     def __init__(self, bias: bool = False, tau: float = 0.1, *,
                  in_features: int, out_features: int, dtype: torch.dtype = torch.float32) -> None:
-        super(CosineProjector, self).__init__(
+        super(CosProjector, self).__init__(
             in_features=in_features, out_features=out_features,
             bias=bias, dtype=dtype,
         )
@@ -36,7 +40,7 @@ class CosineProjector(Projector):
 
     def extra_repr(self) -> str:
         return ', '.join([
-            super(CosineProjector, self).extra_repr(),
+            super(CosProjector, self).extra_repr(),
             f'tau={self.tau}',
         ])
 
@@ -49,7 +53,8 @@ class CosineProjector(Projector):
 
 class ConjugatedLinear(nn.Module):
     def __init__(self, bias: bool = True, *,
-                 in_features: int, num_conjugates: int, out_features: int, dtype: torch.dtype = torch.float32) -> None:
+                 in_features: int, num_conjugates: int, out_features: int,
+                 dtype: torch.dtype = torch.float32) -> None:
         super(ConjugatedLinear, self).__init__()
 
         self.in_features = in_features
@@ -89,3 +94,28 @@ class ConjugatedProjector(ConjugatedLinear):
         init.kaiming_uniform_(self.weight, fan=self.in_features, nonlinearity='relu')
         if self.bias is not None:
             init.constant_(self.bias, 0.)
+
+
+class CosConjugatedProjector(ConjugatedProjector):
+    def __init__(self, bias: bool = True, tau: float = 0.1, *,
+                 in_features: int, num_conjugates: int, out_features: int,
+                 dtype: torch.dtype = torch.float32) -> None:
+        super(CosConjugatedProjector, self).__init__(
+            in_features=in_features, out_features=out_features,
+            num_conjugates=num_conjugates, bias=bias, dtype=dtype,
+        )
+        self.tau = tau
+
+    def extra_repr(self) -> str:
+        return ', '.join([
+            super(CosConjugatedProjector, self).extra_repr(),
+            f'tau={self.tau}',
+        ])
+
+    def forward(self, tensor: Tensor) -> Tensor:
+        tensor = F.normalize(tensor, p=2, dim=-1)
+        weight = F.normalize(self.weight, p=2, dim=-1)
+        out = (weight @ tensor[..., None])[..., 0] / self.tau
+        if self.bias is not None:
+            out = out + self.bias
+        return out
