@@ -2,12 +2,12 @@ import torch
 from torch import Tensor
 from torch import nn
 from torch.nn import functional as F
-from torch.nn import init
 
 from torchglyph.nn import init
 
 __all__ = [
     'Linear', 'ConjugatedLinear',
+    'Projector', 'ConjugatedProjector',
 ]
 
 
@@ -22,7 +22,7 @@ class Linear(nn.Linear):
         self.normalize = normalize
 
     def reset_parameters(self) -> None:
-        init.kaiming_uniform_(self.weight, fan=self.in_features, a=5 ** 0.5, nonlinearity='leaky_relu')
+        init.kaiming_uniform_(self.weight, fan=self.in_features, a=5. ** 0.5, nonlinearity='leaky_relu')
         if self.bias is not None:
             init.constant_(self.bias, 0.)
 
@@ -62,7 +62,7 @@ class ConjugatedLinear(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self) -> None:
-        init.kaiming_uniform_(self.weight, fan=self.in_features, a=5 ** 0.5, nonlinearity='leaky_relu')
+        init.kaiming_uniform_(self.weight, fan=self.in_features, a=5. ** 0.5, nonlinearity='leaky_relu')
         if self.bias is not None:
             init.constant_(self.bias, 0.)
 
@@ -91,3 +91,33 @@ class ConjugatedLinear(nn.Module):
         if self.bias is not None:
             out = out + self.bias
         return out
+
+
+class Projector(Linear):
+    def __init__(self, normalize: bool = False, *,
+                 in_features: int, out_features: int,
+                 dtype: torch.dtype = torch.float32) -> None:
+        super(Projector, self).__init__(
+            in_features=in_features, out_features=out_features,
+            bias=False, normalize=normalize, dtype=dtype,
+        )
+
+    def reset_parameters(self) -> None:
+        init.kaiming_uniform_(self.weight, fan=self.in_features, a=0., nonlinearity='relu')
+        if self.bias is not None:
+            init.constant_(self.bias, 0.)
+
+
+class ConjugatedProjector(ConjugatedLinear):
+    def __init__(self, normalize: bool = False, *,
+                 in_features: int, num_conjugates: int, out_features: int,
+                 dtype: torch.dtype = torch.float32) -> None:
+        super(ConjugatedProjector, self).__init__(
+            in_features=in_features, num_conjugates=num_conjugates, out_features=out_features,
+            bias=False, normalize=normalize, dtype=dtype,
+        )
+
+    def reset_parameters(self) -> None:
+        init.kaiming_uniform_(self.weight, fan=self.in_features, a=0., nonlinearity='relu')
+        if self.bias is not None:
+            init.constant_(self.bias, 0.)
