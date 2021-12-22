@@ -7,35 +7,44 @@ from torch.nn import init
 from torchglyph.nn import init
 
 __all__ = [
-    'Linear', 'CosineLinear', 'ConjugatedLinear',
+    'Linear', 'ConjugatedLinear',
 ]
 
 
 class Linear(nn.Linear):
-    def __init__(self, bias: bool = True, *,
+    def __init__(self, bias: bool = True, normalize: bool = False, *,
                  in_features: int, out_features: int,
                  dtype: torch.dtype = torch.float32) -> None:
         super(Linear, self).__init__(
             in_features=in_features, out_features=out_features,
             bias=bias, dtype=dtype,
         )
+        self.normalize = normalize
 
     def reset_parameters(self) -> None:
         init.kaiming_uniform_(self.weight, fan=self.in_features, a=5 ** 0.5, nonlinearity='leaky_relu')
         if self.bias is not None:
             init.constant_(self.bias, 0.)
 
+    def __repr__(self) -> str:
+        cls_name = self.__class__.__name__
+        if self.normalize:
+            cls_name = f'Cos{cls_name}'
+        return f'{cls_name}({self.extra_repr()})'
 
-class CosineLinear(Linear):
     def forward(self, tensor: Tensor) -> Tensor:
-        tensor = F.normalize(tensor, p=2, dim=-1)
-        weight = F.normalize(self.weight, p=2, dim=-1)
+        if not self.normalize:
+            weight = self.weight
+        else:
+            tensor = F.normalize(tensor, p=2, dim=-1)
+            weight = F.normalize(self.weight, p=2, dim=-1)
+
         return F.linear(tensor, weight=weight, bias=self.bias)
 
 
 class ConjugatedLinear(nn.Module):
-    def __init__(self, bias: bool = True, *,
-                 num_conjugates: int, in_features: int, out_features: int,
+    def __init__(self, bias: bool = True, normalize: bool = False, *,
+                 in_features: int, num_conjugates: int, out_features: int,
                  dtype: torch.dtype = torch.float32) -> None:
         super(ConjugatedLinear, self).__init__()
 
@@ -45,9 +54,10 @@ class ConjugatedLinear(nn.Module):
         else:
             self.register_parameter('bias', None)
 
-        self.num_conjugates = num_conjugates
         self.in_features = in_features
+        self.num_conjugates = num_conjugates
         self.out_features = out_features
+        self.normalize = normalize
 
         self.reset_parameters()
 
@@ -55,6 +65,12 @@ class ConjugatedLinear(nn.Module):
         init.kaiming_uniform_(self.weight, fan=self.in_features, a=5 ** 0.5, nonlinearity='leaky_relu')
         if self.bias is not None:
             init.constant_(self.bias, 0.)
+
+    def __repr__(self) -> str:
+        cls_name = self.__class__.__name__
+        if self.normalize:
+            cls_name = f'Cos{cls_name}'
+        return f'{cls_name}({self.extra_repr()})'
 
     def extra_repr(self) -> str:
         return ', '.join([
@@ -65,7 +81,13 @@ class ConjugatedLinear(nn.Module):
         ])
 
     def forward(self, tensor: Tensor) -> Tensor:
-        out = (self.weight @ tensor[..., None])[..., 0]
+        if not self.normalize:
+            weight = self.weight
+        else:
+            tensor = F.normalize(tensor, p=2, dim=-1)
+            weight = F.normalize(self.weight, p=2, dim=-1)
+
+        out = (weight @ tensor[..., None])[..., 0]
         if self.bias is not None:
             out = out + self.bias
         return out
