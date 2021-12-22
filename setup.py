@@ -4,7 +4,7 @@ name = 'torchglyph'
 
 setup(
     name=name,
-    version='0.2.0',
+    version='0.2.1',
     packages=[package for package in find_packages() if package.startswith(name)],
     url=f'https://speedcell4.github.io/torchglyph',
     license='MIT',
@@ -17,6 +17,8 @@ setup(
         'einops',
         'torchrua>=0.3.0',
         'requests',
+        'tabulate',
+        'aku',
     ],
     extras_require={
         'dev': [

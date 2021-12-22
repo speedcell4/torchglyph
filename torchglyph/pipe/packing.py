@@ -2,15 +2,16 @@ from typing import Optional, Tuple, List
 
 import torch
 from torch.nn.utils.rnn import PackedSequence
+from torch.types import Device, Number
 from torchrua.padding import pad_packed_sequence
 
 from torchglyph.pipe.abc import Pipe
 from torchglyph.proc.abc import Lift
 from torchglyph.proc.basic import ToList
-from torchglyph.proc.catting import CatSequences
+from torchglyph.proc.catting import CatSequence
 from torchglyph.proc.collating import ToTensor
-from torchglyph.proc.packing import PackSequences, ReduceCattedSequences
-from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering, THRESHOLD
+from torchglyph.proc.packing import PackSequence, ReduceCattedSequences
+from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [
     'PackListNumPipe', 'PackListListNumPipe',
@@ -19,15 +20,14 @@ __all__ = [
 
 
 class PackListNumPipe(Pipe):
-    def __init__(self, device: torch.device, dtype: torch.dtype = torch.long) -> None:
-        super(PackListNumPipe, self).__init__(
-            pre=None,
-            vocab=None,
+    def __init__(self, device: Device, dtype: torch.dtype = torch.long) -> None:
+        super(PackListNumPipe, self).__init__()
+        self.with_(
             post=ToTensor(dtype=dtype),
-            batch=PackSequences(device=device),
+            batch=PackSequence(device=device),
         )
 
-    def inv(self, sequence: PackedSequence) -> List[List[Tuple[int, bool, float]]]:
+    def inv(self, sequence: PackedSequence) -> List[List[Number]]:
         data, token_sizes = pad_packed_sequence(sequence=sequence, batch_first=True)
 
         data = data.detach().cpu().tolist()
@@ -40,9 +40,9 @@ class PackListNumPipe(Pipe):
 
 
 class PackListStrPipe(PackListNumPipe):
-    def __init__(self, device: torch.device,
+    def __init__(self, device: Device,
                  unk_token: Optional[str], special_tokens: Tuple[Optional[str], ...] = (),
-                 threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
+                 threshold: int = 10, dtype: torch.dtype = torch.long) -> None:
         super(PackListStrPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=UpdateCounter(),
@@ -57,25 +57,25 @@ class PackListStrPipe(PackListNumPipe):
         assert sequence.data.dim() == 1, f'{sequence.data.dim()} != 1'
 
         return [
-            [self.vocab.itos[datum] for datum in data]
-            for data in super(PackListStrPipe, self).inv(sequence)
+            [self.vocab.inv(index) for index in indices]
+            for indices in super(PackListStrPipe, self).inv(sequence)
         ]
 
 
 class PackListListNumPipe(Pipe):
-    def __init__(self, device: torch.device, dtype: torch.dtype = torch.long) -> None:
+    def __init__(self, device: Device, dtype: torch.dtype = torch.long) -> None:
         super(PackListListNumPipe, self).__init__(
             pre=None,
             vocab=None,
-            post=Lift(ToTensor(dtype=dtype)) + CatSequences(device=None),
+            post=Lift(ToTensor(dtype=dtype)) + CatSequence(device=None),
             batch=ReduceCattedSequences(device=device),
         )
 
 
 class PackListListStrPipe(PackListListNumPipe):
-    def __init__(self, device: torch.device,
+    def __init__(self, device: Device,
                  unk_token: Optional[str], special_tokens: Tuple[Optional[str], ...] = (),
-                 threshold: int = THRESHOLD, dtype: torch.dtype = torch.long) -> None:
+                 threshold: int = 10, dtype: torch.dtype = torch.long) -> None:
         super(PackListListStrPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=Lift(ToList() + UpdateCounter()),

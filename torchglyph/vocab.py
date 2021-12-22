@@ -1,5 +1,5 @@
 import logging
-from collections import Counter, defaultdict
+from collections import Counter, OrderedDict
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict
 
@@ -27,12 +27,9 @@ class Vocab(object):
                  max_size: Optional[int] = None, min_freq: int = 1) -> None:
         super(Vocab, self).__init__()
 
-        if max_size is not None:
-            counter = Counter(counter.most_common(n=max_size))
-
         self.freq = counter
-        self.itos: List[str] = []
-        self.stoi: Dict[str, int] = defaultdict(self._default_factory)
+        self.itos: Dict[int, str] = {}
+        self.stoi: Dict[str, int] = {}
         self.vectors: Optional[Tensor] = None
 
         self.unk_idx = None
@@ -48,26 +45,28 @@ class Vocab(object):
 
         self.unk_token = unk_token
         self.pad_token = pad_token
-        self.special_tokens = self.itos[::]
+        self.special_tokens = tuple(self.stoi.keys())
 
-        for token, freq in self.freq.most_common():
+        for token, freq in self.freq.most_common(n=max_size):
             if freq < min_freq:
                 break
             self.add_token_(token)
 
         assert len(self.stoi) == len(self.itos)
 
-    def _default_factory(self) -> Optional[int]:
-        if self.unk_idx is not None:
-            return self.unk_idx
-        raise KeyError
+    def __getitem__(self, token: str) -> int:
+        return self.stoi.get(token, self.unk_idx)
 
-    def add_token_(self, token) -> int:
+    def inv(self, index: int) -> str:
+        return self.itos.get(index, self.unk_token)
+
+    def add_token_(self, token: str) -> int:
         assert token is not None
 
         if token not in self.stoi:
-            self.stoi[token] = len(self.stoi)
-            self.itos.append(token)
+            index = len(self.stoi)
+            self.stoi[token] = index
+            self.itos[index] = token
 
         return self.stoi[token]
 
@@ -102,13 +101,38 @@ class Vocab(object):
 
         return tok, occ
 
-    def save(self, path: Path) -> None:
-        logger.info(f'saving {self.__class__.__name__} to {path}')
-        torch.save((self.stoi, self.itos, self.vectors), path)
+    def state_dict(self, destination: OrderedDict = None, prefix: str = '', **kwargs) -> OrderedDict:
+        if destination is None:
+            destination = OrderedDict()
+            destination._metadata = OrderedDict()
 
-    def load(self, path: Path) -> None:
-        logger.info(f'loading {self.__class__.__name__} from {path}')
-        self.stoi, self.itos, self.vectors = torch.load(path)
+        destination[prefix + 'unk_idx'] = self.unk_idx
+        destination[prefix + 'pad_idx'] = self.pad_idx
+        destination[prefix + 'unk_token'] = self.unk_token
+        destination[prefix + 'pad_token'] = self.pad_token
+        destination[prefix + 'special_tokens'] = self.special_tokens
+
+        destination[prefix + 'freq'] = self.freq
+        destination[prefix + 'stoi'] = self.stoi
+        destination[prefix + 'itos'] = self.itos
+        destination[prefix + 'vectors'] = self.vectors.detach()
+
+        return destination
+
+    def load_state_dict(self, state_dict: OrderedDict, strict: bool = True, **kwargs) -> None:
+        self.unk_idx = state_dict.pop('unk_idx')
+        self.pad_idx = state_dict.pop('pad_idx')
+        self.unk_token = state_dict.pop('unk_token')
+        self.pad_token = state_dict.pop('pad_token')
+        self.special_tokens = state_dict.pop('special_tokens')
+
+        self.freq = state_dict.pop('freq')
+        self.stoi = state_dict.pop('stoi')
+        self.itos = state_dict.pop('itos')
+        self.vectors = state_dict.pop('vectors')
+
+        if strict:
+            assert len(state_dict) == 0
 
 
 class Vectors(Vocab, DownloadMixin):
@@ -129,7 +153,10 @@ class Vectors(Vocab, DownloadMixin):
     def cache_(self, path: Path) -> None:
         torch_path = path.with_suffix('.pt')
 
-        if not torch_path.exists():
+        if torch_path.exists():
+            logger.info(f'loading from {torch_path}')
+            self.load_state_dict(state_dict=torch.load(f=torch_path))
+        else:
             vectors = []
             with path.open('r', encoding='utf-8') as fp:
 
@@ -148,9 +175,9 @@ class Vectors(Vocab, DownloadMixin):
                     vectors.append([float(v) for v in embeddings])
 
             self.vectors = torch.tensor(vectors, dtype=torch.float32)
-            self.save(torch_path)
-        else:
-            self.load(torch_path)
+
+            logger.info(f'saving to {torch_path}')
+            torch.save(obj=self.state_dict(), f=torch_path)
 
     @torch.no_grad()
     def query_(self, token: str, tensor: Tensor, *fallbacks) -> bool:
@@ -218,4 +245,6 @@ class FastText(Vectors):
 
 
 if __name__ == '__main__':
-    FastText(name='cc', lang='zh')
+    vectors = FastText(name='cc', lang='en')
+    print(f'vectors => {vectors}')
+    print(vectors.vectors.size())
