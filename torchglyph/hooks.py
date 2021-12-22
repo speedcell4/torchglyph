@@ -53,13 +53,21 @@ def load_checkpoint(name: str = CHECKPOINT_PT, strict: bool = True, *, out_dir: 
                 logger.warning(f'{name}.{unexpected_key} is unexpected')
 
 
-def fetch(out_dir: Path) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+def fetch_one(out_dir: Path) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     with (out_dir / SOTA_JSON).open(mode='r', encoding='utf-8') as fp:
         sota = json.load(fp)
     with (out_dir / ARGS_JSON).open(mode='r', encoding='utf-8') as fp:
         args = json.load(fp)
 
-    return sota, {**args, 'path': out_dir / LOG_TXT}
+    return {**args, 'path': out_dir / LOG_TXT}, sota
+
+
+def fetch_all(paths: List[Path]):
+    return zip(*[
+        fetch_one(out_dir=out_dir)
+        for p in paths for out_dir in p.iterdir()
+        if out_dir.is_dir() and (out_dir / ARGS_JSON).exists() and (out_dir / SOTA_JSON).exists()
+    ])
 
 
 def group_keys(keys: Set[str], args: List[Dict[str, Any]]):
@@ -83,25 +91,21 @@ def group_keys(keys: Set[str], args: List[Dict[str, Any]]):
     return major, list(common.items())
 
 
-def reduce_metric(data: List[Tuple[float]], expand: bool):
-    data = torch.tensor(data, dtype=torch.float32)
-    std, mean = torch.std_mean(data[:, 0], unbiased=True)
-    epoch1 = round(data[:, 1].mean().item())
-    epoch2 = round(data[:, 2].mean().item())
+def reduce_metric(metrics: List[Tuple[float]], expand: bool):
+    metrics = torch.tensor(metrics, dtype=torch.float32)
+    s, m = torch.std_mean(metrics[:, 0], unbiased=True)
+    epoch1 = round(metrics[:, 1].mean().item())
+    epoch2 = round(metrics[:, 2].mean().item())
     if expand:
-        return f'{mean.item():.4f}', epoch1, epoch2
-    return f'{mean.item():.4f}', f'{std.item():.2f}', len(data), epoch1, epoch2
+        return f'{m.item():.4f}', epoch1, epoch2
+    return f'{m.item():.4f}', f'{s.item():.2f}', len(metrics), epoch1, epoch2
 
 
 def summary(path: List[Path], metric: str, sort: bool = True,
             common: bool = False, expand: bool = False, fmt: str = 'pretty'):
-    sota, args = zip(*[
-        fetch(out_dir=out_dir)
-        for p in path for out_dir in p.iterdir()
-        if out_dir.is_dir() and (out_dir / ARGS_JSON).exists() and (out_dir / SOTA_JSON).exists()
-    ])
+    args, sota = fetch_all(path)
 
-    ignores = ('device', 'seed')
+    ignores = ('study', 'device', 'seed')
     if not expand:
         ignores = (*ignores, 'path')
 
@@ -125,8 +129,8 @@ def summary(path: List[Path], metric: str, sort: bool = True,
                 tabular_data.setdefault(vs, []).append((s[metric], s[epoch], s['epoch']))
 
         tabular_data = [
-            [*reduce_metric(data, expand), *vs]
-            for vs, data in tabular_data.items()
+            [*reduce_metric(metrics, expand), *vs]
+            for vs, metrics in tabular_data.items()
         ]
         if sort:
             tabular_data = list(sorted(tabular_data, key=lambda item: item[0], reverse=False))
