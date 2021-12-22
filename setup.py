@@ -17,7 +17,8 @@ setup(
         'einops',
         'torchrua>=0.3.0',
         'requests',
-        'pytablewriter',
+        'tabulate',
+        'aku',
     ],
     extras_require={
         'dev': [
