@@ -35,6 +35,9 @@ class Dataset(TorchDataset, DownloadMixin):
             for name, pipe in ps.items():
                 self.data.setdefault(name, []).extend(datum)
 
+    def get_size(self, item: Any) -> int:
+        raise NotImplementedError
+
     def __getitem__(self, index: int) -> Dict[str, Any]:
         return {name: self.data[name][index] for name in self.names}
 
