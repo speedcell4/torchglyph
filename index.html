@@ -62,7 +62,7 @@
 <p>or you can simply manipulate existing <code>Pipe</code>s by calling <code>.with_</code> method.</p>
 <pre><code class="language-python">class PackedTokSeqPipe(PackedIdxSeqPipe):
     def __init__(self, device, unk_token, special_tokens=(),
-                 threshold=THRESHOLD, dtype=torch.long) -&gt; None:
+                 threshold=10, dtype=torch.long) -&gt; None:
         super(PackedTokSeqPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=UpdateCounter(),
@@ -127,15 +127,15 @@
       
       
         
-        Powered by <a href="http://www.mkdocs.org">mkdocs 1.2.2</a>
+        Powered by <a href="http://www.mkdocs.org">mkdocs 1.2.3</a>
         &amp; <a href="https://github.com/iamale/mkdocs-alabaster">mkdocs-alabaster</a>
       
     </div>
   
 
   <!--
-  MkDocs version      : 1.2.2
-  Docs Build Date UTC : 2021-07-30 16:13:47.056250+00:00
+  MkDocs version      : 1.2.3
+  Docs Build Date UTC : 2021-12-22 11:21:54.064034+00:00
   -->
 </body>
 </html>
