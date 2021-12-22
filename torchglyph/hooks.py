@@ -1,7 +1,7 @@
 import json
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Set
+from typing import Any, Set, Union
 from typing import List, Tuple, Dict
 
 import torch
@@ -62,7 +62,7 @@ def fetch(out_dir: Path) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     return sota, {**args, 'path': out_dir / LOG_TXT}
 
 
-def group_keys(keys: Set[str], args: List[Dict[str, Any]]) -> Tuple[List[str], Dict[str, Any]]:
+def group_keys(keys: Set[str], args: List[Dict[str, Any]]):
     has_path = False
     major, common = [], {}
 
@@ -80,39 +80,52 @@ def group_keys(keys: Set[str], args: List[Dict[str, Any]]) -> Tuple[List[str], D
     if has_path:
         major = major + ['path']
 
-    return major, common
+    return major, list(common.items())
 
 
-def reduce_metric(data: List[float]):
+def reduce_metric(data: List[float], expand: bool) -> Union[Tuple[str], Tuple[str, str, int]]:
     tensor = torch.tensor(data, dtype=torch.float32)
+    if expand:
+        return f'{tensor.mean().item():.4f}',
     std, mean = torch.std_mean(tensor, unbiased=True)
     return f'{mean.item():.4f}', f'{std.item():.2f}', len(data)
 
 
-def summary(path: List[Path], metric: str, sort: bool = True, ignores: Tuple[str, ...] = ('device', 'seed', 'path')):
+def summary(path: List[Path], metric: str, sort: bool = True,
+            common: bool = False, expand: bool = False, fmt: str = 'pretty'):
     sota, args = zip(*[
         fetch(out_dir=out_dir)
         for p in path for out_dir in p.iterdir()
         if out_dir.is_dir() and (out_dir / ARGS_JSON).exists() and (out_dir / SOTA_JSON).exists()
     ])
 
+    if expand:
+        ignores = ('device', 'seed')
+    else:
+        ignores = ('device', 'seed', 'path')
+
     keys = set(k for a in args for k in a.keys() if k not in ignores)
-    keys, common = group_keys(keys=keys, args=args)
+    keys, tabular_data = group_keys(keys=keys, args=args)
 
-    print(f'common => {json.dumps(common, indent=2, sort_keys=True)}')
+    if common:
+        print(tabulate(tabular_data=tabular_data, headers=['key', 'value'], tablefmt=fmt))
+    else:
+        tabular_data = {}
+        for s, a in zip(sota, args):
+            if metric in s:
+                vs = tuple(a.get(key, '-') for key in keys)
+                tabular_data.setdefault(vs, []).append(s[metric])
 
-    tabular_data = {}
-    for s, a in zip(sota, args):
-        if metric in s:
-            vs = tuple(a.get(key, '-') for key in keys)
-            tabular_data.setdefault(vs, []).append(s[metric])
+        tabular_data = [
+            [*reduce_metric(data, expand), *vs]
+            for vs, data in tabular_data.items()
+        ]
+        if sort:
+            tabular_data = list(sorted(tabular_data, key=lambda item: item[0], reverse=False))
 
-    tabular_data = [
-        [*reduce_metric(data), *vs]
-        for vs, data in tabular_data.items()
-    ]
-    if sort:
-        tabular_data = list(sorted(tabular_data, key=lambda item: item[0], reverse=False))
-    headers = [metric, 'std', 'runs', *keys]
+        if expand:
+            headers = [metric, *keys]
+        else:
+            headers = [metric, 'std', '*', *keys]
 
-    print(tabulate(tabular_data=tabular_data, headers=headers))
+        print(tabulate(tabular_data=tabular_data, headers=headers, tablefmt=fmt))
