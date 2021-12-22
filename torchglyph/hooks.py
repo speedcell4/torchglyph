@@ -1,7 +1,7 @@
 import json
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Set, Union
+from typing import Any, Set
 from typing import List, Tuple, Dict
 
 import torch
@@ -83,12 +83,14 @@ def group_keys(keys: Set[str], args: List[Dict[str, Any]]):
     return major, list(common.items())
 
 
-def reduce_metric(data: List[float], expand: bool) -> Union[Tuple[str], Tuple[str, str, int]]:
-    tensor = torch.tensor(data, dtype=torch.float32)
+def reduce_metric(data: List[Tuple[float]], expand: bool):
+    data = torch.tensor(data, dtype=torch.float32)
+    std, mean = torch.std_mean(data[:, 0], unbiased=True)
+    epoch1 = round(data[:, 1].mean().item())
+    epoch2 = round(data[:, 2].mean().item())
     if expand:
-        return f'{tensor.mean().item():.4f}',
-    std, mean = torch.std_mean(tensor, unbiased=True)
-    return f'{mean.item():.4f}', f'{std.item():.2f}', len(data)
+        return f'{mean.item():.4f}', epoch1, epoch2
+    return f'{mean.item():.4f}', f'{std.item():.2f}', len(data), epoch1, epoch2
 
 
 def summary(path: List[Path], metric: str, sort: bool = True,
@@ -99,10 +101,9 @@ def summary(path: List[Path], metric: str, sort: bool = True,
         if out_dir.is_dir() and (out_dir / ARGS_JSON).exists() and (out_dir / SOTA_JSON).exists()
     ])
 
-    if expand:
-        ignores = ('device', 'seed')
-    else:
-        ignores = ('device', 'seed', 'path')
+    ignores = ('device', 'seed')
+    if not expand:
+        ignores = (*ignores, 'path')
 
     keys = set(k for a in args for k in a.keys() if k not in ignores)
     keys, tabular_data = group_keys(keys=keys, args=args)
@@ -110,11 +111,18 @@ def summary(path: List[Path], metric: str, sort: bool = True,
     if common:
         print(tabulate(tabular_data=tabular_data, headers=['key', 'value'], tablefmt=fmt))
     else:
+        if metric.startswith('dev_'):
+            epoch = 'dev_epoch'
+        elif metric.startswith('test_'):
+            epoch = 'test_epoch'
+        else:
+            epoch = 'epoch'
+
         tabular_data = {}
         for s, a in zip(sota, args):
             if metric in s:
                 vs = tuple(a.get(key, '-') for key in keys)
-                tabular_data.setdefault(vs, []).append(s[metric])
+                tabular_data.setdefault(vs, []).append((s[metric], s[epoch], s['epoch']))
 
         tabular_data = [
             [*reduce_metric(data, expand), *vs]
@@ -124,8 +132,8 @@ def summary(path: List[Path], metric: str, sort: bool = True,
             tabular_data = list(sorted(tabular_data, key=lambda item: item[0], reverse=False))
 
         if expand:
-            headers = [metric, *keys]
+            headers = [metric, 's', 'e', *keys]
         else:
-            headers = [metric, 'std', '*', *keys]
+            headers = [metric, 'std', '*', 's', 'e', *keys]
 
         print(tabulate(tabular_data=tabular_data, headers=headers, tablefmt=fmt))
