@@ -5,12 +5,13 @@ from typing import Iterable, Any, Type
 from typing import Union, List, Tuple, NamedTuple, Dict
 
 from torch.distributions.utils import lazy_property
-from torch.utils.data import DataLoader as TorchDataLoader
+from torch.utils.data import DataLoader as TorchDataLoader, SequentialSampler, RandomSampler
 from torch.utils.data import Dataset as TorchDataset
 from tqdm import tqdm
 
 from torchglyph.io import DownloadMixin
 from torchglyph.pipe import Pipe
+from torchglyph.sampler import SizedBatchSampler
 
 __all__ = [
     'Dataset',
@@ -107,7 +108,7 @@ class DataLoader(TorchDataLoader):
     @classmethod
     def new(cls, datasets: Tuple[Dataset, ...],
             batch_size: Union[int, Tuple[int, ...]],
-            shuffle: bool = True, drop_last: bool = False) -> Tuple['DataLoader', ...]:
+            shuffle: bool = True, drop_last: bool = False) -> List['DataLoader', ...]:
         assert len(datasets) > 0
 
         batch_sizes = batch_size
@@ -121,12 +122,23 @@ class DataLoader(TorchDataLoader):
                     pipe.postprocess_(dataset)
                     progress.update(1)
 
-        return tuple(
-            DataLoader(
-                dataset=dataset, batch_size=batch_size,
-                collate_fn=dataset.collate_fn,
-                shuffle=shuffle if index == 0 else False,
-                drop_last=drop_last if index == 0 else False,
+        loaders = []
+
+        for index, (dataset, batch_size) in enumerate(zip(datasets, batch_sizes)):
+            if index == 0 and shuffle:
+                sampler = RandomSampler(dataset, generator=None)
+            else:
+                sampler = SequentialSampler(dataset)
+
+            batch_sampler = SizedBatchSampler(
+                dataset=dataset, sampler=sampler, batch_size=batch_size,
+                drop_last=index == 0 and drop_last,
             )
-            for index, (dataset, batch_size) in enumerate(zip(datasets, batch_sizes))
-        )
+
+            loaders.append(DataLoader(
+                dataset=dataset, batch_size=None,
+                collate_fn=dataset.collate_fn,
+                batch_sampler=batch_sampler,
+            ))
+
+        return loaders
