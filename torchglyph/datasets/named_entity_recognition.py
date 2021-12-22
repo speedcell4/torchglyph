@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Tuple, Iterable, NamedTuple
+from typing import Iterable, NamedTuple, Any, List
 
 import torch
 from torch.types import Device
@@ -53,6 +53,9 @@ class CoNLL2003(Dataset):
         chunk_: str
         tag: str
 
+    def get_size(self, item: Any) -> int:
+        return item['word'].size()[0]
+
     @classmethod
     def load(cls, path: Path, **kwargs) -> Iterable[NamedTuple]:
         with tqdm(path.open(mode='r', encoding='Utf-8'), desc=f'loading {path}') as fp:
@@ -61,7 +64,7 @@ class CoNLL2003(Dataset):
 
     @classmethod
     def new(cls, batch_size: int, *, device: Device,
-            root: Path = data_dir, **kwargs) -> Tuple['DataLoader', ...]:
+            root: Path = data_dir, **kwargs) -> List['DataLoader']:
         word = WordPipe(device=device)
         char = CharPipe(device=device)
         tag = TagPipe(device=device)

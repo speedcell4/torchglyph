@@ -2,15 +2,13 @@ from typing import List, Iterator
 
 from torch.utils.data import BatchSampler, Sampler
 
-from torchglyph.dataset import Dataset
-
 __all__ = [
     'SizedBatchSampler',
 ]
 
 
 class SizedBatchSampler(BatchSampler):
-    def __init__(self, dataset: Dataset, sampler: Sampler[int], batch_size: int, drop_last: bool) -> None:
+    def __init__(self, dataset, sampler: Sampler[int], batch_size: int, drop_last: bool) -> None:
         super(SizedBatchSampler, self).__init__(sampler, batch_size, drop_last)
 
         self.dataset = dataset

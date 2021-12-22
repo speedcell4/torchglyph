@@ -1,4 +1,4 @@
-from typing import Any, Type, Tuple, NamedTuple, IO, Iterable
+from typing import Any, Type, Tuple, NamedTuple, IO, Iterable, get_type_hints
 
 from torchglyph.formats.primitive import loads_type, dumps_type
 
@@ -13,8 +13,8 @@ Sentence = Tuple[Tuple[Any, ...], ...]
 
 def loads_token(s: str, *, config: Type[NamedTuple], sep: str = '\t') -> Token:
     return tuple(
-        loads_type(s, tp=config._field_types[name])
-        for s, name in zip(s.strip().split(sep=sep), config._fields)
+        loads_type(s, tp=tp)
+        for s, (name, tp) in zip(s.strip().split(sep=sep), get_type_hints(config).items())
         if not name.endswith('_')
     )
 

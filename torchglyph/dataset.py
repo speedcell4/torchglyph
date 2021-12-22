@@ -108,7 +108,7 @@ class DataLoader(TorchDataLoader):
     @classmethod
     def new(cls, datasets: Tuple[Dataset, ...],
             batch_size: Union[int, Tuple[int, ...]],
-            shuffle: bool = True, drop_last: bool = False) -> List['DataLoader', ...]:
+            shuffle: bool = True, drop_last: bool = False) -> List['DataLoader']:
         assert len(datasets) > 0
 
         batch_sizes = batch_size
@@ -136,7 +136,7 @@ class DataLoader(TorchDataLoader):
             )
 
             loaders.append(DataLoader(
-                dataset=dataset, batch_size=None,
+                dataset=dataset, batch_size=1,
                 collate_fn=dataset.collate_fn,
                 batch_sampler=batch_sampler,
             ))
