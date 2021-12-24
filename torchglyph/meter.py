@@ -63,7 +63,7 @@ class Meter(object, metaclass=ABCMeta):
         raise NotImplementedError
 
     def flush(self, prefix: str, reset_buffers: bool = True) -> None:
-        for key, value in self.state_dict(prefix=prefix, destination=None):
+        for key, value in self.state_dict(prefix=prefix, destination=None).items():
             logger.info(f'{key} => {value}')
 
         if reset_buffers:
