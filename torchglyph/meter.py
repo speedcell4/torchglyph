@@ -41,11 +41,20 @@ class Meter(object, metaclass=ABCMeta):
     def __eq__(self, other: 'Meter') -> bool:
         return self.merit == other.merit
 
-    def __le__(self, other: 'Meter') -> bool:
+    def __lt__(self, other: 'Meter') -> bool:
         return self.merit < other.merit
 
     def __gt__(self, other: 'Meter') -> bool:
         return self.merit > other.merit
+
+    def __ne__(self, other: 'Meter') -> bool:
+        return self.merit != other.merit
+
+    def __le__(self, other: 'Meter') -> bool:
+        return self.merit <= other.merit
+
+    def __ge__(self, other: 'Meter') -> bool:
+        return self.merit >= other.merit
 
     def __add__(self, other: 'Meter') -> 'Meter':
         raise NotImplementedError
