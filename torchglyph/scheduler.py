@@ -29,15 +29,16 @@ class SchedulerMixin(object):
         return ''
 
     def report_lr(self) -> None:
-        lr = ', '.join(f'{lr:.6f}' for lr in self.get_lr())
-        logger.info(f"learning rate => [{lr}]")
+        lr = ' | '.join(f'{lr:.6f}' for lr in self.get_lr())
+        logger.info(f'epoch {self.epoch} | batch {self.batch} | learning rate => [{lr}]')
 
 
 class InverseDecay(LambdaLR, SchedulerMixin):
     def __init__(self, gamma: float = 0.05, *, optimizer: Optimizer, **_) -> None:
-        super(InverseDecay, self).__init__(
-            optimizer=optimizer,
-            lr_lambda=lambda epoch: 1. / (1. + gamma * epoch)
+        SchedulerMixin.__init__(self)
+        LambdaLR.__init__(
+            self, optimizer=optimizer,
+            lr_lambda=lambda epoch: 1. / (1. + gamma * epoch),
         )
         self.gamma = gamma
 
@@ -45,8 +46,8 @@ class InverseDecay(LambdaLR, SchedulerMixin):
         return f'gamma={self.gamma}'
 
     def epoch_step(self) -> None:
-        self.step()
         super(InverseDecay, self).epoch_step()
+        self.step()
         self.report_lr()
 
 
