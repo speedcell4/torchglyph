@@ -1,7 +1,8 @@
 from logging import getLogger
 
 from torch.optim import Optimizer
-from torch.optim.lr_scheduler import LambdaLR
+from torch.optim.lr_scheduler import CosineAnnealingLR as _CosineAnnealingLR
+from torch.optim.lr_scheduler import LambdaLR as _LambdaLR
 
 __all__ = [
     'SchedulerMixin',
@@ -33,10 +34,10 @@ class SchedulerMixin(object):
         logger.info(f'epoch {self.epoch} | batch {self.batch} | learning rate => [{lr}]')
 
 
-class InverseDecay(LambdaLR, SchedulerMixin):
+class InverseDecay(_LambdaLR, SchedulerMixin):
     def __init__(self, gamma: float = 0.05, *, optimizer: Optimizer, **_) -> None:
         SchedulerMixin.__init__(self)
-        LambdaLR.__init__(
+        _LambdaLR.__init__(
             self, optimizer=optimizer,
             lr_lambda=lambda epoch: 1. / (1. + gamma * epoch),
         )
@@ -54,3 +55,23 @@ class InverseDecay(LambdaLR, SchedulerMixin):
 class Fixed(InverseDecay):
     def __init__(self, *, optimizer: Optimizer, **_) -> None:
         super(Fixed, self).__init__(gamma=0., optimizer=optimizer)
+
+
+class CosineAnnealingLR(_CosineAnnealingLR, SchedulerMixin):
+    def __init__(self, min_lr: float, *, optimizer: Optimizer, num_iterations: int) -> None:
+        _CosineAnnealingLR.__init__(
+            self, optimizer=optimizer,
+            T_max=num_iterations, eta_min=min_lr,
+        )
+        SchedulerMixin.__init__(self)
+
+    def extra_repr(self) -> str:
+        return ', '.join([
+            f'{self.T_max}',
+            f'{self.eta_min}',
+        ])
+
+    def epoch_step(self) -> None:
+        super(CosineAnnealingLR, self).epoch_step()
+        self.step()
+        self.report_lr()
