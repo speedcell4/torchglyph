@@ -5,7 +5,7 @@ from torch import Tensor
 from torch import nn
 from torch.nn.utils.rnn import PackedSequence
 from torch.types import Device
-from torchrua import CattedSequence
+from torchrua import CattedSequence, accumulate_sizes
 from torchrua.padding import pad_catted_indices, pad_packed_indices
 from transformers import PreTrainedTokenizer, PreTrainedModel
 
@@ -16,6 +16,7 @@ __all__ = [
     'mask_mlm_tokens', 'MaskMlmTokens',
     'mlm_catted_indices', 'mlm_packed_indices',
     'mlm_catted_sequence', 'mlm_packed_sequence', 'mlm_padded_sequence',
+    'mlm_bag_catted_indices', 'mlm_bag_catted_sequence',
 ]
 
 
@@ -142,3 +143,47 @@ def mlm_packed_sequence(sequence: PackedSequence, tokenizer: PreTrainedTokenizer
     input_ids, attention_mask, ptr = mlm_packed_indices(sequence, tokenizer=tokenizer)
     out_dict = model(input_ids=input_ids, attention_mask=attention_mask, return_dict=True)
     return out_dict.last_hidden_state[ptr]
+
+
+@torch.no_grad()
+def mlm_bag_catted_indices(index: CattedSequence, tokenizer: PreTrainedTokenizer, device: Device = None):
+    if device is None:
+        device = index.data.device
+
+    (b, t), (batch_ptr, token_ptr) = pad_catted_indices(
+        token_sizes=index.token_sizes,
+        batch_first=True, device=device,
+    )
+
+    input_ids = torch.full((b, t), fill_value=tokenizer.pad_token_id, device=device, dtype=torch.long)
+    input_ids[batch_ptr, token_ptr] = index.data
+    attention_mask = input_ids != tokenizer.pad_token_id
+
+    token_sizes = torch.zeros_like(input_ids)
+    token_sizes[batch_ptr, index.data] = 1
+    token_sizes = token_sizes.sum(dim=-1)
+
+    indices = index.data + batch_ptr * t
+    _, counts = torch.unique(indices, sorted=True, return_counts=True)
+    indices = torch.argsort(indices, dim=0, descending=False)
+    indices = (token_ptr + batch_ptr * t)[indices]
+    offsets = accumulate_sizes(sizes=counts)
+
+    return input_ids, attention_mask, indices, offsets, token_sizes
+
+
+def mlm_bag_catted_sequence(sequence: CattedSequence, index: CattedSequence, mode: int,
+                            tokenizer: PreTrainedTokenizer, model: PreTrainedModel) -> CattedSequence:
+    assert torch.equal(sequence.token_sizes, index.token_sizes), f'{sequence.token_sizes} != {index.token_sizes}'
+
+    input_ids, attention_mask, indices, offsets, token_sizes = mlm_bag_catted_indices(
+        index=index, tokenizer=tokenizer,
+        device=sequence.data.device,
+    )
+    out_dict = model(input_ids=input_ids, attention_mask=attention_mask, return_dict=True)
+
+    data, _, _, _ = torch.embedding_bag(
+        out_dict.last_hidden_state.flatten(start_dim=0, end_dim=1),
+        indices=indices, offsets=offsets, mode=mode,
+    )
+    return CattedSequence(data=data, token_sizes=token_sizes)
