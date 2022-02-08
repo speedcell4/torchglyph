@@ -3,14 +3,19 @@ from typing import Tuple
 import torch
 from torch import Tensor
 from torch import nn
+from torch.nn.utils.rnn import PackedSequence
 from torch.types import Device
-from transformers import PreTrainedTokenizer
+from torchrua import CattedSequence
+from torchrua.padding import pad_catted_indices, pad_packed_indices
+from transformers import PreTrainedTokenizer, PreTrainedModel
 
 __all__ = [
     'get_special_ids',
     'get_special_mapping',
     'get_continual_mapping',
     'mask_mlm_tokens', 'MaskMlmTokens',
+    'mlm_catted_indices', 'mlm_packed_indices',
+    'mlm_catted_sequence', 'mlm_packed_sequence', 'mlm_padded_sequence',
 ]
 
 
@@ -83,3 +88,57 @@ class MaskMlmTokens(nn.Module):
             p_mlm=self.p_mlm, p_mask=self.p_mask, p_random=self.p_random,
         )
         return mlm_inputs, mlm_targets, index
+
+
+@torch.no_grad()
+def mlm_catted_indices(sequence: CattedSequence, tokenizer: PreTrainedTokenizer, device: Device = None):
+    if device is None:
+        device = sequence.data.device
+
+    size, ptr = pad_catted_indices(
+        token_sizes=sequence.token_sizes,
+        batch_first=True, device=device,
+    )
+
+    input_ids = torch.full(size, fill_value=tokenizer.pad_token_id, device=device, dtype=torch.long)
+    input_ids[ptr] = sequence.data
+    attention_mask = input_ids != tokenizer.pad_token_id
+
+    return input_ids, attention_mask, ptr
+
+
+@torch.no_grad()
+def mlm_packed_indices(sequence: PackedSequence, tokenizer: PreTrainedTokenizer, device: Device = None):
+    if device is None:
+        device = sequence.data.device
+
+    size, ptr, _ = pad_packed_indices(
+        batch_sizes=sequence.batch_sizes,
+        sorted_indices=sequence.sorted_indices,
+        unsorted_indices=sequence.unsorted_indices,
+        batch_first=True, device=device,
+    )
+
+    input_ids = torch.full(size, fill_value=tokenizer.pad_token_id, device=device, dtype=torch.long)
+    input_ids[ptr] = sequence.data
+    attention_mask = input_ids != tokenizer.pad_token_id
+
+    return input_ids, attention_mask, ptr
+
+
+def mlm_padded_sequence(sequence: Tensor, tokenizer: PreTrainedTokenizer, model: PreTrainedModel) -> Tensor:
+    attention_mask = sequence != tokenizer.pad_token_id
+    out_dict = model(input_ids=sequence, attention_mask=attention_mask, return_dict=True)
+    return out_dict.last_hidden_state
+
+
+def mlm_catted_sequence(sequence: CattedSequence, tokenizer: PreTrainedTokenizer, model: PreTrainedModel) -> Tensor:
+    input_ids, attention_mask, ptr = mlm_catted_indices(sequence, tokenizer=tokenizer)
+    out_dict = model(input_ids=input_ids, attention_mask=attention_mask, return_dict=True)
+    return out_dict.last_hidden_state[ptr]
+
+
+def mlm_packed_sequence(sequence: PackedSequence, tokenizer: PreTrainedTokenizer, model: PreTrainedModel) -> Tensor:
+    input_ids, attention_mask, ptr = mlm_packed_indices(sequence, tokenizer=tokenizer)
+    out_dict = model(input_ids=input_ids, attention_mask=attention_mask, return_dict=True)
+    return out_dict.last_hidden_state[ptr]
