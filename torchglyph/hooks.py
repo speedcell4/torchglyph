@@ -91,17 +91,18 @@ def group_keys(keys: Set[str], args: List[Dict[str, Any]]):
     return major, list(common.items())
 
 
-def reduce_metric(metrics: List[Tuple[float]], expand: bool):
+def reduce_metric(metrics: List[Tuple[float, ...]], expand: bool):
     metrics = torch.tensor(metrics, dtype=torch.float32)
-    s, m = torch.std_mean(metrics[:, 0], unbiased=True)
-    epoch1 = round(metrics[:, 1].mean().item())
-    epoch2 = round(metrics[:, 2].mean().item())
+    *mean, epoch1, epoch2 = [round(m, 4) for m in metrics.mean(dim=0).detach().tolist()]
+    epoch1 = int(epoch1)
+    epoch2 = int(epoch2)
+    std = round(metrics[:, -3].std(unbiased=True).item(), 4)
     if expand:
-        return f'{m.item():.4f}', epoch1, epoch2
-    return f'{m.item():.4f}', f'{s.item():.2f}', len(metrics), epoch1, epoch2
+        return *mean, epoch1, epoch2
+    return *mean, std, len(metrics), epoch1, epoch2
 
 
-def summary(path: List[Path], metric: str, sort: bool = True,
+def summary(path: List[Path], metrics: Tuple[str, ...], sort: bool = True,
             common: bool = False, expand: bool = False, fmt: str = 'pretty'):
     args, sota = fetch_all(path)
 
@@ -115,29 +116,30 @@ def summary(path: List[Path], metric: str, sort: bool = True,
     if common:
         print(tabulate(tabular_data=tabular_data, headers=['key', 'value'], tablefmt=fmt))
     else:
-        if metric.startswith('dev_'):
+        if metrics[-1].startswith('dev_'):
             epoch = 'dev_epoch'
-        elif metric.startswith('test_'):
+        elif metrics[-1].startswith('test_'):
             epoch = 'test_epoch'
         else:
             epoch = 'epoch'
 
         tabular_data = {}
         for s, a in zip(sota, args):
-            if metric in s:
-                vs = tuple(a.get(key, '-') for key in keys)
-                tabular_data.setdefault(vs, []).append((s[metric], s[epoch], s['epoch']))
+            if all(m in s for m in metrics):
+                vs = tuple(a.get(k, '-') for k in keys)
+                ms = tuple(s[m] for m in metrics)
+                tabular_data.setdefault(vs, []).append((*ms, s[epoch], s['epoch']))
 
         tabular_data = [
             [*reduce_metric(metrics, expand), *vs]
             for vs, metrics in tabular_data.items()
         ]
         if sort:
-            tabular_data = list(sorted(tabular_data, key=lambda item: item[0], reverse=False))
+            tabular_data = list(sorted(tabular_data, key=lambda item: item[len(metrics) - 1], reverse=False))
 
         if expand:
-            headers = [metric, 's', 'e', *keys]
+            headers = [*metrics, 's', 'e', *keys]
         else:
-            headers = [metric, 'std', '*', 's', 'e', *keys]
+            headers = [*metrics, 'std', '*', 's', 'e', *keys]
 
         print(tabulate(tabular_data=tabular_data, headers=headers, tablefmt=fmt))
