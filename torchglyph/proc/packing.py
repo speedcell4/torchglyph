@@ -7,7 +7,7 @@ from torch.nn.utils.rnn import PackedSequence
 from torch.types import Device
 from torchrua import accumulate_sizes, pack_padded_sequence, CattedSequence, PaddedSequence
 from torchrua import pack_catted_sequence, pack_sequence
-from torchrua import reduce_catted_sequences, batch_sizes_to_ptr
+from torchrua import reduce_catted_sequences, major_sizes_to_ptr
 
 from torchglyph.proc.abc import Proc
 
@@ -80,7 +80,7 @@ class ToPackedPtrSequence(PackingProc):
         batch_sizes = data.batch_sizes.to(device=device)
         acc_batch_sizes = accumulate_sizes(sizes=batch_sizes)
 
-        _, batch_ptr, _ = batch_sizes_to_ptr(batch_sizes=batch_sizes)
+        batch_ptr, _ = major_sizes_to_ptr(batch_sizes=batch_sizes)
 
         return PackedSequence(
             data=acc_batch_sizes[data] + batch_ptr,

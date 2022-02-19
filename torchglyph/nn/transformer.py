@@ -1,8 +1,7 @@
-from typing import Optional, Type, Tuple, List
+from typing import Optional, Type, Tuple, List, Union
 
 from torch import nn, Tensor
 
-from torchglyph.nn.activation import Activations
 from torchglyph.nn.attention import MultiHeadAttention, att_mask, cas_mask
 
 __all__ = [
@@ -12,10 +11,15 @@ __all__ = [
     'Transformer',
 ]
 
+Activations = Union[
+    Type[nn.ReLU],
+    Type[nn.GELU],
+]
+
 
 class TransformerFfn(nn.Sequential):
     def __init__(self, hidden_size: int, dropout: float,
-                 activation: Activations = nn.Tanh,
+                 activation: Activations = nn.ReLU,
                  bias: bool = True, *, in_size: int) -> None:
         super(TransformerFfn, self).__init__(
             nn.Linear(in_size, hidden_size, bias=bias),

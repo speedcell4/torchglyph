@@ -5,8 +5,8 @@ from einops import rearrange
 from torch import Tensor
 from torch import nn
 from torch.nn.utils.rnn import PackedSequence
-from torchrua import PackedMeta, PackedSequential
-from torchrua import batch_sizes_to_ptr
+from torchrua import RuaMeta, RuaSequential
+from torchrua import major_sizes_to_ptr
 
 from torchglyph.nn.init import bert_normal_
 from torchglyph.vocab import Vocab
@@ -19,7 +19,7 @@ __all__ = [
 ]
 
 
-class TokenEmbedding(nn.Embedding, metaclass=PackedMeta):
+class TokenEmbedding(nn.Embedding, metaclass=RuaMeta):
     def __init__(self, embedding_dim: int, freeze: bool = False, *, vocab: Vocab = None,
                  num_embeddings: int = 0, padding_idx: int = None,
                  dtype: torch.dtype = torch.float32) -> None:
@@ -56,7 +56,7 @@ class CharLstmEmbedding(nn.Module):
                  char_embedding: TokenEmbedding, dtype: torch.dtype = torch.float32) -> None:
         super(CharLstmEmbedding, self).__init__()
 
-        self.embedding = PackedSequential(
+        self.embedding = RuaSequential(
             char_embedding,
             nn.Dropout(dropout),
         )
@@ -106,7 +106,7 @@ class PositionalEmbedding(nn.Module):
             return self.weight[:indices.size()[dim]]
 
         batch_sizes = indices.batch_sizes.to(device=indices.data.device)
-        indices, _, _ = batch_sizes_to_ptr(batch_sizes=batch_sizes)
+        indices, _ = major_sizes_to_ptr(batch_sizes=batch_sizes)
         return torch.embedding(weight=self.weight, indices=indices)
 
 
