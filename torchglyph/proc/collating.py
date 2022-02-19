@@ -1,4 +1,4 @@
-from typing import Any, List, Union, Set, Tuple
+from typing import List, Union, Set, Tuple
 
 import numpy as np
 import torch
@@ -26,19 +26,17 @@ class ToTensor(Proc):
             return f'{self.dtype}'
         return ''
 
-    def __call__(self, data: Any, **kwargs) -> Tensor:
+    def __call__(self, data: Union[Tensor, np.ndarray, List[int]], **kwargs) -> Tensor:
         try:
             if torch.is_tensor(data):
-                tensor = data.clone()
+                tensor = data
             elif isinstance(data, np.ndarray):
-                tensor = torch.from_numpy(data).clone()
+                tensor = torch.from_numpy(data)
             else:
                 tensor = torch.tensor(data)
-            return tensor.to(dtype=self.dtype).requires_grad_(False)
-        except ValueError as error:
-            if error.args[0] == "too many dimensions 'str'":
-                raise ValueError(f"'{data}' can not be converted to {Tensor.__name__}")
-            raise error
+            return tensor.clone().to(dtype=self.dtype).requires_grad_(False)
+        except ValueError:
+            raise ValueError(f"'{data}' can not be converted to {Tensor.__name__}")
 
 
 class ToDevice(Proc):

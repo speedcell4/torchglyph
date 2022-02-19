@@ -10,14 +10,14 @@ from torchglyph.proc.padding import PadSequence
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [
-    'PadNumPipe', 'PadListNumPipe',
+    'PaddedNumPipe', 'PadListNumPipe',
     'PadStrPipe', 'PadListStrPipe',
 ]
 
 
-class PadNumPipe(Pipe):
+class PaddedNumPipe(Pipe):
     def __init__(self, device: Device, dtype: torch.dtype = torch.long) -> None:
-        super(PadNumPipe, self).__init__(
+        super(PaddedNumPipe, self).__init__(
             pre=None,
             vocab=None,
             post=None,
@@ -28,7 +28,7 @@ class PadNumPipe(Pipe):
         return data.detach().cpu().tolist()
 
 
-class PadStrPipe(PadNumPipe):
+class PadStrPipe(PaddedNumPipe):
     def __init__(self, device: Device, unk_token: Optional[str] = None,
                  pad_token: str = '<pad>', special_tokens: Tuple[Optional[str], ...] = (),
                  threshold: int = 10, dtype: torch.dtype = torch.long) -> None:
