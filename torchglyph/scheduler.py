@@ -1,77 +1,88 @@
+import math
 from logging import getLogger
 
 from torch.optim import Optimizer
-from torch.optim.lr_scheduler import CosineAnnealingLR as _CosineAnnealingLR
-from torch.optim.lr_scheduler import LambdaLR as _LambdaLR
+from torch.optim.lr_scheduler import LambdaLR
 
 __all__ = [
-    'SchedulerMixin',
-    'Fixed', 'InverseDecay',
+    'ConstantScheduler',
+    'LinearScheduler',
+    'InverseSquareRootScheduler',
 ]
 
 logger = getLogger(__name__)
 
 
-class SchedulerMixin(object):
-    def __init__(self) -> None:
-        self.batch = 1
-        self.epoch = 1
+class ConstantScheduler(LambdaLR):
+    def __init__(self, num_training_steps: int, warmup_ratio: float = 0.05, *,
+                 optimizer: Optimizer, last_epoch: int = -1, **kwargs) -> None:
+        num_warmup_steps = int(math.ceil(warmup_ratio * num_training_steps))
+        logger.info(f'num_warmup_steps => {num_warmup_steps}')
 
-    def batch_step(self) -> None:
-        self.batch += 1
+        self.num_warmup_steps = num_warmup_steps
+        self.num_training_steps = num_training_steps
 
-    def epoch_step(self) -> None:
-        self.epoch += 1
+        def lr_lambda(current_step: int) -> float:
+            if current_step < num_warmup_steps:
+                return float(current_step / max(1, num_warmup_steps))
+            return 1.0
+
+        super(ConstantScheduler, self).__init__(
+            optimizer=optimizer, lr_lambda=lr_lambda, last_epoch=last_epoch,
+        )
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self.extra_repr()})'
-
-    def extra_repr(self) -> str:
-        return ''
-
-    def report_lr(self) -> None:
-        lr = ' | '.join(f'{lr:.6f}' for lr in self.get_lr())
-        logger.info(f'epoch {self.epoch} | batch {self.batch} | learning rate => [{lr}]')
-
-
-class InverseDecay(_LambdaLR, SchedulerMixin):
-    def __init__(self, gamma: float = 0.05, *, optimizer: Optimizer, **_) -> None:
-        SchedulerMixin.__init__(self)
-        _LambdaLR.__init__(
-            self, optimizer=optimizer,
-            lr_lambda=lambda epoch: 1. / (1. + gamma * epoch),
-        )
-        self.gamma = gamma
-
-    def extra_repr(self) -> str:
-        return f'gamma={self.gamma}'
-
-    def epoch_step(self) -> None:
-        super(InverseDecay, self).epoch_step()
-        self.step()
-        self.report_lr()
-
-
-class Fixed(InverseDecay):
-    def __init__(self, *, optimizer: Optimizer, **_) -> None:
-        super(Fixed, self).__init__(gamma=0., optimizer=optimizer)
-
-
-class CosineAnnealingLR(_CosineAnnealingLR, SchedulerMixin):
-    def __init__(self, min_lr: float, *, optimizer: Optimizer, num_iterations: int) -> None:
-        _CosineAnnealingLR.__init__(
-            self, optimizer=optimizer,
-            T_max=num_iterations, eta_min=min_lr,
-        )
-        SchedulerMixin.__init__(self)
-
-    def extra_repr(self) -> str:
         return ', '.join([
-            f'{self.T_max}',
-            f'{self.eta_min}',
+            f'num_warmup_steps={self.num_warmup_steps}',
+            f'num_training_steps={self.num_training_steps}',
         ])
 
-    def epoch_step(self) -> None:
-        super(CosineAnnealingLR, self).epoch_step()
-        self.step()
-        self.report_lr()
+
+class LinearScheduler(LambdaLR):
+    def __init__(self, num_training_steps: int, warmup_ratio: float = 0.05, *,
+                 optimizer: Optimizer, last_epoch: int = -1, **kwargs) -> None:
+        num_warmup_steps = int(math.ceil(warmup_ratio * num_training_steps))
+        logger.info(f'num_warmup_steps => {num_warmup_steps}')
+
+        self.num_warmup_steps = num_warmup_steps
+        self.num_training_steps = num_training_steps
+
+        def lr_lambda(current_step: int) -> float:
+            if current_step < num_warmup_steps:
+                return float(current_step / max(1, num_warmup_steps))
+            return max(0., (num_training_steps - current_step) / max(1, num_training_steps - num_warmup_steps))
+
+        super(LinearScheduler, self).__init__(
+            optimizer=optimizer, lr_lambda=lr_lambda, last_epoch=last_epoch,
+        )
+
+    def __repr__(self) -> str:
+        return ', '.join([
+            f'num_warmup_steps={self.num_warmup_steps}',
+            f'num_training_steps={self.num_training_steps}',
+        ])
+
+
+class InverseSquareRootScheduler(LambdaLR):
+    def __init__(self, num_training_steps: int, warmup_ratio: float = 0.05, *,
+                 optimizer: Optimizer, last_epoch: int = -1, **kwargs) -> None:
+        num_warmup_steps = int(math.ceil(warmup_ratio * num_training_steps))
+        logger.info(f'num_warmup_steps => {num_warmup_steps}')
+
+        self.num_warmup_steps = num_warmup_steps
+        self.num_training_steps = num_training_steps
+
+        def lr_lambda(current_step: int) -> float:
+            if current_step < num_warmup_steps:
+                return float(current_step / max(1, num_warmup_steps))
+            return max(0., (num_warmup_steps / current_step) ** 0.5)
+
+        super(InverseSquareRootScheduler, self).__init__(
+            optimizer=optimizer, lr_lambda=lr_lambda, last_epoch=last_epoch,
+        )
+
+    def __repr__(self) -> str:
+        return ', '.join([
+            f'num_warmup_steps={self.num_warmup_steps}',
+            f'num_training_steps={self.num_training_steps}',
+        ])
