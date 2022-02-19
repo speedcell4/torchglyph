@@ -9,14 +9,14 @@ from tqdm import tqdm
 from torchglyph import data_dir
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.formats.conll import iter_sentence
-from torchglyph.pipe.packing import PackListStrPipe, PackListListStrPipe
+from torchglyph.pipe.packing import PackedStrListPipe, PackedStrListListPipe
 
 __all__ = [
     'CoNLL2003',
 ]
 
 
-class WordPipe(PackListStrPipe):
+class WordPipe(PackedStrListPipe):
     def __init__(self, device: Device) -> None:
         super(WordPipe, self).__init__(
             device=device, dtype=torch.long,
@@ -24,7 +24,7 @@ class WordPipe(PackListStrPipe):
         )
 
 
-class CharPipe(PackListListStrPipe):
+class CharPipe(PackedStrListListPipe):
     def __init__(self, device: Device) -> None:
         super(CharPipe, self).__init__(
             device=device, dtype=torch.long,
@@ -32,7 +32,7 @@ class CharPipe(PackListListStrPipe):
         )
 
 
-class TagPipe(PackListStrPipe):
+class TagPipe(PackedStrListPipe):
     def __init__(self, device: Device) -> None:
         super(TagPipe, self).__init__(
             device=device, dtype=torch.long,
