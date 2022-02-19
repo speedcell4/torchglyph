@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, List
+from typing import Tuple, List
 
 import torch
 from torch import Tensor
@@ -10,8 +10,8 @@ from torchglyph.proc.padding import PadSequence
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [
-    'PaddedNumPipe', 'PadListNumPipe',
-    'PadStrPipe', 'PadListStrPipe',
+    'PaddedNumPipe', 'PaddedNumListPipe',
+    'PaddedStrPipe', 'PaddedStrListPipe',
 ]
 
 
@@ -28,11 +28,11 @@ class PaddedNumPipe(Pipe):
         return data.detach().cpu().tolist()
 
 
-class PadStrPipe(PaddedNumPipe):
-    def __init__(self, device: Device, unk_token: Optional[str] = None,
-                 pad_token: str = '<pad>', special_tokens: Tuple[Optional[str], ...] = (),
-                 threshold: int = 10, dtype: torch.dtype = torch.long) -> None:
-        super(PadStrPipe, self).__init__(device=device, dtype=dtype)
+class PaddedStrPipe(PaddedNumPipe):
+    def __init__(self, device: Device, dtype: torch.dtype = torch.long,
+                 unk_token: str = '<unk>', pad_token: str = '<pad>',
+                 special_tokens: Tuple[str, ...] = (), threshold: int = 10) -> None:
+        super(PaddedStrPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=UpdateCounter(),
             vocab=[
@@ -46,14 +46,14 @@ class PadStrPipe(PaddedNumPipe):
     def inv(self, data: Tensor) -> List[str]:
         return [
             self.vocab.inv(index)
-            for index in super(PadStrPipe, self).inv(data=data)
+            for index in super(PaddedStrPipe, self).inv(data=data)
         ]
 
 
-class PadListNumPipe(Pipe):
-    def __init__(self, batch_first: bool, padding_value: Number,
-                 device: Device, dtype: torch.dtype = torch.long) -> None:
-        super(PadListNumPipe, self).__init__(
+class PaddedNumListPipe(Pipe):
+    def __init__(self, device: Device, dtype: torch.dtype = torch.long,
+                 batch_first: bool = True, padding_value: Number = 0) -> None:
+        super(PaddedNumListPipe, self).__init__(
             post=ToTensor(dtype=dtype),
             batch=PadSequence(batch_first=batch_first, padding_value=padding_value, device=device),
         )
@@ -68,12 +68,11 @@ class PadListNumPipe(Pipe):
         ]
 
 
-class PadListStrPipe(PadListNumPipe):
-    def __init__(self, batch_first: bool, device: Device,
-                 unk_token: Optional[str], pad_token: str = '<pad>',
-                 special_tokens: Tuple[Optional[str], ...] = (),
-                 threshold: int = 10, dtype: torch.dtype = torch.long) -> None:
-        super(PadListStrPipe, self).__init__(
+class PaddedStrListPipe(PaddedNumListPipe):
+    def __init__(self, device: Device, dtype: torch.dtype = torch.long, batch_first: bool = True,
+                 unk_token: str = '<unk>', pad_token: str = '<pad>',
+                 special_tokens: Tuple[str, ...] = (), threshold: int = 10) -> None:
+        super(PaddedStrListPipe, self).__init__(
             batch_first=batch_first,
             padding_value=0,  # TODO: fix padding_value
             device=device, dtype=dtype,
@@ -93,5 +92,5 @@ class PadListStrPipe(PadListNumPipe):
 
         return [
             [self.vocab.inv(index) for index in indices]
-            for indices in super(PadListStrPipe, self).inv(data=data, token_sizes=token_sizes)
+            for indices in super(PaddedStrListPipe, self).inv(data=data, token_sizes=token_sizes)
         ]
