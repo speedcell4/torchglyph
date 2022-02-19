@@ -2,15 +2,30 @@ import math
 from logging import getLogger
 
 from torch.optim import Optimizer
-from torch.optim.lr_scheduler import LambdaLR
+from torch.optim.lr_scheduler import LambdaLR as _LambdaLR
 
 __all__ = [
+    'LambdaLR',
     'ConstantScheduler',
     'LinearScheduler',
     'InverseSquareRootScheduler',
 ]
 
 logger = getLogger(__name__)
+
+
+class LambdaLR(_LambdaLR):
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.extra_repr()})'
+
+    def extra_repr(self) -> str:
+        return ''
+
+    def step(self, epoch: int = None) -> None:
+        super(LambdaLR, self).step(epoch=epoch)
+
+        for group, lr in enumerate(self.get_last_lr()):
+            logger.info(f'step {self._step_count} | group {group} | lr => {lr:.10f}')
 
 
 class ConstantScheduler(LambdaLR):
@@ -29,9 +44,10 @@ class ConstantScheduler(LambdaLR):
 
         super(ConstantScheduler, self).__init__(
             optimizer=optimizer, lr_lambda=lr_lambda, last_epoch=last_epoch,
+
         )
 
-    def __repr__(self) -> str:
+    def extra_repr(self) -> str:
         return ', '.join([
             f'num_warmup_steps={self.num_warmup_steps}',
             f'num_training_steps={self.num_training_steps}',
@@ -56,7 +72,7 @@ class LinearScheduler(LambdaLR):
             optimizer=optimizer, lr_lambda=lr_lambda, last_epoch=last_epoch,
         )
 
-    def __repr__(self) -> str:
+    def extra_repr(self) -> str:
         return ', '.join([
             f'num_warmup_steps={self.num_warmup_steps}',
             f'num_training_steps={self.num_training_steps}',
@@ -81,7 +97,7 @@ class InverseSquareRootScheduler(LambdaLR):
             optimizer=optimizer, lr_lambda=lr_lambda, last_epoch=last_epoch,
         )
 
-    def __repr__(self) -> str:
+    def extra_repr(self) -> str:
         return ', '.join([
             f'num_warmup_steps={self.num_warmup_steps}',
             f'num_training_steps={self.num_training_steps}',
