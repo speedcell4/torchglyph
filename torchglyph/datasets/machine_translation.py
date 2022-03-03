@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from torchglyph import data_dir
 from torchglyph.dataset import Dataset, DataLoader
-from torchglyph.pipe import PadListStrPipe
+from torchglyph.pipe import PaddedStrListPipe
 
 __all__ = [
     'MachineTranslation',
@@ -17,7 +17,7 @@ __all__ = [
 ]
 
 
-class WordPipe(PadListStrPipe):
+class WordPipe(PaddedStrListPipe):
     def __init__(self, device: Device) -> None:
         super(WordPipe, self).__init__(
             batch_first=True, device=device,

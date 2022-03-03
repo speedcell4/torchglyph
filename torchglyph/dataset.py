@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from torchglyph.io import DownloadMixin
 from torchglyph.pipe import Pipe
-from torchglyph.sampler import SizedBatchSampler
+from torchglyph.sampler import BatchSampler
 
 __all__ = [
     'Dataset',
@@ -130,7 +130,7 @@ class DataLoader(TorchDataLoader):
             else:
                 sampler = SequentialSampler(dataset)
 
-            batch_sampler = SizedBatchSampler(
+            batch_sampler = BatchSampler(
                 dataset=dataset, sampler=sampler, batch_size=batch_size,
                 drop_last=index == 0 and drop_last,
             )

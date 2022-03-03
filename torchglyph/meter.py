@@ -41,11 +41,20 @@ class Meter(object, metaclass=ABCMeta):
     def __eq__(self, other: 'Meter') -> bool:
         return self.merit == other.merit
 
-    def __le__(self, other: 'Meter') -> bool:
+    def __lt__(self, other: 'Meter') -> bool:
         return self.merit < other.merit
 
     def __gt__(self, other: 'Meter') -> bool:
         return self.merit > other.merit
+
+    def __ne__(self, other: 'Meter') -> bool:
+        return self.merit != other.merit
+
+    def __le__(self, other: 'Meter') -> bool:
+        return self.merit <= other.merit
+
+    def __ge__(self, other: 'Meter') -> bool:
+        return self.merit >= other.merit
 
     def __add__(self, other: 'Meter') -> 'Meter':
         raise NotImplementedError
@@ -54,7 +63,7 @@ class Meter(object, metaclass=ABCMeta):
         raise NotImplementedError
 
     def flush(self, prefix: str, reset_buffers: bool = True) -> None:
-        for key, value in self.state_dict(prefix=prefix, destination=None):
+        for key, value in self.state_dict(prefix=prefix, destination=None).items():
             logger.info(f'{key} => {value}')
 
         if reset_buffers:

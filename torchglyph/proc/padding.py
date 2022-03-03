@@ -37,10 +37,11 @@ class PaddingProc(Proc, metaclass=ABCMeta):
 
 class PadSequence(PaddingProc):
     def __call__(self, data: List[Tensor], **kwargs) -> Tensor:
-        return pad_sequence(
+        sequence, _ = pad_sequence(
             sequences=data, batch_first=self.batch_first,
             padding_value=self.padding_value, device=self.device,
         )
+        return sequence
 
 
 class PadPackedSequence(PaddingProc):
@@ -54,8 +55,8 @@ class PadPackedSequence(PaddingProc):
 
 class PadCattedSequence(PaddingProc):
     def __call__(self, data: CattedSequence, **kwargs) -> Tensor:
-        data, token_sizes = data
-        return pad_catted_sequence(
-            sequence=data, token_sizes=token_sizes, batch_first=self.batch_first,
+        sequence, _ = pad_catted_sequence(
+            sequence=data, batch_first=self.batch_first,
             padding_value=self.padding_value, device=self.device,
         )
+        return sequence

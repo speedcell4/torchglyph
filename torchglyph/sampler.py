@@ -1,42 +1,44 @@
 from typing import List, Iterator
 
-from torch.utils.data import BatchSampler, Sampler
+from torch.utils.data import BatchSampler as _BatchSampler, Sampler
 
 __all__ = [
-    'SizedBatchSampler',
+    'BatchSampler',
 ]
 
 
-class SizedBatchSampler(BatchSampler):
+class BatchSampler(_BatchSampler):
     def __init__(self, dataset, sampler: Sampler[int], batch_size: int, drop_last: bool) -> None:
-        super(SizedBatchSampler, self).__init__(sampler, batch_size, drop_last)
+        super(BatchSampler, self).__init__(sampler, batch_size, drop_last)
 
         self.dataset = dataset
-
         self.reset_indices()
 
     def reset_indices(self) -> None:
-        self.indices, batch, batch_size = [], [], 0
+        self.batch_indices = []
 
+        batch_size = 0
+        batch_indices = []
         for index in self.sampler:
             data_size = self.dataset.get_size(self.dataset[index])
-            batch.append(index)
+
+            if (data_size + batch_size) > self.batch_size:
+                if batch_size > 0:
+                    self.batch_indices.append(batch_indices)
+                    batch_size = 0
+                    batch_indices = []
+                else:
+                    continue
+
+            batch_indices.append(index)
             batch_size += data_size
 
-            if batch_size >= self.batch_size:
-                self.indices.append(batch)
-                batch, batch_size = [], 0
-
         if not self.drop_last and batch_size > 0:
-            self.indices.append(batch)
-
-    def __iter__(self) -> Iterator[List[int]]:
-        yield from self.indices
-        self.reset_indices()
+            self.batch_indices.append(batch_indices)
 
     def __len__(self) -> int:
-        num_batches = len(self.indices)
+        return len(self.batch_indices)
 
-        if not self.drop_last:
-            num_batches += self.batch_size - 1
-        return num_batches // self.batch_size
+    def __iter__(self) -> Iterator[List[int]]:
+        yield from self.batch_indices
+        self.reset_indices()
