@@ -7,7 +7,7 @@ from torch.nn.utils.rnn import PackedSequence
 from torch.types import Device
 from torchrua import accumulate_sizes, pack_padded_sequence, CattedSequence, PaddedSequence
 from torchrua import pack_catted_sequence, pack_sequence
-from torchrua import reduce_catted_sequences, major_sizes_to_ptr
+from torchrua import compose_catted_sequences, major_sizes_to_ptr
 
 from torchglyph.proc.abc import Proc
 
@@ -17,7 +17,7 @@ __all__ = [
     'PackCattedSequence',
     'PackPaddedSequence',
     'ToPackedPtrSequence',
-    'ReduceCattedSequences',
+    'ComposeCattedSequences',
 ]
 
 
@@ -90,6 +90,6 @@ class ToPackedPtrSequence(PackingProc):
         )
 
 
-class ReduceCattedSequences(PackingProc):
+class ComposeCattedSequences(PackingProc):
     def __call__(self, data: List[CattedSequence], **kwargs) -> PackedSequence:
-        return reduce_catted_sequences(sequences=data, device=self.device)
+        return compose_catted_sequences(sequences=data, device=self.device)
