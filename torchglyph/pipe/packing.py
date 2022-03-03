@@ -10,7 +10,7 @@ from torchglyph.proc.abc import Lift
 from torchglyph.proc.basic import ToList
 from torchglyph.proc.catting import CatSequence
 from torchglyph.proc.collating import ToTensor
-from torchglyph.proc.packing import PackSequence, ReduceCattedSequences
+from torchglyph.proc.packing import PackSequence, ComposeCattedSequences
 from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
 
 __all__ = [
@@ -68,7 +68,7 @@ class PackedNumListListPipe(Pipe):
             pre=None,
             vocab=None,
             post=Lift(ToTensor(dtype=dtype)) + CatSequence(device=None),
-            batch=ReduceCattedSequences(device=device),
+            batch=ComposeCattedSequences(device=device),
         )
 
 
