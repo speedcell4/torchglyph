@@ -102,7 +102,7 @@ def reduce_metric(metrics: List[Tuple[float, ...]], expand: bool):
     return *mean, std, len(metrics), epoch1, epoch2
 
 
-def summary(path: List[Path], metrics: Tuple[str, ...], sort: bool = True,
+def summary(path: List[Path], metrics: Tuple[str, ...], sort: Tuple[str, ...] = (),
             common: bool = False, expand: bool = False, fmt: str = 'pretty'):
     args, sota = fetch_all(path)
 
@@ -134,12 +134,15 @@ def summary(path: List[Path], metrics: Tuple[str, ...], sort: bool = True,
             [*reduce_metric(metrics, expand), *vs]
             for vs, metrics in tabular_data.items()
         ]
-        if sort:
-            tabular_data = list(sorted(tabular_data, key=lambda item: item[len(metrics) - 1], reverse=False))
 
         if expand:
             headers = [*metrics, 's', 'e', *keys]
         else:
             headers = [*metrics, 'std', '*', 's', 'e', *keys]
 
+        if len(sort) == 0:
+            sort = metrics[::-1]
+
+        indices = [headers.index(x) for x in sort]
+        tabular_data = list(sorted(tabular_data, key=lambda item: [item[index] for index in indices]))
         print(tabulate(tabular_data=tabular_data, headers=headers, tablefmt=fmt))
