@@ -55,7 +55,7 @@ class LinearBatchSampler(BatchSampler):
             batch.append(index)
             batch_size += self.sizes[index]
 
-        if not self.drop_last and batch_size > 0:
+        if not self.drop_last and len(batch) > 0:
             yield batch
 
 
@@ -74,14 +74,13 @@ class QuadraticBatchSampler(BatchSampler):
         batch, batch_size, max_size = [], 0, 0
 
         for index in self.sampler:
-            if self.sizes[index] + batch_size > self.batch_size:
-                if len(batch) * (max_size ** 2) > self.attention_size:
-                    yield batch
-                    batch, batch_size, max_size = [], 0, 0
+            if self.sizes[index] + batch_size > self.batch_size or len(batch) * (max_size ** 2) > self.attention_size:
+                yield batch
+                batch, batch_size, max_size = [], 0, 0
 
             batch.append(index)
             batch_size += self.sizes[index]
             max_size = max(max_size, self.sizes[index])
 
-        if not self.drop_last and batch_size > 0:
+        if not self.drop_last and len(batch) > 0:
             yield batch
