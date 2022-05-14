@@ -1,4 +1,5 @@
 import itertools
+from abc import ABCMeta
 from collections import namedtuple, OrderedDict
 from pathlib import Path
 from typing import Iterable, Any, Type
@@ -6,20 +7,39 @@ from typing import Union, List, Tuple, NamedTuple, Dict
 
 from torch.distributions.utils import lazy_property
 from torch.utils.data import DataLoader as TorchDataLoader, SequentialSampler, RandomSampler
-from torch.utils.data import Dataset as TorchDataset
+from torch.utils.data import Dataset as DatasetBase
 from tqdm import tqdm
 
 from torchglyph.io import DownloadMixin
 from torchglyph.pipe import Pipe
-from torchglyph.sampler import BatchSampler
+from torchglyph.sampler import LinearBatchSampler
 
 __all__ = [
+    'DatasetABC',
     'Dataset',
     'DataLoader',
 ]
 
 
-class Dataset(TorchDataset, DownloadMixin):
+class DatasetABC(DatasetBase, metaclass=ABCMeta):
+    def __len__(self) -> int:
+        raise NotImplementedError
+
+    def __getitem__(self, index: int) -> Any:
+        raise NotImplementedError
+
+    def size_by_item(self, item: Any) -> int:
+        raise NotImplementedError
+
+    def size_by_index(self, index: int) -> int:
+        raise NotImplementedError
+
+    @lazy_property
+    def sizes(self) -> List[int]:
+        return [self.size_by_index(index=index) for index in range(len(self))]
+
+
+class Dataset(DatasetABC, DownloadMixin):
     def __init__(self, pipes: List[Dict[str, Pipe]], **kwargs) -> None:
         super(Dataset, self).__init__()
 
@@ -35,9 +55,6 @@ class Dataset(TorchDataset, DownloadMixin):
         for datum, ps in zip(zip(*self.load(**kwargs)), pipes):
             for name, pipe in ps.items():
                 self.data.setdefault(name, []).extend(datum)
-
-    def get_size(self, item: Any) -> int:
-        raise NotImplementedError
 
     def __getitem__(self, index: int) -> Dict[str, Any]:
         return {name: self.data[name][index] for name in self.names}
@@ -130,7 +147,7 @@ class DataLoader(TorchDataLoader):
             else:
                 sampler = SequentialSampler(dataset)
 
-            batch_sampler = BatchSampler(
+            batch_sampler = LinearBatchSampler(
                 dataset=dataset, sampler=sampler, batch_size=batch_size,
                 drop_last=index == 0 and drop_last,
             )
