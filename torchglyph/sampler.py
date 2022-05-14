@@ -1,13 +1,40 @@
-from typing import List, Iterator
+from typing import Iterator
+from typing import List
 
-from torch.utils.data import BatchSampler as _BatchSampler, Sampler
+import torch
+from torch.utils.data import BatchSampler as TorchBatchSampler, Sampler
+
+from torchglyph.dataset import DatasetABC
 
 __all__ = [
     'BatchSampler',
 ]
 
 
-class BatchSampler(_BatchSampler):
+class SortishSampler(Sampler[int]):
+    def __init__(self, data_source: DatasetABC, chunk_size: int) -> None:
+        super(SortishSampler, self).__init__(data_source=data_source)
+
+        self.chunk_size = chunk_size
+        self.sizes = data_source.sizes
+
+    def __len__(self) -> int:
+        return len(self.sizes)
+
+    def __iter__(self) -> Iterator[int]:
+        sizes = torch.tensor(self.sizes, dtype=torch.long, device=torch.device('cpu'))
+        permutation = torch.randperm(len(self.sizes), dtype=torch.long, device=torch.device('cpu'))
+
+        chunks = [
+            permutation[index:index + self.chunk_size]
+            for index in range(0, len(self.sizes), self.chunk_size)
+        ]
+        for k, chunk in enumerate(chunks):
+            indices = torch.argsort(sizes[chunk], dim=0, descending=k % 2 == 1)
+            yield from chunk[indices].detach().tolist()
+
+
+class BatchSampler(TorchBatchSampler):
     def __init__(self, dataset, sampler: Sampler[int], batch_size: int, drop_last: bool) -> None:
         super(BatchSampler, self).__init__(sampler, batch_size, drop_last)
 
