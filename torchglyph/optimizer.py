@@ -7,6 +7,12 @@ __all__ = [
 ]
 
 
+def requires_grad(module: nn.Module) -> Iterable[nn.Parameter]:
+    for param in module.parameters():
+        if param.requires_grad:
+            yield param
+
+
 class SGD(optim.SGD):
     def __init__(self, lr: float = 1e-3, momentum: float = 0.9, dampening: float = 0.0,
                  weight_decay: float = 1e-8, nesterov: bool = False, *,
