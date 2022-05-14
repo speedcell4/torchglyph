@@ -6,7 +6,7 @@ from torch.utils.data import BatchSampler, Sampler
 
 __all__ = [
     'SortishSampler',
-    'SizedBatchSampler',
+    'LinearBatchSampler',
     'QuadraticBatchSampler',
 ]
 
@@ -34,10 +34,10 @@ class SortishSampler(Sampler[int]):
             yield from chunk[indices].detach().tolist()
 
 
-class SizedBatchSampler(BatchSampler):
+class LinearBatchSampler(BatchSampler):
     def __init__(self, data_source, sampler: Sampler[int],
                  batch_size: int, drop_last: bool) -> None:
-        super(SizedBatchSampler, self).__init__(sampler=sampler, batch_size=batch_size, drop_last=drop_last)
+        super(LinearBatchSampler, self).__init__(sampler=sampler, batch_size=batch_size, drop_last=drop_last)
 
         self.sizes = data_source.sizes
 
