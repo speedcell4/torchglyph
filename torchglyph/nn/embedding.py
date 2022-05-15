@@ -5,7 +5,7 @@ from einops import rearrange
 from torch import Tensor
 from torch import nn
 from torch.nn.utils.rnn import PackedSequence
-from torchrua import RuaMeta, RuaSequential
+from torchrua import RuaMeta, RuaSequential, CattedSequence
 from torchrua import major_sizes_to_ptr
 
 from torchglyph.nn.init import bert_normal_
@@ -79,14 +79,23 @@ class CharLstmEmbedding(nn.Module):
 
 
 class PositionalEmbedding(nn.Module):
-    def __init__(self, embedding_dim: int, num_embeddings: int = 1024, freeze: bool = False, *,
-                 dtype: torch.dtype = torch.float32) -> None:
+    def __init__(self, num_embeddings: int, embedding_dim: int,
+                 freeze: bool = False, *, dtype: torch.dtype = torch.float32) -> None:
         super(PositionalEmbedding, self).__init__()
 
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
 
-        self.weight = nn.Parameter(self.obtain_parameters(dtype=dtype), requires_grad=not freeze)
+        self.weight = nn.Parameter(
+            torch.empty((self.num_embeddings, self.embedding_dim), dtype=dtype),
+            requires_grad=not freeze,
+        )
+
+        self.reset_parameters()
+
+    @torch.no_grad()
+    def reset_parameters(self) -> Tensor:
+        return bert_normal_(self.weight)
 
     def extra_repr(self) -> str:
         args = [
@@ -97,33 +106,25 @@ class PositionalEmbedding(nn.Module):
             args.append('frozen')
         return ', '.join(args)
 
-    @torch.no_grad()
-    def obtain_parameters(self, dtype: torch.dtype, **kwargs) -> Tensor:
-        return bert_normal_(torch.empty((self.num_embeddings, self.embedding_dim), dtype=dtype))
+    def forward(self, sequence: Union[CattedSequence, PackedSequence]) -> Union[CattedSequence, PackedSequence]:
+        if isinstance(sequence, CattedSequence):
+            token_sizes = sequence.token_sizes.to(device=sequence.data.device)
+            _, sequence = major_sizes_to_ptr(sizes=token_sizes)
+        elif isinstance(sequence, PackedSequence):
+            batch_sizes = sequence.batch_sizes.to(device=sequence.data.device)
+            sequence, _ = major_sizes_to_ptr(sizes=batch_sizes)
+        else:
+            TypeError(f'{type(sequence)} is not supported')
 
-    def forward(self, indices: Union[Tensor, PackedSequence], dim: int = -2) -> Union[Tensor, PackedSequence]:
-        if torch.is_tensor(indices):
-            return self.weight[:indices.size()[dim]]
-
-        batch_sizes = indices.batch_sizes.to(device=indices.data.device)
-        indices, _ = major_sizes_to_ptr(batch_sizes=batch_sizes)
-        return torch.embedding(weight=self.weight, indices=indices)
+        return sequence._replace(data=torch.embedding(weight=self.weight, indices=sequence))
 
 
 class TriangularEmbedding(PositionalEmbedding):
-    def __init__(self, embedding_dim: int, num_embeddings: int = 1024, freeze: bool = True, *,
-                 dtype: torch.dtype = torch.float32) -> None:
-        super(TriangularEmbedding, self).__init__(
-            embedding_dim=embedding_dim,
-            num_embeddings=num_embeddings,
-            freeze=freeze, dtype=dtype,
-        )
-
     @torch.no_grad()
-    def obtain_parameters(self, dtype: torch.dtype, **kwargs) -> Tensor:
-        token = torch.arange(self.num_embeddings, dtype=dtype)
-        feature = torch.arange(self.embedding_dim // 2, dtype=dtype) * 2
+    def reset_parameters(self) -> None:
+        tok = torch.arange(self.num_embeddings, dtype=self.weight.dtype)
+        vec = torch.arange(self.embedding_dim >> 1, dtype=self.weight.dtype) << 1
 
-        position = token[:, None] / (10000. ** (feature[None, :] / self.embedding_dim))
+        position = tok[:, None] / (10000. ** (vec[None, :] / self.embedding_dim))
         embedding = torch.stack([torch.sin(position), torch.cos(position)], dim=-1)
-        return torch.flatten(embedding, start_dim=-2)
+        self.weight.data = torch.flatten(embedding, start_dim=-2)
