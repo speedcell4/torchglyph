@@ -20,14 +20,14 @@ class LSTM(nn.Module):
         self.bidirectional = bidirectional
 
         self.weight_ih = nn.Parameter(torch.empty((num_conjugates, hidden_size * 4, input_size)))
-        self.weight_hh = nn.Parameter(torch.empty((num_conjugates, hidden_size * 4, input_size)))
+        self.weight_hh = nn.Parameter(torch.empty((num_conjugates, hidden_size * 4, hidden_size)))
         if bias:
             self.bias_ih = nn.Parameter(torch.empty((num_conjugates, hidden_size * 4)))
             self.bias_hh = nn.Parameter(torch.empty((num_conjugates, hidden_size * 4)))
 
         if bidirectional:
             self.weight_ih_reverse = nn.Parameter(torch.empty((num_conjugates, hidden_size * 4, input_size)))
-            self.weight_hh_reverse = nn.Parameter(torch.empty((num_conjugates, hidden_size * 4, input_size)))
+            self.weight_hh_reverse = nn.Parameter(torch.empty((num_conjugates, hidden_size * 4, hidden_size)))
             if bias:
                 self.bias_ih_reverse = nn.Parameter(torch.empty((num_conjugates, hidden_size * 4)))
                 self.bias_hh_reverse = nn.Parameter(torch.empty((num_conjugates, hidden_size * 4)))
@@ -54,22 +54,20 @@ class LSTM(nn.Module):
             dtype=sequence.data.dtype, device=sequence.data.device, requires_grad=False,
         )
 
-    def forward_unary(self, sequence: PackedSequence, hx, weight_ih, weight_hh, bias):
+    def forward_unary(self, sequence: PackedSequence, weight_ih, weight_hh, bias):
         xs = (weight_ih @ sequence.data[..., None]).flatten(start_dim=-2)
         if bias is not None:
             xs = xs + bias
 
-        if hx is not None:
-            hs, cs = [hx[0]], [hx[1]]
-        else:
-            hs = cs = [self.prepare_init(sequence)]
+        hs = [self.prepare_init(sequence)]
+        cs = [self.prepare_init(sequence)]
 
         start, end = 0, 0
         for batch_size in sequence.batch_sizes.detach().cpu().tolist():
             start, end = end, end + batch_size
 
             gates = xs[start:end] + (weight_hh @ hs[-1][:batch_size, ..., None]).flatten(start_dim=-2)
-            i, f, g, o = gates.chunks(4, dim=-1)
+            i, f, g, o = gates.chunk(4, dim=-1)
 
             c = torch.sigmoid(i) * torch.tanh(g) + torch.sigmoid(f) * cs[-1][:batch_size]
             h = torch.sigmoid(o) * torch.tanh(c)
@@ -82,10 +80,10 @@ class LSTM(nn.Module):
     def forward(self, sequence: PackedSequence, hx: Tuple[Tensor, Tensor] = None) -> PackedSequence:
         if not self.bidirectional:
             data = self.forward_unary(
-                sequence=sequence, hx=hx,
+                sequence=sequence,
                 weight_ih=self.weight_ih,
                 weight_hh=self.weight_hh,
-                bias=self.bias_ih + self.bias_hh,
+                bias=(self.bias_ih + self.bias_hh) if self.bias else None,
             )
 
             return sequence._replace(data=data)
@@ -96,10 +94,13 @@ class LSTM(nn.Module):
             )
 
             data = self.forward_unary(
-                sequence=sequence._replace(data=torch.cat([sequence.data, sequence.data[indices]], dim=1)), hx=hx,
+                sequence=sequence._replace(data=torch.cat([sequence.data, sequence.data[indices]], dim=1)),
                 weight_ih=torch.cat([self.weight_ih, self.weight_ih_reverse], dim=0),
                 weight_hh=torch.cat([self.weight_hh, self.weight_hh_reverse], dim=0),
-                bias=torch.cat([self.bias_ih + self.bias_hh, self.bias_ih_reverse + self.bias_hh_reverse], dim=0),
+                bias=torch.cat([
+                    self.bias_ih + self.bias_hh,
+                    self.bias_ih_reverse + self.bias_hh_reverse,
+                ], dim=0) if self.bias else None,
             )
 
             data1, data2 = data.chunk(2, dim=1)
