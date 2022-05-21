@@ -1,7 +1,7 @@
 import torch
 from torch import Tensor
 from torch import nn
-from torch.nn.init import uniform_
+from torch.nn.init import uniform_, normal_, constant_
 
 from torchglyph.nn.init import kaiming_uniform_
 
@@ -28,7 +28,7 @@ class Linear(nn.Module):
         kaiming_uniform_(self.weight, fan=self.in_features, a=5 ** 0.5)
         if self.bias is not None:
             bound = self.in_features ** -0.5
-            uniform_(self.bias, -bound, bound)
+            uniform_(self.bias, -bound, +bound)
 
     def extra_repr(self) -> str:
         return ', '.join([
@@ -43,3 +43,11 @@ class Linear(nn.Module):
         if self.bias is not None:
             out = out + self.bias
         return out
+
+
+class TransformerLinear(Linear):
+    @torch.no_grad()
+    def reset_parameters(self) -> None:
+        normal_(self.weight, mean=0, std=0.05)
+        if self.bias is not None:
+            constant_(self.bias, 0.)
