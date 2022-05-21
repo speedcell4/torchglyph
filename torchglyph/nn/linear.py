@@ -3,6 +3,7 @@ from torch import Tensor
 from torch import nn
 from torch.nn.init import uniform_, normal_, constant_
 
+from torchglyph.functional import conjugated_linear
 from torchglyph.nn.init import kaiming_uniform_
 
 
@@ -39,10 +40,7 @@ class Linear(nn.Module):
         ])
 
     def forward(self, tensor: Tensor) -> Tensor:
-        out = (self.weight @ tensor[..., None]).flatten(start_dim=-2)
-        if self.bias is not None:
-            out = out + self.bias
-        return out
+        return conjugated_linear(tensor, weight=self.weight, bias=self.bias)
 
 
 class TransformerLinear(Linear):

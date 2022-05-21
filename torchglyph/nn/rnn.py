@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import List
 
 import torch
 from torch import Tensor
@@ -6,6 +6,8 @@ from torch import nn
 from torch.nn import init
 from torch.nn.utils.rnn import PackedSequence
 from torchrua import reverse_packed_indices
+
+from torchglyph.functional import conjugated_linear
 
 
 class LSTM(nn.Module):
@@ -55,18 +57,16 @@ class LSTM(nn.Module):
         )
 
     def forward_unary(self, sequence: PackedSequence, weight_ih, weight_hh, bias):
-        xs = (weight_ih @ sequence.data[..., None]).flatten(start_dim=-2)
-        if bias is not None:
-            xs = xs + bias
+        xs = conjugated_linear(sequence.data, weight=weight_ih, bias=bias)
 
-        hs = [self.prepare_init(sequence)]
-        cs = [self.prepare_init(sequence)]
+        hs: List[Tensor] = [self.prepare_init(sequence)]
+        cs: List[Tensor] = [self.prepare_init(sequence)]
 
         start, end = 0, 0
         for batch_size in sequence.batch_sizes.detach().cpu().tolist():
             start, end = end, end + batch_size
 
-            gates = xs[start:end] + (weight_hh @ hs[-1][:batch_size, ..., None]).flatten(start_dim=-2)
+            gates = conjugated_linear(hs[-1][:batch_size], weight=weight_hh, bias=xs[start:end])
             i, f, g, o = gates.chunk(4, dim=-1)
 
             c = torch.sigmoid(i) * torch.tanh(g) + torch.sigmoid(f) * cs[-1][:batch_size]
@@ -77,7 +77,7 @@ class LSTM(nn.Module):
 
         return torch.cat(hs[1:], dim=0)
 
-    def forward(self, sequence: PackedSequence, hx: Tuple[Tensor, Tensor] = None) -> PackedSequence:
+    def forward(self, sequence: PackedSequence) -> PackedSequence:
         if not self.bidirectional:
             data = self.forward_unary(
                 sequence=sequence,
@@ -97,10 +97,8 @@ class LSTM(nn.Module):
                 sequence=sequence._replace(data=torch.cat([sequence.data, sequence.data[indices]], dim=1)),
                 weight_ih=torch.cat([self.weight_ih, self.weight_ih_reverse], dim=0),
                 weight_hh=torch.cat([self.weight_hh, self.weight_hh_reverse], dim=0),
-                bias=torch.cat([
-                    self.bias_ih + self.bias_hh,
-                    self.bias_ih_reverse + self.bias_hh_reverse,
-                ], dim=0) if self.bias else None,
+                bias=torch.cat([self.bias_ih + self.bias_hh, self.bias_ih_reverse + self.bias_hh_reverse], dim=0)
+                if self.bias else None,
             )
 
             data1, data2 = data.chunk(2, dim=1)
