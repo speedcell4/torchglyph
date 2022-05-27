@@ -7,7 +7,7 @@ from torch.nn import init
 from torch.nn.utils.rnn import PackedSequence
 from torchrua import reverse_packed_indices
 
-from torchglyph.functional import conjugated_linear
+from torchglyph.functional import linear
 
 
 class LSTM(nn.Module):
@@ -57,7 +57,7 @@ class LSTM(nn.Module):
         )
 
     def forward_unary(self, sequence: PackedSequence, weight_ih, weight_hh, bias):
-        xs = conjugated_linear(sequence.data, weight=weight_ih, bias=bias)
+        xs = linear(sequence.data, weight=weight_ih, bias=bias)
 
         hs: List[Tensor] = [self.prepare_init(sequence)]
         cs: List[Tensor] = [self.prepare_init(sequence)]
@@ -66,7 +66,7 @@ class LSTM(nn.Module):
         for batch_size in sequence.batch_sizes.detach().cpu().tolist():
             start, end = end, end + batch_size
 
-            gates = conjugated_linear(hs[-1][:batch_size], weight=weight_hh, bias=xs[start:end])
+            gates = linear(hs[-1][:batch_size], weight=weight_hh, bias=xs[start:end])
             i, f, g, o = gates.chunk(4, dim=-1)
 
             c = torch.sigmoid(i) * torch.tanh(g) + torch.sigmoid(f) * cs[-1][:batch_size]

@@ -1,10 +1,10 @@
 import torch
 from torch import Tensor
 from torch import nn
-from torch.nn.init import uniform_, normal_, constant_
+from torch.nn.init import uniform_, zeros_
 
-from torchglyph.functional import conjugated_linear
-from torchglyph.nn.init import kaiming_uniform_
+from torchglyph.functional import linear
+from torchglyph.nn.init import kaiming_uniform_, bert_normal_
 
 
 class Linear(nn.Module):
@@ -40,12 +40,12 @@ class Linear(nn.Module):
         ])
 
     def forward(self, tensor: Tensor) -> Tensor:
-        return conjugated_linear(tensor, weight=self.weight, bias=self.bias)
+        return linear(tensor, weight=self.weight, bias=self.bias)
 
 
 class TransformerLinear(Linear):
     @torch.no_grad()
     def reset_parameters(self) -> None:
-        normal_(self.weight, mean=0, std=0.05)
+        bert_normal_(self.weight)
         if self.bias is not None:
-            constant_(self.bias, 0.)
+            zeros_(self.bias)
