@@ -30,7 +30,7 @@ class Vocab(object):
         self.freq = counter
         self.itos: Dict[int, str] = {}
         self.stoi: Dict[str, int] = {}
-        self.vectors: Optional[Tensor] = None
+        self.embeddings: Optional[Tensor] = None
 
         self.unk_idx = None
         if unk_token is not None:
@@ -88,16 +88,16 @@ class Vocab(object):
     @torch.no_grad()
     def load_vectors(self, *fallbacks, vectors: 'Vectors') -> Tuple[int, int]:
         _, vector_size = vectors.vectors.size()
-        self.vectors = torch.empty((len(self), vector_size), dtype=torch.float32)
+        self.embeddings = torch.empty((len(self), vector_size), dtype=torch.float32)
 
         tok, occ = 0, 0
         for token, index in self.stoi.items():
-            if vectors.query_(token, self.vectors[index], *fallbacks):
+            if vectors.query_(token, self.embeddings[index], *fallbacks):
                 tok += 1
                 occ += self.freq[token]
 
         if self.pad_token is not None:
-            init.zeros_(self.vectors[self.stoi[self.pad_token]])
+            init.zeros_(self.embeddings[self.stoi[self.pad_token]])
 
         return tok, occ
 
@@ -115,7 +115,7 @@ class Vocab(object):
         destination[prefix + 'freq'] = self.freq
         destination[prefix + 'stoi'] = self.stoi
         destination[prefix + 'itos'] = self.itos
-        destination[prefix + 'vectors'] = self.vectors.detach()
+        destination[prefix + 'vectors'] = self.embeddings.detach()
 
         return destination
 
@@ -129,7 +129,7 @@ class Vocab(object):
         self.freq = state_dict.pop('freq')
         self.stoi = state_dict.pop('stoi')
         self.itos = state_dict.pop('itos')
-        self.vectors = state_dict.pop('vectors')
+        self.embeddings = state_dict.pop('vectors')
 
         if strict:
             assert len(state_dict) == 0

@@ -14,30 +14,21 @@ from torchglyph.vocab import Vocab
 __all__ = [
     'TokenEmbedding',
     'CharLstmEmbedding',
-    'AbsolutePositionEmbedding',
+    'PositionEmbedding',
     'TriangularEmbedding',
 ]
 
 
 class TokenEmbedding(nn.Embedding, metaclass=RuaMeta):
-    def __init__(self, embedding_dim: int, freeze: bool = False, *, vocab: Vocab = None,
-                 num_embeddings: int = 0, padding_idx: int = None,
-                 dtype: torch.dtype = torch.float32) -> None:
-        if vocab is not None:
-            super(TokenEmbedding, self).__init__(
-                embedding_dim=embedding_dim,
-                num_embeddings=len(vocab),
-                padding_idx=vocab.pad_idx,
-                _weight=vocab.vectors, dtype=dtype,
-            )
-        else:
-            super(TokenEmbedding, self).__init__(
-                embedding_dim=embedding_dim,
-                num_embeddings=num_embeddings,
-                padding_idx=padding_idx,
-                _weight=None, dtype=dtype,
-            )
-        self.weight.requires_grad = not freeze
+    def __init__(self, embedding_dim: int, freeze: bool = False, *,
+                 num_embeddings: int, padding_idx: int = None) -> None:
+        super(TokenEmbedding, self).__init__(
+            num_embeddings=num_embeddings,
+            embedding_dim=embedding_dim,
+            padding_idx=padding_idx,
+        )
+        if freeze:
+            self.weight.requires_grad_(False)
 
     def extra_repr(self) -> str:
         args = [super(TokenEmbedding, self).extra_repr()]
@@ -45,15 +36,18 @@ class TokenEmbedding(nn.Embedding, metaclass=RuaMeta):
             args.append('frozen')
         return ', '.join(args)
 
-    @torch.no_grad()
-    def padding_mask(self, indices: Tensor) -> Tensor:
-        return indices == (self.padding_idx if self.padding_idx is None else -100)
+    @classmethod
+    def from_vocab(cls, vocab: Vocab, freeze: bool = False):
+        return cls.from_pretrained(
+            embeddings=vocab.embeddings,
+            freeze=freeze, padding_idx=vocab.pad_idx,
+        )
 
 
 class CharLstmEmbedding(nn.Module):
     def __init__(self, hidden_dim: int = 50, num_layers: int = 1,
                  bias: bool = True, bidirectional: bool = True, dropout: float = 0.5, *,
-                 char_embedding: TokenEmbedding, dtype: torch.dtype = torch.float32) -> None:
+                 char_embedding: TokenEmbedding) -> None:
         super(CharLstmEmbedding, self).__init__()
 
         self.embedding = RuaSequential(
@@ -66,7 +60,6 @@ class CharLstmEmbedding(nn.Module):
             hidden_size=hidden_dim,
             num_layers=num_layers, bias=bias,
             bidirectional=bidirectional,
-            dtype=dtype,
         )
 
         self.num_directions = 2 if self.rnn.bidirectional else 1
@@ -78,27 +71,18 @@ class CharLstmEmbedding(nn.Module):
         return rearrange(encoding, '(l d) b x -> l b (d x)', d=self.num_directions)[-1]
 
 
-class AbsolutePositionEmbedding(nn.Embedding):
-    def __init__(self, num_embeddings: int, embedding_dim: int, freeze: bool = False) -> None:
-        super(AbsolutePositionEmbedding, self).__init__(
-            num_embeddings=num_embeddings,
+class PositionEmbedding(TokenEmbedding):
+    def __init__(self, max_position_embeddings: int, embedding_dim: int, freeze: bool = True) -> None:
+        super(PositionEmbedding, self).__init__(
+            num_embeddings=max_position_embeddings,
             embedding_dim=embedding_dim,
+            padding_idx=None,
+            freeze=freeze,
         )
-        if freeze:
-            self.weight.requires_grad_(False)
 
     @torch.no_grad()
     def reset_parameters(self) -> Tensor:
         return bert_normal_(self.weight)
-
-    def extra_repr(self) -> str:
-        args = [
-            f'{self.num_embeddings}',
-            f'{self.embedding_dim}',
-        ]
-        if not self.weight.requires_grad:
-            args.append('frozen')
-        return ', '.join(args)
 
     def forward(self, sequence: Union[CattedSequence, PackedSequence]) -> Union[CattedSequence, PackedSequence]:
         if isinstance(sequence, CattedSequence):
@@ -110,10 +94,11 @@ class AbsolutePositionEmbedding(nn.Embedding):
         else:
             raise TypeError(f'{type(sequence)} is not supported')
 
-        return sequence._replace(data=super(AbsolutePositionEmbedding, self).forward(indices))
+        data = super(PositionEmbedding, self).forward(indices)
+        return sequence._replace(data=data)
 
 
-class TriangularEmbedding(AbsolutePositionEmbedding):
+class TriangularEmbedding(PositionEmbedding):
     @torch.no_grad()
     def reset_parameters(self) -> None:
         index1 = torch.arange(self.num_embeddings, dtype=self.weight.dtype)
