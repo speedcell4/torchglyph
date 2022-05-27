@@ -14,7 +14,7 @@ from torchglyph.vocab import Vocab
 __all__ = [
     'TokenEmbedding',
     'CharLstmEmbedding',
-    'PositionalEmbedding',
+    'AbsolutePositionEmbedding',
     'TriangularEmbedding',
 ]
 
@@ -78,20 +78,14 @@ class CharLstmEmbedding(nn.Module):
         return rearrange(encoding, '(l d) b x -> l b (d x)', d=self.num_directions)[-1]
 
 
-class PositionalEmbedding(nn.Module):
-    def __init__(self, num_embeddings: int, embedding_dim: int,
-                 freeze: bool = False, *, dtype: torch.dtype = torch.float32) -> None:
-        super(PositionalEmbedding, self).__init__()
-
-        self.num_embeddings = num_embeddings
-        self.embedding_dim = embedding_dim
-
-        self.weight = nn.Parameter(
-            torch.empty((self.num_embeddings, self.embedding_dim), dtype=dtype),
-            requires_grad=not freeze,
+class AbsolutePositionEmbedding(nn.Embedding):
+    def __init__(self, num_embeddings: int, embedding_dim: int, freeze: bool = False) -> None:
+        super(AbsolutePositionEmbedding, self).__init__(
+            num_embeddings=num_embeddings,
+            embedding_dim=embedding_dim,
         )
-
-        self.reset_parameters()
+        if freeze:
+            self.weight.requires_grad_(False)
 
     @torch.no_grad()
     def reset_parameters(self) -> Tensor:
@@ -109,22 +103,22 @@ class PositionalEmbedding(nn.Module):
     def forward(self, sequence: Union[CattedSequence, PackedSequence]) -> Union[CattedSequence, PackedSequence]:
         if isinstance(sequence, CattedSequence):
             token_sizes = sequence.token_sizes.to(device=sequence.data.device)
-            _, sequence = major_sizes_to_ptr(sizes=token_sizes)
+            _, indices = major_sizes_to_ptr(sizes=token_sizes)
         elif isinstance(sequence, PackedSequence):
             batch_sizes = sequence.batch_sizes.to(device=sequence.data.device)
-            sequence, _ = major_sizes_to_ptr(sizes=batch_sizes)
+            indices, _ = major_sizes_to_ptr(sizes=batch_sizes)
         else:
-            TypeError(f'{type(sequence)} is not supported')
+            raise TypeError(f'{type(sequence)} is not supported')
 
-        return sequence._replace(data=torch.embedding(weight=self.weight, indices=sequence))
+        return sequence._replace(data=super(AbsolutePositionEmbedding, self).forward(indices))
 
 
-class TriangularEmbedding(PositionalEmbedding):
+class TriangularEmbedding(AbsolutePositionEmbedding):
     @torch.no_grad()
     def reset_parameters(self) -> None:
-        tok = torch.arange(self.num_embeddings, dtype=self.weight.dtype)
-        vec = torch.arange(self.embedding_dim >> 1, dtype=self.weight.dtype) << 1
+        index1 = torch.arange(self.num_embeddings, dtype=self.weight.dtype)
+        index2 = torch.arange(self.embedding_dim >> 1, dtype=self.weight.dtype) << 1
 
-        position = tok[:, None] / (10000. ** (vec[None, :] / self.embedding_dim))
+        position = index1[:, None] / (10000. ** (index2[None, :] / self.embedding_dim))
         embedding = torch.stack([torch.sin(position), torch.cos(position)], dim=-1)
         self.weight.data = torch.flatten(embedding, start_dim=-2)
