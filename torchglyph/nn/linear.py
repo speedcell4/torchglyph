@@ -4,7 +4,14 @@ from torch import nn
 from torch.nn.init import uniform_, zeros_
 
 from torchglyph.functional import linear
-from torchglyph.nn.init import kaiming_uniform_, bert_normal_
+from torchglyph.nn.init import kaiming_uniform_, orthogonal_, bert_normal_
+
+__all__ = [
+    'Linear',
+    'LinearKaimingInit',
+    'LinearOrthogonalInit',
+    'LinearTransformerInit',
+]
 
 
 class Linear(nn.Module):
@@ -43,7 +50,19 @@ class Linear(nn.Module):
         return linear(tensor, weight=self.weight, bias=self.bias)
 
 
-class TransformerLinear(Linear):
+class LinearKaimingInit(Linear):
+    pass
+
+
+class LinearOrthogonalInit(Linear):
+    @torch.no_grad()
+    def reset_parameters(self):
+        orthogonal_(self.weight)
+        if self.bias is not None:
+            zeros_(self.bias)
+
+
+class LinearTransformerInit(Linear):
     @torch.no_grad()
     def reset_parameters(self) -> None:
         bert_normal_(self.weight)
