@@ -5,10 +5,11 @@ from torchrua import pack_sequence
 
 from tests.assertion import assert_close, assert_grad_close
 from tests.strategy import sizes, TOKEN_SIZE, NUM_CONJUGATES, EMBEDDING_DIM, device, TINY_BATCH_SIZE
-from torchglyph.nn.rnn import LSTM
+from torchglyph.nn.rnn import Lstm, LstmOrthogonalInit, LstmUniformInit
 
 
 @given(
+    rnn_cls=st.sampled_from([Lstm, LstmOrthogonalInit, LstmUniformInit]),
     token_sizes=sizes(TINY_BATCH_SIZE, TOKEN_SIZE),
     num_conjugates=sizes(NUM_CONJUGATES),
     input_size=sizes(EMBEDDING_DIM),
@@ -16,8 +17,8 @@ from torchglyph.nn.rnn import LSTM
     bias=st.booleans(),
     bidirectional=st.booleans(),
 )
-def test_lstm(token_sizes, num_conjugates, input_size, hidden_size, bias, bidirectional):
-    actual_rnn = LSTM(
+def test_lstm(rnn_cls, token_sizes, num_conjugates, input_size, hidden_size, bias, bidirectional):
+    actual_rnn = rnn_cls(
         num_conjugates=num_conjugates,
         input_size=input_size,
         hidden_size=hidden_size,
