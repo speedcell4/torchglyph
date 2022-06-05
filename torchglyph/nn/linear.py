@@ -15,8 +15,8 @@ __all__ = [
 
 
 class Linear(nn.Module):
-    def __init__(self, bias: bool = True, *, num_conjugates: int, in_features: int, out_features: int,
-                 dtype: torch.dtype = torch.float32, **kwargs) -> None:
+    def __init__(self, num_conjugates: int, in_features: int, out_features: int, bias: bool = True,
+                 dtype: torch.dtype = torch.float32) -> None:
         super(Linear, self).__init__()
 
         self.num_conjugates = num_conjugates

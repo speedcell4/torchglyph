@@ -9,7 +9,7 @@ from torchglyph.nn.rnn import Lstm, LstmOrthogonalInit, LstmUniformInit
 
 
 @given(
-    rnn_cls=st.sampled_from([Lstm, LstmOrthogonalInit, LstmUniformInit]),
+    cls=st.sampled_from([Lstm, LstmOrthogonalInit, LstmUniformInit]),
     token_sizes=sizes(TINY_BATCH_SIZE, TOKEN_SIZE),
     num_conjugates=sizes(NUM_CONJUGATES),
     input_size=sizes(EMBEDDING_DIM),
@@ -17,8 +17,8 @@ from torchglyph.nn.rnn import Lstm, LstmOrthogonalInit, LstmUniformInit
     bias=st.booleans(),
     bidirectional=st.booleans(),
 )
-def test_lstm(rnn_cls, token_sizes, num_conjugates, input_size, hidden_size, bias, bidirectional):
-    actual_rnn = rnn_cls(
+def test_lstm(cls, token_sizes, num_conjugates, input_size, hidden_size, bias, bidirectional):
+    actual_rnn = cls(
         num_conjugates=num_conjugates,
         input_size=input_size,
         hidden_size=hidden_size,

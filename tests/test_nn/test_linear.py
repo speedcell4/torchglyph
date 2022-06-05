@@ -5,18 +5,19 @@ from torch.testing import assert_close
 
 from tests.assertion import assert_grad_close
 from tests.strategy import device, sizes, BATCH_SIZE, NUM_CONJUGATES, EMBEDDING_DIM
-from torchglyph.nn.linear import Linear
+from torchglyph.nn.linear import Linear, LinearKaimingInit, LinearOrthogonalInit, LinearTransformerInit
 
 
 @given(
+    cls=st.sampled_from([Linear, LinearKaimingInit, LinearOrthogonalInit, LinearTransformerInit]),
     batch_size=sizes(BATCH_SIZE),
     num_conjugates=sizes(NUM_CONJUGATES),
     input_size=sizes(EMBEDDING_DIM),
     hidden_size=sizes(EMBEDDING_DIM),
     bias=st.booleans()
 )
-def test_linear(batch_size, num_conjugates, input_size, hidden_size, bias):
-    actual_linear = Linear(
+def test_linear(cls, batch_size, num_conjugates, input_size, hidden_size, bias):
+    actual_linear = cls(
         in_features=input_size, out_features=hidden_size,
         num_conjugates=num_conjugates, bias=bias,
     ).to(device=device)
