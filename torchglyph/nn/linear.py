@@ -33,9 +33,9 @@ class Linear(nn.Module):
 
     def extra_repr(self) -> str:
         return ', '.join([
-            f'{self.in_features}',
-            f'{self.out_features}',
             f'num_conjugates={self.num_conjugates}',
+            f'in_features={self.in_features}',
+            f'out_features={self.out_features}',
             f'bias={self.bias is not None}',
         ])
 
