@@ -15,28 +15,21 @@ __all__ = [
 
 
 class Linear(nn.Module):
-    def __init__(self, num_conjugates: int, in_features: int, out_features: int, bias: bool = True) -> None:
+    def __init__(self, bias: bool = True, *, num_conjugates: int, in_features: int, out_features: int,
+                 dtype: torch.dtype = torch.float32, **kwargs) -> None:
         super(Linear, self).__init__()
 
+        self.num_conjugates = num_conjugates
         self.in_features = in_features
         self.out_features = out_features
-        self.num_conjugates = num_conjugates
 
-        self.weight = nn.Parameter(torch.empty((num_conjugates, out_features, in_features)))
-
+        self.weight = nn.Parameter(torch.empty((num_conjugates, out_features, in_features), dtype=dtype))
         if bias:
-            self.bias = nn.Parameter(torch.empty((num_conjugates, out_features)))
+            self.bias = nn.Parameter(torch.empty((num_conjugates, out_features), dtype=dtype))
         else:
             self.register_parameter('bias', None)
 
         self.reset_parameters()
-
-    @torch.no_grad()
-    def reset_parameters(self) -> None:
-        kaiming_uniform_(self.weight, fan=self.in_features, a=5 ** 0.5)
-        if self.bias is not None:
-            bound = self.in_features ** -0.5
-            uniform_(self.bias, -bound, +bound)
 
     def extra_repr(self) -> str:
         return ', '.join([
@@ -45,6 +38,13 @@ class Linear(nn.Module):
             f'num_conjugates={self.num_conjugates}',
             f'bias={self.bias is not None}',
         ])
+
+    @torch.no_grad()
+    def reset_parameters(self) -> None:
+        kaiming_uniform_(self.weight, fan=self.in_features, a=5 ** 0.5)
+        if self.bias is not None:
+            bound = self.in_features ** -0.5
+            uniform_(self.bias, -bound, +bound)
 
     def forward(self, tensor: Tensor) -> Tensor:
         return linear(tensor, weight=self.weight, bias=self.bias)
