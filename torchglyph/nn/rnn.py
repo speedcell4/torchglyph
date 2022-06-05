@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import torch
 from torch import Tensor
@@ -8,6 +8,10 @@ from torch.nn.utils.rnn import PackedSequence
 from torchrua import reverse_packed_indices
 
 from torchglyph.functional import linear
+
+__all__ = [
+    'LSTM',
+]
 
 
 class LSTM(nn.Module):
@@ -36,11 +40,6 @@ class LSTM(nn.Module):
 
         self.reset_parameters()
 
-    def reset_parameters(self) -> None:
-        std = self.hidden_size ** -0.5
-        for weight in self.parameters():
-            init.uniform_(weight, -std, std)
-
     def extra_repr(self) -> str:
         return ', '.join([
             f'num_conjugates={self.num_conjugates}',
@@ -50,19 +49,24 @@ class LSTM(nn.Module):
             f'bidirectional={self.bidirectional}',
         ])
 
-    def prepare_init(self, sequence: PackedSequence) -> Tensor:
-        return torch.zeros(
+    @torch.no_grad()
+    def reset_parameters(self) -> None:
+        std = self.hidden_size ** -0.5
+        for weight in self.parameters():
+            init.uniform_(weight, -std, std)
+
+    def prepare_hx(self, sequence: PackedSequence) -> Tuple[List[Tensor], List[Tensor]]:
+        hx = torch.zeros(
             (sequence.batch_sizes[0].item(), sequence.data.size()[1], self.hidden_size),
             dtype=sequence.data.dtype, device=sequence.data.device, requires_grad=False,
         )
+        return [hx], [hx]
 
-    def forward_unary(self, sequence: PackedSequence, weight_ih, weight_hh, bias):
+    def forward_cell(self, sequence: PackedSequence, weight_ih, weight_hh, bias):
         xs = linear(sequence.data, weight=weight_ih, bias=bias)
 
-        hs: List[Tensor] = [self.prepare_init(sequence)]
-        cs: List[Tensor] = [self.prepare_init(sequence)]
-
         start, end = 0, 0
+        hs, cs = self.prepare_hx(sequence=sequence)
         for batch_size in sequence.batch_sizes.detach().cpu().tolist():
             start, end = end, end + batch_size
 
@@ -79,7 +83,7 @@ class LSTM(nn.Module):
 
     def forward(self, sequence: PackedSequence) -> PackedSequence:
         if not self.bidirectional:
-            data = self.forward_unary(
+            data = self.forward_cell(
                 sequence=sequence,
                 weight_ih=self.weight_ih,
                 weight_hh=self.weight_hh,
@@ -93,7 +97,7 @@ class LSTM(nn.Module):
                 device=sequence.data.device,
             )
 
-            data = self.forward_unary(
+            data = self.forward_cell(
                 sequence=sequence._replace(data=torch.cat([sequence.data, sequence.data[indices]], dim=1)),
                 weight_ih=torch.cat([self.weight_ih, self.weight_ih_reverse], dim=0),
                 weight_hh=torch.cat([self.weight_hh, self.weight_hh_reverse], dim=0),
