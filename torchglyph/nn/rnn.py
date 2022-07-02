@@ -8,7 +8,7 @@ from torch.nn.init import zeros_, ones_
 from torch.nn.utils.rnn import PackedSequence
 from torchrua import reverse_packed_indices
 
-from torchglyph.functional import linear
+from torchglyph.functional import conjugated_linear
 from torchglyph.nn.init import orthogonal_, xavier_uniform_
 
 __all__ = [
@@ -73,14 +73,14 @@ class Lstm(nn.Module):
         return [hx], [hx]
 
     def forward_cell(self, x: Tensor, h_prev: Tensor, c_prev: Tensor, weight_hh: Tensor) -> Tuple[Tensor, Tensor]:
-        i, f, g, o = linear(h_prev, weight=weight_hh, bias=x).chunk(4, dim=-1)
+        i, f, g, o = conjugated_linear(h_prev, weight=weight_hh, bias=x).chunk(4, dim=-1)
 
         c = torch.sigmoid(i) * torch.tanh(g) + torch.sigmoid(f) * c_prev
         h = torch.sigmoid(o) * torch.tanh(c)
         return h, c
 
     def forward_unary(self, sequence: PackedSequence, weight_ih: Tensor, weight_hh: Tensor, bias: Tensor) -> Tensor:
-        xs = linear(sequence.data, weight=weight_ih, bias=bias)
+        xs = conjugated_linear(sequence.data, weight=weight_ih, bias=bias)
 
         start, end = 0, 0
         hs, cs = self.prepare_hx(sequence=sequence)

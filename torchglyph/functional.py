@@ -1,8 +1,9 @@
+import torch
 from torch import Tensor
 
 
-def linear(tensor: Tensor, weight: Tensor, bias: Tensor = None) -> Tensor:
-    out = (weight @ tensor[..., None]).flatten(start_dim=-2)
+def conjugated_linear(tensor: Tensor, weight: Tensor, bias: Tensor = None) -> Tensor:
+    out = torch.einsum('cyx,...cx->...cy', weight, tensor)
     if bias is not None:
         out = out + bias
     return out

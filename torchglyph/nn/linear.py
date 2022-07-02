@@ -3,7 +3,7 @@ from torch import Tensor
 from torch import nn
 from torch.nn.init import uniform_, zeros_
 
-from torchglyph.functional import linear
+from torchglyph.functional import conjugated_linear
 from torchglyph.nn.init import kaiming_uniform_, orthogonal_, bert_normal_
 
 __all__ = [
@@ -47,7 +47,7 @@ class Linear(nn.Module):
             uniform_(self.bias, -bound, +bound)
 
     def forward(self, tensor: Tensor) -> Tensor:
-        return linear(tensor, weight=self.weight, bias=self.bias)
+        return conjugated_linear(tensor, weight=self.weight, bias=self.bias)
 
 
 class LinearKaimingInit(Linear):
