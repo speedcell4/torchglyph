@@ -15,7 +15,7 @@ class CountToken(Proc):
         return data
 
 
-class CountSequence(Proc):
+class CountTokenList(Proc):
     def __call__(self, data: Sequence[Any], *, counter: Counter, **kwargs) -> Sequence[Any]:
         counter.update(data)
         return data
@@ -24,6 +24,11 @@ class CountSequence(Proc):
 class ToIndex(Proc):
     def __call__(self, data: Any, *, vocab: Vocab, **kwargs) -> int:
         return vocab[data]
+
+
+class ToIndexList(Proc):
+    def __call__(self, data: Sequence[int], *, vocab: Vocab, **kwargs) -> Sequence[int]:
+        return type(data)([vocab[datum] for datum in data])
 
 
 class BuildVocab(Proc):
