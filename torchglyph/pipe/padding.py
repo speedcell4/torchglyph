@@ -8,7 +8,7 @@ from torchglyph.pipe.abc import Pipe
 from torchglyph.proc.abc import Lift
 from torchglyph.proc.collating import ToTensor, ToDevice
 from torchglyph.proc.padding import PadSequence
-from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, ToIndex
+from torchglyph.proc.vocab import CountSequence, BuildVocab, StatsVocab, ToIndex
 
 
 class PaddedNumPipe(Pipe):
@@ -30,7 +30,7 @@ class PaddedStrPipe(PaddedNumPipe):
                  special_tokens: Tuple[str, ...] = (), threshold: int = 10) -> None:
         super(PaddedStrPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
-            pre=UpdateCounter(),
+            pre=CountSequence(),
             vocab=[
                 BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
@@ -74,7 +74,7 @@ class PaddedStrListPipe(PaddedNumListPipe):
             device=device, dtype=dtype,
         )
         self.with_(
-            pre=UpdateCounter(),
+            pre=CountSequence(),
             vocab=[
                 BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),

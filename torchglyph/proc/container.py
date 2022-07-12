@@ -17,7 +17,7 @@ class Prepend(Proc):
         return f'[{self.item}]'
 
     def __call__(self, data: Any, **kwargs) -> Any:
-        return type(data)(list(data) + [self.item])
+        return type(data)([self.item] + list(data))
 
 
 class Append(Proc):
@@ -29,4 +29,4 @@ class Append(Proc):
         return f'[{self.item}]'
 
     def __call__(self, data: Any, **kwargs) -> Any:
-        return type(data)([self.item] + list(data))
+        return type(data)(list(data) + [self.item])

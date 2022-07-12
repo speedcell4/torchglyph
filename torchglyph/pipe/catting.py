@@ -8,7 +8,7 @@ from torchrua import CattedSequence
 from torchglyph.pipe.abc import Pipe
 from torchglyph.proc.catting import CatSequence
 from torchglyph.proc.collating import ToTensor
-from torchglyph.proc.vocab import UpdateCounter, BuildVocab, ToIndex, StatsVocab
+from torchglyph.proc.vocab import CountSequence, BuildVocab, ToIndex, StatsVocab
 
 __all__ = [
     'CattedNumListPipe',
@@ -45,7 +45,7 @@ class CattedStrListPipe(CattedNumListPipe):
                  special_tokens: Tuple[Optional[str], ...] = (), threshold: int = 10) -> None:
         super(CattedStrListPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
-            pre=UpdateCounter(),
+            pre=CountSequence(),
             vocab=[
                 BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),

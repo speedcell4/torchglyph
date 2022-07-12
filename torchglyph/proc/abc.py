@@ -5,7 +5,6 @@ __all__ = [
     'compress', 'subs',
     'Proc', 'Processors',
     'Identity', 'Lift', 'Chain',
-    'Map', 'Filter',
 ]
 
 Processors = Union[Optional['Proc'], List[Optional['Proc']]]
@@ -99,25 +98,3 @@ class Chain(Proc):
         for proc in self.proc:
             data = proc(data, **kwargs)
         return data
-
-
-class Map(Proc):
-    Sequence = Union[Any, Set[Any], List[Any], Tuple[Any, ...]]
-
-    def map(self, data: Any, **kwargs) -> Any:
-        raise NotImplementedError
-
-    def __call__(self, sequence: Sequence, **kwargs) -> Sequence:
-        if not isinstance(sequence, (set, list, tuple)):
-            return self.map(sequence, **kwargs)
-        return type(sequence)([self(data, **kwargs) for data in sequence])
-
-
-class Filter(Proc):
-    Sequence = Union[Any, Set[Any], List[Any], Tuple[Any, ...]]
-
-    def filter(self, data: Any, **kwargs) -> bool:
-        raise NotImplementedError
-
-    def __call__(self, sequence: Sequence, **kwargs) -> Sequence:
-        return type(sequence)([data for data in sequence if self.filter(data, **kwargs)])

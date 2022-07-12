@@ -1,28 +1,29 @@
 import heapq
 import logging
 from collections import Counter
-from typing import Tuple, Optional, Any
+from typing import Tuple, Optional, Any, Sequence
 
-from torchglyph.proc.abc import Proc, Map
+from torchglyph.proc.abc import Proc
 from torchglyph.vocab import Vocab, Vectors, Glove, FastText
 
 logger = logging.getLogger(__name__)
 
-__all__ = [
-    'UpdateCounter', 'ToIndex', 'BuildVocab', 'StatsVocab',
-    'LoadVectors', 'LoadGlove', 'LoadFastText',
-]
+
+class CountToken(Proc):
+    def __call__(self, data: Any, *, counter: Counter, **kwargs) -> Any:
+        counter[data] += 1
+        return data
 
 
-class UpdateCounter(Map):
-    def map(self, token: str, *, counter: Counter, **kwargs) -> str:
-        counter[token] += 1
-        return token
+class CountSequence(Proc):
+    def __call__(self, data: Sequence[Any], *, counter: Counter, **kwargs) -> Sequence[Any]:
+        counter.update(data)
+        return data
 
 
 class ToIndex(Proc):
-    def __call__(self, token: Any, *, vocab: Vocab, **kwargs) -> int:
-        return vocab[token]
+    def __call__(self, data: Any, *, vocab: Vocab, **kwargs) -> int:
+        return vocab[data]
 
 
 class BuildVocab(Proc):
