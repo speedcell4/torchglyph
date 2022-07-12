@@ -9,21 +9,6 @@ class ToSize(Proc):
         return len(data)
 
 
-class ToLower(Map):
-    def map(self, string: str, **kwargs) -> str:
-        return string.lower()
-
-
-class ToUpper(Map):
-    def map(self, string: str, **kwargs) -> str:
-        return string.upper()
-
-
-class ToCapitalized(Map):
-    def map(self, string: str, **kwargs) -> str:
-        return string.capitalize()
-
-
 class RegexSub(Map):
     def __init__(self, pattern: Pattern, repl: str) -> None:
         super(RegexSub, self).__init__()
