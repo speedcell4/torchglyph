@@ -7,7 +7,7 @@ from torchrua.padding import pad_packed_sequence
 
 from torchglyph.pipe.abc import Pipe
 from torchglyph.proc.abc import Lift
-from torchglyph.proc.basic import ToList
+from torchglyph.proc.container import ToLen
 from torchglyph.proc.catting import CatSequence
 from torchglyph.proc.collating import ToTensor
 from torchglyph.proc.packing import PackSequence, ComposeCattedSequences
@@ -78,7 +78,7 @@ class PackedStrListListPipe(PackedNumListListPipe):
                  threshold: int = 10) -> None:
         super(PackedStrListListPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
-            pre=Lift(ToList() + UpdateCounter()),
+            pre=Lift(ToLen() + UpdateCounter()),
             vocab=[
                 BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
