@@ -76,8 +76,8 @@ class Pipe(object, metaclass=ABCMeta):
 
         return self
 
-    def build_vocab_(self, *datasets, special_tokens: Tuple[str, ...] = (),
-                     max_size: Optional[int] = None, min_freq: int = 1) -> 'Pipe':
+    def build_vocab(self, *datasets, special_tokens: Tuple[str, ...] = (),
+                    max_size: Optional[int] = None, min_freq: int = 1) -> 'Pipe':
         name = ', '.join(sorted(list(set([
             name for dataset in datasets
             for name, pipe in dataset.pipes.items() if self is pipe

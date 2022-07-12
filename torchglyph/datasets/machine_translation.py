@@ -61,9 +61,9 @@ class MachineTranslation(Dataset):
         dev = cls(pipes=pipes, path=dev, src_lang=src_lang, tgt_lang=tgt_lang)
         test = cls(pipes=pipes, path=test, src_lang=src_lang, tgt_lang=tgt_lang)
 
-        src.build_vocab_(train)
+        src.build_vocab(train)
         if not share_vocab:
-            tgt.build_vocab_(train)
+            tgt.build_vocab(train)
 
         return DataLoader.new(
             (train, dev, test),

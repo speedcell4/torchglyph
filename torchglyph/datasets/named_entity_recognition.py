@@ -83,9 +83,9 @@ class CoNLL2003(Dataset):
         dev = cls(pipes=pipes, path=dev)
         test = cls(pipes=pipes, path=test)
 
-        word.build_vocab_(train)
-        char.build_vocab_(train)
-        tag.build_vocab_(train)
+        word.build_vocab(train)
+        char.build_vocab(train)
+        tag.build_vocab(train)
 
         return DataLoader.new(
             (train, dev, test),

@@ -1,6 +1,7 @@
 import itertools
 from abc import ABCMeta
 from collections import namedtuple, OrderedDict
+from logging import getLogger
 from pathlib import Path
 from typing import Iterable, Any, Type
 from typing import Union, List, Tuple, NamedTuple, Dict
@@ -13,6 +14,8 @@ from tqdm import tqdm
 from torchglyph.io import DownloadMixin
 from torchglyph.pipe import Pipe
 from torchglyph.sampler import LinearBatchSampler
+
+logger = getLogger(__name__)
 
 __all__ = [
     'DatasetABC',
@@ -111,7 +114,7 @@ class Dataset(DatasetABC, DownloadMixin):
         raise NotImplementedError
 
     @classmethod
-    def new(cls, **kwargs) -> Tuple['DataLoader', ...]:
+    def new(cls, **kwargs) -> List['DataLoader']:
         raise NotImplementedError
 
 
@@ -139,6 +142,7 @@ class DataLoader(TorchDataLoader):
                     pipe.postprocess_(dataset)
                     progress.update(1)
 
+        logger.debug('post-processing done')
         loaders = []
 
         for index, (dataset, batch_size) in enumerate(zip(datasets, batch_sizes)):
@@ -147,10 +151,14 @@ class DataLoader(TorchDataLoader):
             else:
                 sampler = SequentialSampler(dataset)
 
+            logger.debug(f'{index}.sampler => {sampler}')
+
             batch_sampler = LinearBatchSampler(
-                dataset=dataset, sampler=sampler, batch_size=batch_size,
+                data_source=dataset, sampler=sampler, batch_size=batch_size,
                 drop_last=index == 0 and drop_last,
             )
+
+            logger.debug(f'{index}.batch_sampler => {batch_sampler}')
 
             loaders.append(DataLoader(
                 dataset=dataset, batch_size=1,
