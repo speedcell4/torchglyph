@@ -5,14 +5,10 @@ from torch import Tensor
 from torch.types import Device, Number
 
 from torchglyph.pipe.abc import Pipe
+from torchglyph.proc.abc import Lift
 from torchglyph.proc.collating import ToTensor, ToDevice
 from torchglyph.proc.padding import PadSequence
-from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
-
-__all__ = [
-    'PaddedNumPipe', 'PaddedNumListPipe',
-    'PaddedStrPipe', 'PaddedStrListPipe',
-]
+from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, ToIndex
 
 
 class PaddedNumPipe(Pipe):
@@ -39,7 +35,7 @@ class PaddedStrPipe(PaddedNumPipe):
                 BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
             ],
-            post=Numbering() + ...,
+            post=Lift(ToIndex()) + ...,
             batch=...,
         )
 
@@ -83,7 +79,7 @@ class PaddedStrListPipe(PaddedNumListPipe):
                 BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
             ],
-            post=Numbering() + ...,
+            post=Lift(ToIndex()) + ...,
         )
 
     def inv(self, data: Tensor, token_sizes: Tensor) -> List[List[str]]:

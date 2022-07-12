@@ -11,7 +11,7 @@ from torchglyph.proc.container import ToLen
 from torchglyph.proc.catting import CatSequence
 from torchglyph.proc.collating import ToTensor
 from torchglyph.proc.packing import PackSequence, ComposeCattedSequences
-from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, Numbering
+from torchglyph.proc.vocab import UpdateCounter, BuildVocab, StatsVocab, ToIndex
 
 __all__ = [
     'PackedNumListPipe', 'PackedNumListListPipe',
@@ -50,7 +50,7 @@ class PackedStrListPipe(PackedNumListPipe):
                 BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
             ],
-            post=Numbering() + ...,
+            post=Lift(ToIndex()) + ...,
         )
 
     def inv(self, sequence: PackedSequence) -> List[List[str]]:
@@ -83,5 +83,5 @@ class PackedStrListListPipe(PackedNumListListPipe):
                 BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
             ],
-            post=Lift(Numbering()) + ...,
+            post=Lift(ToIndex()) + ...,
         )

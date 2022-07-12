@@ -2,12 +2,13 @@ from typing import List, Tuple, Optional
 
 import torch
 from torch.types import Device, Number
+from torchglyph.proc.abc import Lift
 from torchrua import CattedSequence
 
 from torchglyph.pipe.abc import Pipe
 from torchglyph.proc.catting import CatSequence
 from torchglyph.proc.collating import ToTensor
-from torchglyph.proc.vocab import UpdateCounter, BuildVocab, Numbering, StatsVocab
+from torchglyph.proc.vocab import UpdateCounter, BuildVocab, ToIndex, StatsVocab
 
 __all__ = [
     'CattedNumListPipe',
@@ -49,7 +50,7 @@ class CattedStrListPipe(CattedNumListPipe):
                 BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
             ],
-            post=Numbering() + ...,
+            post=Lift(ToIndex()) + ...,
         )
 
     def inv(self, sequence: CattedSequence) -> List[List[str]]:
