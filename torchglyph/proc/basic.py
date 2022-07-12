@@ -3,48 +3,6 @@ from typing import Pattern, Any, List, Tuple, Set, Union, Sized
 
 from torchglyph.proc.abc import Proc, Map
 
-__all__ = [
-    'ToStr', 'ToInt', 'ToBool', 'ToFloat',
-    'ToSet', 'ToList', 'ToTuple', 'ToSize',
-    'ToLower', 'ToUpper', 'ToCapitalized', 'RegexSub',
-    'Prepend', 'Append',
-]
-
-
-class ToStr(Map):
-    def map(self, data: Any, **kwargs) -> str:
-        return str(data)
-
-
-class ToInt(Map):
-    def map(self, data: Any, **kwargs) -> int:
-        return int(data)
-
-
-class ToBool(Map):
-    def map(self, data: Any, **kwargs) -> bool:
-        return bool(data)
-
-
-class ToFloat(Map):
-    def map(self, data: Any, **kwargs) -> float:
-        return float(data)
-
-
-class ToSet(Proc):
-    def __call__(self, data: Any, **kwargs) -> Set[Any]:
-        return set(data)
-
-
-class ToList(Proc):
-    def __call__(self, data: Any, **kwargs) -> List[Any]:
-        return list(data)
-
-
-class ToTuple(Proc):
-    def __call__(self, data: Any, **kwargs) -> Tuple[Any, ...]:
-        return tuple(data)
-
 
 class ToSize(Proc):
     def __call__(self, data: Sized, **kwargs) -> int:
