@@ -9,19 +9,6 @@ class ToSize(Proc):
         return len(data)
 
 
-class RegexSub(Map):
-    def __init__(self, pattern: Pattern, repl: str) -> None:
-        super(RegexSub, self).__init__()
-        self.pattern = pattern
-        self.repl = repl
-
-    def extra_repr(self) -> str:
-        return f'{self.pattern} -> {self.repl}'
-
-    def map(self, string: str, **kwargs) -> str:
-        return re.sub(pattern=self.pattern, repl=self.repl, string=string)
-
-
 class Prepend(Proc):
     Container = Union[Set[Any], List[Any], Tuple[Any, ...]]
 
