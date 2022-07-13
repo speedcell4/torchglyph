@@ -24,6 +24,7 @@ class LambdaLR(_LambdaLR):
     def step(self, epoch: int = None) -> None:
         super(LambdaLR, self).step(epoch=epoch)
 
+    def report_lr(self) -> None:
         for group, lr in enumerate(self.get_last_lr()):
             logger.info(f'step {self._step_count} | group {group} | lr => {lr:.10f}')
 
