@@ -1,10 +1,10 @@
 import json
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Set
-from typing import List, Tuple, Dict
+from typing import Any, Set, List, Tuple, Dict, Iterable
 
 import torch
+from filelock import FileLock
 from tabulate import tabulate
 from torch import nn
 
@@ -16,26 +16,37 @@ SOTA_JSON = 'sota.json'
 CHECKPOINT_PT = 'checkpoint.pt'
 
 
-def save_kwargs(name: str, *, out_dir: Path, **kwargs) -> None:
-    if (out_dir / name).exists():
-        with (out_dir / name).open(mode='r', encoding='utf-8') as fp:
-            kwargs = {**json.load(fp=fp), **kwargs}
+def load_kwargs(*, out_dir: Path, _kwargs_name: str):
+    with FileLock(str(out_dir / f'{_kwargs_name}.lock')):
+        if (out_dir / _kwargs_name).exists():
+            with (out_dir / _kwargs_name).open(mode='r', encoding='utf-8') as fp:
+                return json.load(fp=fp)
 
-    with (out_dir / name).open(mode='w', encoding='utf-8') as fp:
-        json.dump(kwargs, fp=fp, indent=2, sort_keys=True)
+
+def load_args(*, out_dir: Path):
+    return load_kwargs(out_dir=out_dir, _kwargs_name=ARGS_JSON)
+
+
+def load_sota(*, out_dir: Path):
+    return load_kwargs(out_dir=out_dir, _kwargs_name=SOTA_JSON)
+
+
+def save_kwargs(*, out_dir: Path, _kwargs_name: str, **kwargs) -> None:
+    with FileLock(str(out_dir / f'{_kwargs_name}.lock')):
+        if (out_dir / _kwargs_name).exists():
+            with (out_dir / _kwargs_name).open(mode='r', encoding='utf-8') as fp:
+                kwargs = {**json.load(fp=fp), **kwargs}
+
+        with (out_dir / _kwargs_name).open(mode='w', encoding='utf-8') as fp:
+            json.dump(kwargs, fp=fp, indent=2, sort_keys=True, ensure_ascii=False)
 
 
 def save_args(*, out_dir: Path, **kwargs) -> None:
-    return save_kwargs(name=ARGS_JSON, out_dir=out_dir, **kwargs)
+    return save_kwargs(out_dir=out_dir, _kwargs_name=ARGS_JSON, **kwargs)
 
 
 def save_sota(*, out_dir: Path, **kwargs) -> None:
-    return save_kwargs(name=SOTA_JSON, out_dir=out_dir, **kwargs)
-
-
-def save_checkpoint(name: str = CHECKPOINT_PT, *, out_dir: Path, **kwargs) -> None:
-    logger.info(f'saving checkpoint ({", ".join(kwargs.keys())}) to {out_dir / name}')
-    return torch.save({name: module.state_dict() for name, module in kwargs.items()}, f=out_dir / name)
+    return save_kwargs(out_dir=out_dir, _kwargs_name=SOTA_JSON, **kwargs)
 
 
 def load_checkpoint(name: str = CHECKPOINT_PT, strict: bool = True, *, out_dir: Path, **kwargs) -> None:
@@ -53,6 +64,11 @@ def load_checkpoint(name: str = CHECKPOINT_PT, strict: bool = True, *, out_dir: 
                 logger.warning(f'{name}.{unexpected_key} is unexpected')
 
 
+def save_checkpoint(name: str = CHECKPOINT_PT, *, out_dir: Path, **kwargs) -> None:
+    logger.info(f'saving checkpoint ({", ".join(kwargs.keys())}) to {out_dir / name}')
+    return torch.save({name: module.state_dict() for name, module in kwargs.items()}, f=out_dir / name)
+
+
 def fetch_one(out_dir: Path) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     with (out_dir / SOTA_JSON).open(mode='r', encoding='utf-8') as fp:
         sota = json.load(fp)
@@ -62,12 +78,28 @@ def fetch_one(out_dir: Path) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     return {**args, 'path': out_dir / LOG_TXT}, sota
 
 
+def recur_dir(path: Path) -> Iterable[Path]:
+    for out_dir in path.iterdir():
+        if out_dir.is_dir():
+            if (out_dir / ARGS_JSON).exists() and (out_dir / SOTA_JSON).exists():
+                yield out_dir
+            else:
+                yield from recur_dir(out_dir)
+
+
 def fetch_all(paths: List[Path]):
     return zip(*[
         fetch_one(out_dir=out_dir)
-        for p in paths for out_dir in p.iterdir()
-        if out_dir.is_dir() and (out_dir / ARGS_JSON).exists() and (out_dir / SOTA_JSON).exists()
+        for p in paths for out_dir in recur_dir(p)
     ])
+
+
+def frozen(item: Any) -> Any:
+    if isinstance(item, list):
+        return tuple(item)
+    if isinstance(item, set):
+        return frozenset(item)
+    return item
 
 
 def group_keys(keys: Set[str], args: List[Dict[str, Any]]):
@@ -75,7 +107,7 @@ def group_keys(keys: Set[str], args: List[Dict[str, Any]]):
     major, common = [], {}
 
     for key in keys:
-        values = set(a.get(key, '-') for a in args)
+        values = set(frozen(a.get(key, '-')) for a in args)
         if len(values) > 1:
             if key == 'path':
                 has_path = True
@@ -91,54 +123,37 @@ def group_keys(keys: Set[str], args: List[Dict[str, Any]]):
     return major, list(common.items())
 
 
-def reduce_metric(metrics: List[Tuple[float, ...]], expand: bool):
+def reduce_metric(metrics: List[Tuple[float, ...]]):
     metrics = torch.tensor(metrics, dtype=torch.float32)
-    *mean, epoch1, epoch2 = [round(m, 4) for m in metrics.mean(dim=0).detach().tolist()]
-    epoch1 = int(epoch1)
-    epoch2 = int(epoch2)
-    std = round(metrics[:, -3].std(unbiased=True).item(), 4)
-    if expand:
-        return *mean, epoch1, epoch2
-    return *mean, std, len(metrics), epoch1, epoch2
+    return [round(m, 4) for m in metrics.mean(dim=0).detach().tolist()]
 
 
 def summary(path: List[Path], metrics: Tuple[str, ...], sort: Tuple[str, ...] = (),
+            ignore: Tuple[str, ...] = ('study', 'device', 'seed', 'hostname'),
             common: bool = False, expand: bool = False, fmt: str = 'pretty'):
     args, sota = fetch_all(path)
 
-    ignores = ('study', 'device', 'seed')
     if not expand:
-        ignores = (*ignores, 'path')
+        ignore = (*ignore, 'path')
 
-    keys = set(k for a in args for k in a.keys() if k not in ignores)
+    keys = set(k for a in args for k in a.keys() if k not in ignore)
     keys, tabular_data = group_keys(keys=keys, args=args)
 
     if common:
         print(tabulate(tabular_data=tabular_data, headers=['key', 'value'], tablefmt=fmt))
     else:
-        if metrics[-1].startswith('dev_'):
-            epoch = 'dev_epoch'
-        elif metrics[-1].startswith('test_'):
-            epoch = 'test_epoch'
-        else:
-            epoch = 'epoch'
-
         tabular_data = {}
         for s, a in zip(sota, args):
             if all(m in s for m in metrics):
-                vs = tuple(a.get(k, '-') for k in keys)
+                vs = tuple(frozen(a.get(k, '-')) for k in keys)
                 ms = tuple(s[m] for m in metrics)
-                tabular_data.setdefault(vs, []).append((*ms, s[epoch], s['epoch']))
+                tabular_data.setdefault(vs, []).append(ms)
 
         tabular_data = [
-            [*reduce_metric(metrics, expand), *vs]
+            [*reduce_metric(metrics), len(metrics), *vs]
             for vs, metrics in tabular_data.items()
         ]
-
-        if expand:
-            headers = [*metrics, 's', 'e', *keys]
-        else:
-            headers = [*metrics, 'std', '*', 's', 'e', *keys]
+        headers = [*metrics, '@', *keys]
 
         if len(sort) == 0:
             sort = metrics[::-1]
