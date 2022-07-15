@@ -1,7 +1,7 @@
 import heapq
 import logging
 from collections import Counter
-from typing import Tuple, Optional, Any, Sequence
+from typing import Tuple, Any, Set, List, Union
 
 from torchglyph.proc.abc import Proc
 from torchglyph.vocab import Vocab, Vectors, Glove, FastText
@@ -16,7 +16,9 @@ class CountToken(Proc):
 
 
 class CountTokenList(Proc):
-    def __call__(self, data: Sequence[Any], *, counter: Counter, **kwargs) -> Sequence[Any]:
+    Data = Union[Set[Any], List[Any], Tuple[Any, ...]]
+
+    def __call__(self, data: Data, *, counter: Counter, **kwargs) -> Data:
         counter.update(data)
         return data
 
@@ -27,29 +29,42 @@ class ToIndex(Proc):
 
 
 class ToIndexList(Proc):
-    def __call__(self, data: Sequence[int], *, vocab: Vocab, **kwargs) -> Sequence[int]:
+    Data = Union[Set[Any], List[Any], Tuple[Any, ...]]
+    IntSequence = Union[Set[int], List[int], Tuple[int, ...]]
+
+    def __call__(self, data: Data, *, vocab: Vocab, **kwargs) -> IntSequence:
         return type(data)([vocab[datum] for datum in data])
 
 
 class BuildVocab(Proc):
-    def __init__(self, unk_token: Optional[str], pad_token: Optional[str],
-                 special_tokens: Tuple[Optional[str], ...] = ()) -> None:
+    def __init__(self, unk_token: str = None, pad_token: str = None,
+                 special_tokens: Tuple[str, ...] = (), max_size: int = None, min_freq: int = 0) -> None:
         super(BuildVocab, self).__init__()
         self.unk_token = unk_token
         self.pad_token = pad_token
-        special_tokens = (unk_token, pad_token, *special_tokens)
-        self.special_tokens = tuple(token for token in special_tokens if token is not None)
+        self.special_tokens = tuple(
+            token for token in (unk_token, pad_token, *special_tokens)
+            if token is not None
+        )
+
+        self.max_size = max_size
+        self.min_freq = min_freq
 
     def extra_repr(self) -> str:
-        return ', '.join(self.special_tokens)
+        return ', '.join([
+            ', '.join(self.special_tokens),
+            f'max_size={self.max_size}',
+            f'min_freq={self.min_freq}',
+        ])
 
-    def __call__(self, vocab: Counter, *, max_size: Optional[int], min_freq: int, **kwargs) -> Vocab:
+    def __call__(self, vocab: Counter, **kwargs) -> Vocab:
         return Vocab(
             counter=vocab,
             unk_token=self.unk_token,
             pad_token=self.pad_token,
             special_tokens=self.special_tokens,
-            max_size=max_size, min_freq=min_freq,
+            max_size=self.max_size,
+            min_freq=self.min_freq,
         )
 
 
