@@ -5,10 +5,9 @@ from torch.types import Device, Number
 from torchrua import CattedSequence
 
 from torchglyph.pipe.abc import Pipe
-from torchglyph.proc.abc import Lift
 from torchglyph.proc.catting import CatSequence
-from torchglyph.proc.collating import ToTensor
-from torchglyph.proc.vocab import CountTokenList, BuildVocab, ToIndex, StatsVocab, ToIndexList
+from torchglyph.proc.tensor import ToTensor
+from torchglyph.proc.vocab import CountTokenList, BuildVocab, StatsVocab, ToIndexList
 
 __all__ = [
     'CattedNumListPipe',

@@ -7,11 +7,11 @@ from torchrua.padding import pad_packed_sequence
 
 from torchglyph.pipe.abc import Pipe
 from torchglyph.proc.abc import Lift
-from torchglyph.proc.container import ToLen
 from torchglyph.proc.catting import CatSequence
-from torchglyph.proc.collating import ToTensor
 from torchglyph.proc.packing import PackSequence, ComposeCattedSequences
-from torchglyph.proc.vocab import CountTokenList, BuildVocab, StatsVocab, ToIndex, ToIndexList
+from torchglyph.proc.sequence import ToLen
+from torchglyph.proc.tensor import ToTensor
+from torchglyph.proc.vocab import CountTokenList, BuildVocab, StatsVocab, ToIndexList
 
 __all__ = [
     'PackedNumListPipe', 'PackedNumListListPipe',

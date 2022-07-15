@@ -6,7 +6,7 @@ from torch.types import Device, Number
 
 from torchglyph.pipe.abc import Pipe
 from torchglyph.proc.abc import Lift
-from torchglyph.proc.collating import ToTensor, ToDevice
+from torchglyph.proc.tensor import ToTensor, CastTensor
 from torchglyph.proc.padding import PadSequence
 from torchglyph.proc.vocab import CountTokenList, BuildVocab, StatsVocab, ToIndex, ToIndexList
 
@@ -17,7 +17,7 @@ class PaddedNumPipe(Pipe):
             pre=None,
             vocab=None,
             post=None,
-            batch=ToTensor(dtype=dtype) + ToDevice(device=device),
+            batch=ToTensor(dtype=dtype) + CastTensor(device=device),
         )
 
     def inv(self, data: Tensor) -> List[Number]:
