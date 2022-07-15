@@ -2,9 +2,9 @@ from torchglyph.proc.abc import *
 from torchglyph.proc.cast import *
 from torchglyph.proc.catting import *
 from torchglyph.proc.collating import *
-from torchglyph.proc.container import *
 from torchglyph.proc.mlm import *
 from torchglyph.proc.packing import *
 from torchglyph.proc.padding import *
+from torchglyph.proc.sequence import *
 from torchglyph.proc.string import *
 from torchglyph.proc.vocab import *

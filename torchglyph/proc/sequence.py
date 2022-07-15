@@ -1,11 +1,13 @@
-from typing import Any
+from typing import Any, Set, List, Tuple, Union
 
 from torchglyph.proc import Proc
 
+Sequence = Union[Set[Any], List[Any], Tuple[Any, ...]]
+
 
 class ToLen(Proc):
-    def __call__(self, data: Any, **kwargs) -> int:
-        return len(data)
+    def __call__(self, sequence: Sequence, **kwargs) -> int:
+        return len(sequence)
 
 
 class Prepend(Proc):
@@ -16,8 +18,8 @@ class Prepend(Proc):
     def extra_repr(self) -> str:
         return f'[{self.item}]'
 
-    def __call__(self, data: Any, **kwargs) -> Any:
-        return type(data)([self.item] + list(data))
+    def __call__(self, sequence: Sequence, **kwargs) -> Sequence:
+        return type(sequence)([self.item] + list(sequence))
 
 
 class Append(Proc):
@@ -28,5 +30,5 @@ class Append(Proc):
     def extra_repr(self) -> str:
         return f'[{self.item}]'
 
-    def __call__(self, data: Any, **kwargs) -> Any:
-        return type(data)(list(data) + [self.item])
+    def __call__(self, sequence: Sequence, **kwargs) -> Sequence:
+        return type(sequence)(list(sequence) + [self.item])
