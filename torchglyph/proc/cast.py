@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Set, List, Tuple
 
 from torchglyph.proc.abc import Proc
 
@@ -24,15 +24,15 @@ class ToFloat(Proc):
 
 
 class ToSet(Proc):
-    def __call__(self, data: Any, **kwargs) -> set:
+    def __call__(self, data: Any, **kwargs) -> Set[Any]:
         return set(data)
 
 
 class ToList(Proc):
-    def __call__(self, data: Any, **kwargs) -> list:
+    def __call__(self, data: Any, **kwargs) -> List[Any]:
         return list(data)
 
 
 class ToTuple(Proc):
-    def __call__(self, data: Any, **kwargs) -> tuple:
+    def __call__(self, data: Any, **kwargs) -> Tuple[Any, ...]:
         return tuple(data)
