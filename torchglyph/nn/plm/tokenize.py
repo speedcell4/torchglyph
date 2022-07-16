@@ -19,8 +19,8 @@ def tokenize(sequence: str, tokenizer: PreTrainedTokenizer,
     )['input_ids']
 
 
-def tokenize_words(sequence: List[str], tokenizer: PreTrainedTokenizer,
-                   add_prefix_space: bool = False, add_special_tokens: bool = True) -> Tuple[List[int], List[int]]:
+def tokenize_as_words(sequence: List[str], tokenizer: PreTrainedTokenizer,
+                      add_prefix_space: bool = False, add_special_tokens: bool = True) -> Tuple[List[int], List[int]]:
     input_ids = tokenizer.batch_encode_plus(
         [f' {word}' if index > 0 or add_prefix_space else word for index, word in enumerate(sequence)],
         add_special_tokens=False,
