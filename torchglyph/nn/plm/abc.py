@@ -141,6 +141,28 @@ class RoBertaBase(PLM):
             'ja': 'rinna/japanese-roberta-base',
         }[self._lang]
 
+    def tokenize(self, sentence: str, tokenizer: PreTrainedTokenizer = None, *,
+                 as_string: bool = False, add_prefix_space: bool = False, add_special_tokens: bool = True):
+        if self._lang == 'ja' and add_special_tokens:
+            sentence = f'[CLS]{sentence}'
+
+        return super(RoBertaBase, self).tokenize(
+            sentence, tokenizer, as_string=as_string,
+            add_prefix_space=add_prefix_space,
+            add_special_tokens=add_special_tokens,
+        )
+
+    def tokenize_as_words(self, sentence: List[str], tokenizer: PreTrainedTokenizer = None, *,
+                          as_string: bool = False, add_prefix_space: bool = False, add_special_tokens: bool = True):
+        if self._lang == 'ja' and add_special_tokens:
+            sentence = ['[CLS]', *sentence]
+
+        return super(RoBertaBase, self).tokenize_as_words(
+            sentence, tokenizer, as_string=as_string,
+            add_prefix_space=add_prefix_space,
+            add_special_tokens=add_special_tokens,
+        )
+
 
 class XlmRobertaBase(PLM):
     @property
