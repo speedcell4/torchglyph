@@ -1,7 +1,3 @@
-from typing import List
-
-from transformers import PreTrainedTokenizer
-
 from torchglyph.nn.plm.abc import PLM
 
 
@@ -14,7 +10,7 @@ class BertBase(PLM):
         }[self._lang]
 
 
-class RoBertaBase(PLM):
+class RoBERTaBase(PLM):
     @property
     def pretrained_model_name(self) -> str:
         return {
@@ -22,30 +18,25 @@ class RoBertaBase(PLM):
             'de': 'uklfr/gottbert-base',
             'fr': 'camembert-base',
             'zh': 'hfl/chinese-macbert-base',
-            'ja': 'rinna/japanese-roberta-base',
         }[self._lang]
 
-    def tokenize(self, sentence: str, tokenizer: PreTrainedTokenizer = None, *,
-                 as_string: bool = False, add_prefix_space: bool = False, add_special_tokens: bool = True):
-        if self.lang == 'ja' and add_special_tokens:
-            sentence = f'[CLS]{sentence}'
 
-        return super(RoBertaBase, self).tokenize(
-            sentence, tokenizer, as_string=as_string,
-            add_prefix_space=add_prefix_space,
-            add_special_tokens=add_special_tokens,
-        )
+class XLNetBase(PLM):
+    @property
+    def pretrained_model_name(self) -> str:
+        return {
+            'en': 'xlnet-base-cased',
+            'zh': 'hfl/chinese-xlnet-base',
+        }[self._lang]
 
-    def tokenize_as_words(self, sentence: List[str], tokenizer: PreTrainedTokenizer = None, *,
-                          as_string: bool = False, add_prefix_space: bool = False, add_special_tokens: bool = True):
-        if self.lang == 'ja' and add_special_tokens:
-            sentence = ['[CLS]', *sentence]
 
-        return super(RoBertaBase, self).tokenize_as_words(
-            sentence, tokenizer, as_string=as_string,
-            add_prefix_space=add_prefix_space,
-            add_special_tokens=add_special_tokens,
-        )
+class XLNetLarge(PLM):
+    @property
+    def pretrained_model_name(self) -> str:
+        return {
+            'en': 'xlnet-large-cased',
+            'zh': 'hfl/chinese-xlnet-large',
+        }[self._lang]
 
 
 class BartBase(PLM):
@@ -55,4 +46,12 @@ class BartBase(PLM):
             'en': 'facebook/bart-base',
             'fr': 'moussaKam/barthez',
             'zh': 'fnlp/bart-base-chinese',
+        }[self._lang]
+
+
+class DeBERTaBase(PLM):
+    @property
+    def pretrained_model_name(self) -> str:
+        return {
+            'en': 'microsoft/deberta-base',
         }[self._lang]

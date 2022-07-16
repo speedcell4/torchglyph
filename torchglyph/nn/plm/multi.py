@@ -7,7 +7,7 @@ class MultiBertBase(PLM):
         return 'bert-base-multilingual-cased'
 
 
-class MultiRobertaBase(PLM):
+class MultiRoBERTaBase(PLM):
     @property
     def pretrained_model_name(self) -> str:
         return 'xlm-roberta-base'
