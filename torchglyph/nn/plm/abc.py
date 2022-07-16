@@ -1,4 +1,4 @@
-from typing import Union, List
+from typing import Union, List, Optional
 
 from torch import Tensor
 from torch.distributions.utils import lazy_property
@@ -24,12 +24,12 @@ class PLM(object):
         raise NotImplementedError
 
     @property
-    def src_lang(self) -> str:
-        raise NotImplementedError
+    def src_lang(self) -> Optional[str]:
+        return None
 
     @property
-    def tgt_lang(self) -> str:
-        raise NotImplementedError
+    def tgt_lang(self) -> Optional[str]:
+        return None
 
     @lazy_property
     def config(self) -> PretrainedConfig:
@@ -79,3 +79,25 @@ class PLM(object):
             tokenizer=self.tokenizer if tokenizer is None else tokenizer,
             model=self.model if model is None else model,
         )
+
+
+class RoBertaBase(PLM):
+    @property
+    def pretrained_model_name(self) -> str:
+        return {
+            'en': 'roberta-base',
+            'de': 'uklfr/gottbert-base',
+            'fr': 'camembert-base',
+            'zh': 'hfl/chinese-macbert-base',
+            'ja': 'rinna/japanese-roberta-base',
+        }[self._src_lang]
+
+    @property
+    def src_lang(self) -> str:
+        return {
+            'en': 'en_XX',
+            'de': 'de_DE',
+            'fr': 'fr_XX',
+            'zh': 'zh_CN',
+            'ja': 'ja_XX',
+        }[self._src_lang]
