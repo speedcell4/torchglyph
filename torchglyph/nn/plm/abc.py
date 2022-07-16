@@ -1,4 +1,4 @@
-from typing import Union, List, Optional
+from typing import Union, List
 
 from torch import Tensor
 from torch.distributions.utils import lazy_property
@@ -15,21 +15,17 @@ Sequence = Union[Tensor, CattedSequence, PackedSequence]
 
 
 class PLM(object):
-    def __init__(self, src_lang: str, **kwargs) -> None:
+    def __init__(self, lang: str, **kwargs) -> None:
         super(PLM, self).__init__()
-        self._src_lang = src_lang
+        self._lang = lang
 
     @property
     def pretrained_model_name(self) -> str:
         raise NotImplementedError
 
     @property
-    def src_lang(self) -> Optional[str]:
-        return None
-
-    @property
-    def tgt_lang(self) -> Optional[str]:
-        return None
+    def lang(self) -> str:
+        return self._lang
 
     @lazy_property
     def config(self) -> PretrainedConfig:
@@ -39,7 +35,8 @@ class PLM(object):
     def tokenizer(self) -> PreTrainedTokenizer:
         return AutoTokenizer.from_pretrained(
             pretrained_model_name_or_path=self.pretrained_model_name,
-            src_lang=self.src_lang, tgt_lang=self.tgt_lang, add_prefix_space=False,
+            add_prefix_space=False,
+            src_lang=self.lang,
         )
 
     @lazy_property
@@ -94,17 +91,7 @@ class RoBertaBase(PLM):
             'fr': 'camembert-base',
             'zh': 'hfl/chinese-macbert-base',
             'ja': 'rinna/japanese-roberta-base',
-        }[self._src_lang]
-
-    @property
-    def src_lang(self) -> str:
-        return {
-            'en': 'en_XX',
-            'de': 'de_DE',
-            'fr': 'fr_XX',
-            'zh': 'zh_CN',
-            'ja': 'ja_XX',
-        }[self._src_lang]
+        }[self._lang]
 
 
 class BartBase(PLM):
@@ -114,12 +101,66 @@ class BartBase(PLM):
             'en': 'facebook/bart-base',
             'fr': 'moussaKam/barthez',
             'zh': 'fnlp/bart-base-chinese',
-        }[self._src_lang]
+        }[self._lang]
+
+
+class MBartLarge(PLM):
+    @property
+    def pretrained_model_name(self) -> str:
+        return {
+            'ar': 'facebook/mbart-large-cc25',
+            'cs': 'facebook/mbart-large-cc25',
+            'de': 'facebook/mbart-large-cc25',
+            'en': 'facebook/mbart-large-cc25',
+            'es': 'facebook/mbart-large-cc25',
+            'et': 'facebook/mbart-large-cc25',
+            'fi': 'facebook/mbart-large-cc25',
+            'fr': 'facebook/mbart-large-cc25',
+            'gu': 'facebook/mbart-large-cc25',
+            'hi': 'facebook/mbart-large-cc25',
+            'it': 'facebook/mbart-large-cc25',
+            'ja': 'facebook/mbart-large-cc25',
+            'kk': 'facebook/mbart-large-cc25',
+            'ko': 'facebook/mbart-large-cc25',
+            'lt': 'facebook/mbart-large-cc25',
+            'lv': 'facebook/mbart-large-cc25',
+            'my': 'facebook/mbart-large-cc25',
+            'ne': 'facebook/mbart-large-cc25',
+            'nl': 'facebook/mbart-large-cc25',
+            'ro': 'facebook/mbart-large-cc25',
+            'ru': 'facebook/mbart-large-cc25',
+            'si': 'facebook/mbart-large-cc25',
+            'tr': 'facebook/mbart-large-cc25',
+            'vi': 'facebook/mbart-large-cc25',
+            'zh': 'facebook/mbart-large-cc25',
+        }[self._lang]
 
     @property
-    def src_lang(self) -> str:
+    def lang(self) -> str:
         return {
+            'ar': 'ar_AR',
+            'cs': 'cs_CZ',
+            'de': 'de_DE',
             'en': 'en_XX',
+            'es': 'es_XX',
+            'et': 'et_EE',
+            'fi': 'fi_FI',
             'fr': 'fr_XX',
+            'gu': 'gu_IN',
+            'hi': 'hi_IN',
+            'it': 'it_IT',
+            'ja': 'ja_XX',
+            'kk': 'kk_KZ',
+            'ko': 'ko_KR',
+            'lt': 'lt_LT',
+            'lv': 'lv_LV',
+            'my': 'my_MM',
+            'ne': 'ne_NP',
+            'nl': 'nl_XX',
+            'ro': 'ro_RO',
+            'ru': 'ru_RU',
+            'si': 'si_LK',
+            'tr': 'tr_TR',
+            'vi': 'vi_VN',
             'zh': 'zh_CN',
-        }[self._src_lang]
+        }[self._lang]
