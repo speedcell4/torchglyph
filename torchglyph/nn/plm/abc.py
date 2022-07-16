@@ -1,3 +1,5 @@
+import logging
+from logging import getLogger
 from typing import Union, List
 
 from torch import Tensor
@@ -11,7 +13,7 @@ from transformers import PretrainedConfig, AutoConfig
 from torchglyph.nn.plm.encode import encode, encode_as_words
 from torchglyph.nn.plm.tokenize import tokenize, tokenize_as_words
 
-Sequence = Union[Tensor, CattedSequence, PackedSequence]
+logger = getLogger(__name__)
 
 
 class PLM(object):
@@ -33,6 +35,7 @@ class PLM(object):
 
     @lazy_property
     def tokenizer(self) -> PreTrainedTokenizer:
+        logging.info(f'{self.__class__.__name__}.tokenizer({self.pretrained_model_name}, lang={self.lang})')
         return AutoTokenizer.from_pretrained(
             pretrained_model_name_or_path=self.pretrained_model_name,
             add_prefix_space=False,
@@ -41,7 +44,10 @@ class PLM(object):
 
     @lazy_property
     def model(self) -> PreTrainedModel:
-        return AutoModel.from_pretrained(pretrained_model_name_or_path=self.pretrained_model_name)
+        model = AutoModel.from_pretrained(pretrained_model_name_or_path=self.pretrained_model_name)
+        logger.info(f'{self.__class__.__name__}.model({self.pretrained_model_name}, lang={self.lang}) => '
+                    f'{sum(param.numel() for param in model.parameters())} parameters')
+        return model
 
     def tokenize(self, sentence: str, tokenizer: PreTrainedTokenizer = None, *,
                  as_string: bool = False, add_prefix_space: bool = False, add_special_tokens: bool = True):
@@ -65,7 +71,7 @@ class PLM(object):
 
         return self.tokenizer.convert_ids_to_tokens(input_ids) if as_string else input_ids, duration
 
-    def encode(self, input_ids: Sequence,
+    def encode(self, input_ids: Union[Tensor, CattedSequence, PackedSequence],
                tokenizer: PreTrainedTokenizer = None, model: PreTrainedModel = None):
         return encode(
             input_ids=input_ids,
@@ -73,13 +79,55 @@ class PLM(object):
             model=self.model if model is None else model,
         )
 
-    def encode_as_words(self, input_ids: Sequence, duration: Sequence,
+    def encode_as_words(self, input_ids: Union[Tensor, CattedSequence, PackedSequence],
+                        duration: Union[Tensor, CattedSequence, PackedSequence],
                         tokenizer: PreTrainedTokenizer = None, model: PreTrainedModel = None):
         return encode_as_words(
             input_ids=input_ids, duration=duration,
             tokenizer=self.tokenizer if tokenizer is None else tokenizer,
             model=self.model if model is None else model,
         )
+
+
+class BertBase(PLM):
+    @property
+    def pretrained_model_name(self) -> str:
+        return {
+            'en': 'bert-base-cased',
+            'de': 'bert-base-german-cased',
+        }[self._lang]
+
+
+class MBertBase(PLM):
+    @property
+    def pretrained_model_name(self) -> str:
+        return {
+            'ar': 'bert-base-multilingual-cased',
+            'cs': 'bert-base-multilingual-cased',
+            'de': 'bert-base-multilingual-cased',
+            'en': 'bert-base-multilingual-cased',
+            'es': 'bert-base-multilingual-cased',
+            'et': 'bert-base-multilingual-cased',
+            'fi': 'bert-base-multilingual-cased',
+            'fr': 'bert-base-multilingual-cased',
+            'gu': 'bert-base-multilingual-cased',
+            'hi': 'bert-base-multilingual-cased',
+            'it': 'bert-base-multilingual-cased',
+            'ja': 'bert-base-multilingual-cased',
+            'kk': 'bert-base-multilingual-cased',
+            'ko': 'bert-base-multilingual-cased',
+            'lt': 'bert-base-multilingual-cased',
+            'lv': 'bert-base-multilingual-cased',
+            'my': 'bert-base-multilingual-cased',
+            'ne': 'bert-base-multilingual-cased',
+            'nl': 'bert-base-multilingual-cased',
+            'ro': 'bert-base-multilingual-cased',
+            'ru': 'bert-base-multilingual-cased',
+            'si': 'bert-base-multilingual-cased',
+            'tr': 'bert-base-multilingual-cased',
+            'vi': 'bert-base-multilingual-cased',
+            'zh': 'bert-base-multilingual-cased',
+        }[self._lang]
 
 
 class RoBertaBase(PLM):
@@ -91,6 +139,38 @@ class RoBertaBase(PLM):
             'fr': 'camembert-base',
             'zh': 'hfl/chinese-macbert-base',
             'ja': 'rinna/japanese-roberta-base',
+        }[self._lang]
+
+
+class XlmRobertaBase(PLM):
+    @property
+    def pretrained_model_name(self) -> str:
+        return {
+            'ar': 'xlm-roberta-base',
+            'cs': 'xlm-roberta-base',
+            'de': 'xlm-roberta-base',
+            'en': 'xlm-roberta-base',
+            'es': 'xlm-roberta-base',
+            'et': 'xlm-roberta-base',
+            'fi': 'xlm-roberta-base',
+            'fr': 'xlm-roberta-base',
+            'gu': 'xlm-roberta-base',
+            'hi': 'xlm-roberta-base',
+            'it': 'xlm-roberta-base',
+            'ja': 'xlm-roberta-base',
+            'kk': 'xlm-roberta-base',
+            'ko': 'xlm-roberta-base',
+            'lt': 'xlm-roberta-base',
+            'lv': 'xlm-roberta-base',
+            'my': 'xlm-roberta-base',
+            'ne': 'xlm-roberta-base',
+            'nl': 'xlm-roberta-base',
+            'ro': 'xlm-roberta-base',
+            'ru': 'xlm-roberta-base',
+            'si': 'xlm-roberta-base',
+            'tr': 'xlm-roberta-base',
+            'vi': 'xlm-roberta-base',
+            'zh': 'xlm-roberta-base',
         }[self._lang]
 
 
