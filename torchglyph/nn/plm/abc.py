@@ -47,22 +47,26 @@ class PLM(object):
         return AutoModel.from_pretrained(pretrained_model_name_or_path=self.pretrained_model_name)
 
     def tokenize(self, sentence: str, tokenizer: PreTrainedTokenizer = None, *,
-                 add_prefix_space: bool = False, add_special_tokens: bool = True):
-        return tokenize(
+                 as_string: bool = False, add_prefix_space: bool = False, add_special_tokens: bool = True):
+        input_ids = tokenize(
             sentence=sentence,
             tokenizer=self.tokenizer if tokenizer is None else tokenizer,
             add_prefix_space=add_prefix_space,
             add_special_tokens=add_special_tokens,
         )
 
+        return self.tokenizer.convert_ids_to_tokens(input_ids) if as_string else input_ids
+
     def tokenize_as_words(self, sentence: List[str], tokenizer: PreTrainedTokenizer = None, *,
-                          add_prefix_space: bool = False, add_special_tokens: bool = True):
-        return tokenize_as_words(
+                          as_string: bool = False, add_prefix_space: bool = False, add_special_tokens: bool = True):
+        input_ids, duration = tokenize_as_words(
             sentence=sentence,
             tokenizer=self.tokenizer if tokenizer is None else tokenizer,
             add_prefix_space=add_prefix_space,
             add_special_tokens=add_special_tokens,
         )
+
+        return self.tokenizer.convert_ids_to_tokens(input_ids) if as_string else input_ids, duration
 
     def encode(self, input_ids: Sequence,
                tokenizer: PreTrainedTokenizer = None, model: PreTrainedModel = None):
@@ -100,4 +104,22 @@ class RoBertaBase(PLM):
             'fr': 'fr_XX',
             'zh': 'zh_CN',
             'ja': 'ja_XX',
+        }[self._src_lang]
+
+
+class BartBase(PLM):
+    @property
+    def pretrained_model_name(self) -> str:
+        return {
+            'en': 'facebook/bart-base',
+            'fr': 'moussaKam/barthez',
+            'zh': 'fnlp/bart-base-chinese',
+        }[self._src_lang]
+
+    @property
+    def src_lang(self) -> str:
+        return {
+            'en': 'en_XX',
+            'fr': 'fr_XX',
+            'zh': 'zh_CN',
         }[self._src_lang]
