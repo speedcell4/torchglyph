@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from torchglyph.io import DownloadMixin
 from torchglyph.pipe import Pipe
-from torchglyph.sampler import LinearBatchSampler
+from torchglyph.sampler import SortishBatchSampler
 
 logger = getLogger(__name__)
 
@@ -153,7 +153,7 @@ class DataLoader(TorchDataLoader):
 
             logger.debug(f'{index}.sampler => {sampler}')
 
-            batch_sampler = LinearBatchSampler(
+            batch_sampler = SortishBatchSampler(
                 data_source=dataset, sampler=sampler, batch_size=batch_size,
                 drop_last=index == 0 and drop_last,
             )
