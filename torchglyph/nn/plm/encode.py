@@ -38,7 +38,7 @@ def encode_packed_sequence(input_ids: PackedSequence,
 
 
 @singledispatch
-def encode_as_words(input_ids: Tensor, duration: Tensor,
+def encode_as_words(input_ids: Tensor, duration: Tensor, reduce: str,
                     model: PreTrainedModel, tokenizer: PreTrainedTokenizer) -> Tensor:
     raise NotImplementedError
 

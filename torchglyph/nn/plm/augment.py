@@ -4,6 +4,7 @@ import torch
 from torch import Tensor
 from torch.distributions import Poisson
 from transformers import PreTrainedTokenizer
+from torchrua import rua_fn
 
 
 def is_special(input_ids: Tensor, duration: Optional[Tensor], tokenizer: PreTrainedTokenizer) -> Tensor:
@@ -14,6 +15,7 @@ def is_special(input_ids: Tensor, duration: Optional[Tensor], tokenizer: PreTrai
     return mask
 
 
+@rua_fn
 def uniform_augment(input_ids: Tensor, tokenizer: PreTrainedTokenizer, p: float) -> Tensor:
     mask = torch.rand_like(input_ids, dtype=torch.float32) < p
     mask[is_special(input_ids=input_ids, duration=None, tokenizer=tokenizer)] = False
@@ -24,6 +26,7 @@ def uniform_augment(input_ids: Tensor, tokenizer: PreTrainedTokenizer, p: float)
     return input_ids
 
 
+@rua_fn
 def uniform_augment_as_words(input_ids: Tensor, duration: Tensor,
                              tokenizer: PreTrainedTokenizer, p: float) -> Tensor:
     mask = torch.rand_like(duration, dtype=torch.float32) < p
@@ -36,6 +39,7 @@ def uniform_augment_as_words(input_ids: Tensor, duration: Tensor,
     return input_ids
 
 
+@rua_fn
 def poisson_augment_as_words(input_ids: Tensor, duration: Tensor,
                              tokenizer: PreTrainedTokenizer, rate: float) -> Tensor:
     rate = torch.scalar_tensor(rate, device=duration.device)

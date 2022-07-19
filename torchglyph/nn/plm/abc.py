@@ -84,10 +84,10 @@ class PLM(object):
         )
 
     def encode_as_words(self, input_ids: Union[Tensor, CattedSequence, PackedSequence],
-                        duration: Union[Tensor, CattedSequence, PackedSequence],
+                        duration: Union[Tensor, CattedSequence, PackedSequence], reduce: str,
                         tokenizer: PreTrainedTokenizer = None, model: PreTrainedModel = None):
         return encode_as_words(
-            input_ids, duration=duration,
+            input_ids, duration=duration, reduce=reduce,
             tokenizer=self.tokenizer if tokenizer is None else tokenizer,
             model=self.model if model is None else model,
         )
