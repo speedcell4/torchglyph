@@ -7,11 +7,11 @@ from torchrua.padding import pad_packed_sequence
 
 from torchglyph.pipe.abc import Pipe
 from torchglyph.proc.abc import Lift
+from torchglyph.proc.cast import ToList
 from torchglyph.proc.catting import CatSequence
 from torchglyph.proc.packing import PackSequence, ComposeCattedSequences
-from torchglyph.proc.sequence import ToLen
 from torchglyph.proc.tensor import ToTensor
-from torchglyph.proc.vocab import CountTokenList, BuildVocab, StatsVocab, ToIndexList
+from torchglyph.proc.vocab import CountTokenSequence, BuildVocab, StatsVocab, ToIndexSequence
 
 __all__ = [
     'PackedNumListPipe', 'PackedNumListListPipe',
@@ -45,12 +45,12 @@ class PackedStrListPipe(PackedNumListPipe):
                  threshold: int = 10) -> None:
         super(PackedStrListPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
-            pre=CountTokenList(),
+            pre=CountTokenSequence(),
             vocab=[
                 BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
             ],
-            post=ToIndexList() + ...,
+            post=ToIndexSequence() + ...,
         )
 
     def inv(self, sequence: PackedSequence) -> List[List[str]]:
@@ -78,10 +78,11 @@ class PackedStrListListPipe(PackedNumListListPipe):
                  threshold: int = 10) -> None:
         super(PackedStrListListPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
-            pre=Lift(ToLen() + CountTokenList()),
+            pre=Lift(ToList() + CountTokenSequence()),
             vocab=[
                 BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
             ],
-            post=ToIndexList() + ...,
+            post=Lift(ToIndexSequence() + ToTensor(dtype=dtype)) + CatSequence(device=None),
+            batch=ComposeCattedSequences(device=device)
         )

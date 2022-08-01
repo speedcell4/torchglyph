@@ -15,7 +15,7 @@ class CountToken(Proc):
         return data
 
 
-class CountTokenList(Proc):
+class CountTokenSequence(Proc):
     Data = Union[Set[Any], List[Any], Tuple[Any, ...]]
 
     def __call__(self, data: Data, *, counter: Counter, **kwargs) -> Data:
@@ -28,7 +28,7 @@ class ToIndex(Proc):
         return vocab[data]
 
 
-class ToIndexList(Proc):
+class ToIndexSequence(Proc):
     Data = Union[Set[Any], List[Any], Tuple[Any, ...]]
     IntSequence = Union[Set[int], List[int], Tuple[int, ...]]
 

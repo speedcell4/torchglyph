@@ -7,13 +7,13 @@ from typing import Iterable, Any, Type
 from typing import Union, List, Tuple, NamedTuple, Dict
 
 from torch.distributions.utils import lazy_property
-from torch.utils.data import DataLoader as TorchDataLoader, SequentialSampler, RandomSampler
+from torch.utils.data import DataLoader as TorchDataLoader
 from torch.utils.data import Dataset as DatasetBase
 from tqdm import tqdm
 
 from torchglyph.io import DownloadMixin
 from torchglyph.pipe import Pipe
-from torchglyph.sampler import SortishBatchSampler
+from torchglyph.sampler import SizedBatchSampler, SortishSampler, SequentialSampler
 
 logger = getLogger(__name__)
 
@@ -31,15 +31,15 @@ class DatasetABC(DatasetBase, metaclass=ABCMeta):
     def __getitem__(self, index: int) -> Any:
         raise NotImplementedError
 
-    def size_by_item(self, item: Any) -> int:
+    def size_of_item(self, item: Any) -> int:
         raise NotImplementedError
 
-    def size_by_index(self, index: int) -> int:
+    def size_of_index(self, index: int) -> int:
         raise NotImplementedError
 
     @lazy_property
     def sizes(self) -> List[int]:
-        return [self.size_by_index(index=index) for index in range(len(self))]
+        return [self.size_of_index(index=index) for index in range(len(self))]
 
 
 class Dataset(DatasetABC, DownloadMixin):
@@ -128,7 +128,7 @@ class DataLoader(TorchDataLoader):
     @classmethod
     def new(cls, datasets: Tuple[Dataset, ...],
             batch_size: Union[int, Tuple[int, ...]],
-            shuffle: bool = True, drop_last: bool = False) -> List['DataLoader']:
+            shuffle: bool = True, section_size: int = 128) -> List['DataLoader']:
         assert len(datasets) > 0
 
         batch_sizes = batch_size
@@ -147,15 +147,14 @@ class DataLoader(TorchDataLoader):
 
         for index, (dataset, batch_size) in enumerate(zip(datasets, batch_sizes)):
             if index == 0 and shuffle:
-                sampler = RandomSampler(dataset, generator=None)
+                sampler = SortishSampler(dataset, section_size=section_size)
             else:
                 sampler = SequentialSampler(dataset)
 
             logger.debug(f'{index}.sampler => {sampler}')
 
-            batch_sampler = SortishBatchSampler(
+            batch_sampler = SizedBatchSampler(
                 data_source=dataset, sampler=sampler, batch_size=batch_size,
-                drop_last=index == 0 and drop_last,
             )
 
             logger.debug(f'{index}.batch_sampler => {batch_sampler}')

@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Iterable, NamedTuple, Any, List
+from typing import Iterable, NamedTuple, Any
 
 import torch
 from torch.types import Device
@@ -53,18 +53,20 @@ class CoNLL2003(Dataset):
         chunk_: str
         tag: str
 
-    def get_size(self, item: Any) -> int:
-        return item['word'].size()[0]
+    def size_of_item(self, item: Any) -> int:
+        return len(item['word'])
+
+    def size_of_index(self, index: int) -> int:
+        return len(self.data['word'][index])
 
     @classmethod
     def load(cls, path: Path, **kwargs) -> Iterable[NamedTuple]:
         with tqdm(path.open(mode='r', encoding='Utf-8'), desc=f'loading {path}') as fp:
-            for item in iter_sentence(fp, config=cls.Config, sep=' '):
-                yield item
+            for word, tag in iter_sentence(fp, config=cls.Config, sep=' '):
+                yield word, tag
 
     @classmethod
-    def new(cls, batch_size: int, *, device: Device,
-            root: Path = data_dir, **kwargs) -> List['DataLoader']:
+    def new(cls, batch_size: int, device: Device = torch.device('cpu'), root: Path = data_dir, **kwargs):
         word = WordPipe(device=device)
         char = CharPipe(device=device)
         tag = TagPipe(device=device)
@@ -90,5 +92,12 @@ class CoNLL2003(Dataset):
         return DataLoader.new(
             (train, dev, test),
             batch_size=batch_size,
-            shuffle=True, drop_last=False,
+            shuffle=True,
         )
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    train, dev, test = CoNLL2003.new(batch_size=128, device=torch.device('cpu'))
+    for item in dev:
+        print(item)

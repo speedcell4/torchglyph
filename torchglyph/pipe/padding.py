@@ -8,7 +8,7 @@ from torchglyph.pipe.abc import Pipe
 from torchglyph.proc.abc import Lift
 from torchglyph.proc.tensor import ToTensor, CastTensor
 from torchglyph.proc.padding import PadSequence
-from torchglyph.proc.vocab import CountTokenList, BuildVocab, StatsVocab, ToIndex, ToIndexList
+from torchglyph.proc.vocab import CountTokenSequence, BuildVocab, StatsVocab, ToIndex, ToIndexSequence
 
 
 class PaddedNumPipe(Pipe):
@@ -30,12 +30,12 @@ class PaddedStrPipe(PaddedNumPipe):
                  special_tokens: Tuple[str, ...] = (), threshold: int = 10) -> None:
         super(PaddedStrPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
-            pre=CountTokenList(),
+            pre=CountTokenSequence(),
             vocab=[
                 BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
             ],
-            post=ToIndexList() + ...,
+            post=ToIndexSequence() + ...,
             batch=...,
         )
 
@@ -74,12 +74,12 @@ class PaddedStrListPipe(PaddedNumListPipe):
             device=device, dtype=dtype,
         )
         self.with_(
-            pre=CountTokenList(),
+            pre=CountTokenSequence(),
             vocab=[
                 BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
                 StatsVocab(threshold=threshold),
             ],
-            post=ToIndexList() + ...,
+            post=ToIndexSequence() + ...,
         )
 
     def inv(self, data: Tensor, token_sizes: Tensor) -> List[List[str]]:
