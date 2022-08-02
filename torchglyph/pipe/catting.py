@@ -43,7 +43,7 @@ class CattedStrListPipe(CattedNumListPipe):
             pre=CountTokenSequence(),
             vocab=[
                 BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
-                StatsVocab(threshold=threshold),
+                StatsVocab(n=threshold),
             ],
             post=ToIndexSequence() + ...,
         )
@@ -51,7 +51,4 @@ class CattedStrListPipe(CattedNumListPipe):
     def inv(self, sequence: CattedSequence) -> List[List[str]]:
         assert sequence.data.dim() == 1, f'{sequence.data.dim()} != 1'
 
-        return [
-            [self.vocab.inv(index) for index in indices]
-            for indices in super(CattedStrListPipe, self).inv(sequence)
-        ]
+        return self.vocab.inv(super(CattedStrListPipe, self).inv(sequence=sequence))

@@ -39,7 +39,7 @@ class TokenEmbedding(nn.Embedding, metaclass=RuaMeta):
     @classmethod
     def from_vocab(cls, vocab: Vocab, freeze: bool = False):
         return cls.from_pretrained(
-            embeddings=vocab.embeddings,
+            embeddings=vocab.weight,
             freeze=freeze, padding_idx=vocab.pad_idx,
         )
 

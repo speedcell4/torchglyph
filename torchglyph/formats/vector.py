@@ -1,62 +1,52 @@
-from typing import Iterable, List, Tuple, IO
+from typing import Tuple, IO
 
+import torch
 from tqdm import tqdm
 
-__all__ = [
-    'load_meta',
-    'loads_vector',
-    'load_vector',
-    'iter_vector',
-    'load_word2vec', 'load_glove',
-]
 
-Token = str
-Vector = Tuple[float, ...]
-
-
-def load_meta(fp: IO, *, sep: str = ' ') -> Tuple[int, int]:
-    num_embeddings, embedding_dim = next(fp).strip().split(sep=sep)
+def loads_meta(string: str, *, sep: str = ' ') -> Tuple[int, int]:
+    num_embeddings, embedding_dim = string.strip().split(sep=sep)
     return int(num_embeddings), int(embedding_dim)
 
 
-def loads_vector(s: str, *, sep: str = ' ') -> Tuple[Token, Vector]:
-    token, *scalars = s.strip().split(sep=sep)
-    return str(token), tuple(float(scalar) for scalar in scalars)
+def load_meta(fp: IO, *, sep: str = ' ') -> Tuple[int, int]:
+    return loads_meta(fp.readline(), sep=sep)
 
 
-def load_vector(fp: IO, *, sep: str = ' ') -> Tuple[List[Token], List[Vector]]:
-    tokens, vectors = zip(*[loads_vector(s, sep=sep) for s in fp])
-    return tokens, vectors
+def loads_vector(string: str, *, sep: str = ' '):
+    token, *values = string.strip().split(sep=sep)
+    return str(token), tuple(float(value) for value in values)
 
 
-def iter_vector(fp: IO, *, sep: str = ' ') -> Iterable[Tuple[Token, Vector]]:
-    yield from map(lambda s: loads_vector(s, sep=sep), fp)
+def load_vector(fp: IO, *, sep: str = ' '):
+    return loads_vector(fp.readline(), sep=sep)
 
 
-def load_word2vec(fp: IO, *, sep: str = ' ') -> Tuple[List[Token], List[Vector]]:
+def load_word2vec(fp: IO, *, sep: str = ' '):
     num_embeddings, embedding_dim = load_meta(fp, sep=sep)
-    if isinstance(fp, tqdm) and hasattr(fp, 'total'):
-        fp.total = num_embeddings
 
     tokens, vectors = [], []
-    for token, vector in iter_vector(fp, sep=sep):
-        assert len(vector) == embedding_dim, f'len({token}) = {len(vector)} != {embedding_dim}'
+    for string in tqdm(fp.readlines(), initial=0):
+        token, vector = loads_vector(string=string, sep=sep)
+        assert embedding_dim == len(vector), f'{embedding_dim} != {len(vector)}'
 
         tokens.append(token)
         vectors.append(vector)
 
-    return tokens, vectors
+    assert num_embeddings == len(tokens), f'{num_embeddings} != {len(tokens)}'
+    return tokens, torch.tensor(vectors, dtype=torch.float32, device=torch.device('cpu'))
 
 
-def load_glove(fp: IO, *, sep: str = ' ') -> Tuple[List[Token], List[Vector]]:
-    token, vector = loads_vector(next(fp), sep=sep)
+def load_glove(fp: IO, *, sep: str = ' '):
+    token, vector = load_vector(fp, sep=sep)
     embedding_dim = len(vector)
 
     tokens, vectors = [token], [vector]
-    for token, vector in iter_vector(fp, sep=sep):
-        assert len(vector) == embedding_dim, f'len({token}) = {len(vector)} != {embedding_dim}'
+    for string in tqdm(fp.readlines(), initial=1):
+        token, vector = loads_vector(string, sep=sep)
+        assert embedding_dim == len(vector), f'{embedding_dim} != {len(vector)}'
 
         tokens.append(token)
         vectors.append(vector)
 
-    return tokens, vectors
+    return tokens, torch.tensor(vectors, dtype=torch.float32, device=torch.device('cpu'))

@@ -4,6 +4,7 @@ from typing import Iterable, NamedTuple, Any
 
 import torch
 from torch.types import Device
+from torchglyph.proc.vocab import LoadFastText
 from tqdm import tqdm
 
 from torchglyph import data_dir
@@ -21,6 +22,9 @@ class WordPipe(PackedStrListPipe):
         super(WordPipe, self).__init__(
             device=device, dtype=torch.long,
             unk_token='<unk>', special_tokens=(), threshold=10,
+        )
+        self.with_(
+            vocab=... + LoadFastText(str.lower, name='cc', lang='en'),
         )
 
 
@@ -99,5 +103,5 @@ class CoNLL2003(Dataset):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     train, dev, test = CoNLL2003.new(batch_size=128, device=torch.device('cpu'))
-    for item in dev:
-        print(item)
+    # for item in dev:
+    #     print(item)

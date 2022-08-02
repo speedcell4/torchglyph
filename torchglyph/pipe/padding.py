@@ -5,10 +5,9 @@ from torch import Tensor
 from torch.types import Device, Number
 
 from torchglyph.pipe.abc import Pipe
-from torchglyph.proc.abc import Lift
-from torchglyph.proc.tensor import ToTensor, CastTensor
 from torchglyph.proc.padding import PadSequence
-from torchglyph.proc.vocab import CountTokenSequence, BuildVocab, StatsVocab, ToIndex, ToIndexSequence
+from torchglyph.proc.tensor import ToTensor, CastTensor
+from torchglyph.proc.vocab import CountTokenSequence, BuildVocab, StatsVocab, ToIndexSequence
 
 
 class PaddedNumPipe(Pipe):
@@ -20,8 +19,8 @@ class PaddedNumPipe(Pipe):
             batch=ToTensor(dtype=dtype) + CastTensor(device=device),
         )
 
-    def inv(self, data: Tensor) -> List[Number]:
-        return data.detach().cpu().tolist()
+    def inv(self, sequence: Tensor) -> List[Number]:
+        return sequence.detach().cpu().tolist()
 
 
 class PaddedStrPipe(PaddedNumPipe):
@@ -33,17 +32,14 @@ class PaddedStrPipe(PaddedNumPipe):
             pre=CountTokenSequence(),
             vocab=[
                 BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
-                StatsVocab(threshold=threshold),
+                StatsVocab(n=threshold),
             ],
             post=ToIndexSequence() + ...,
             batch=...,
         )
 
-    def inv(self, data: Tensor) -> List[str]:
-        return [
-            self.vocab.inv(index)
-            for index in super(PaddedStrPipe, self).inv(data=data)
-        ]
+    def inv(self, sequence: Tensor) -> List[str]:
+        return self.vocab.inv(super(PaddedStrPipe, self).inv(sequence=sequence))
 
 
 class PaddedNumListPipe(Pipe):
@@ -54,12 +50,12 @@ class PaddedNumListPipe(Pipe):
             batch=PadSequence(batch_first=batch_first, padding_value=padding_value, device=device),
         )
 
-    def inv(self, data: Tensor, token_sizes: Tensor) -> List[List[Number]]:
-        data = data.detach().cpu().tolist()
+    def inv(self, sequence: Tensor, token_sizes: Tensor) -> List[List[Number]]:
+        sequence = sequence.detach().cpu().tolist()
         token_sizes = token_sizes.detach().cpu().tolist()
 
         return [
-            [data[index1][index2] for index2 in range(token_size)]
+            [sequence[index1][index2] for index2 in range(token_size)]
             for index1, token_size in enumerate(token_sizes)
         ]
 
@@ -77,16 +73,13 @@ class PaddedStrListPipe(PaddedNumListPipe):
             pre=CountTokenSequence(),
             vocab=[
                 BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
-                StatsVocab(threshold=threshold),
+                StatsVocab(n=threshold),
             ],
             post=ToIndexSequence() + ...,
         )
 
-    def inv(self, data: Tensor, token_sizes: Tensor) -> List[List[str]]:
-        assert data.dim() == 2, f'{data.dim()} != 2'
+    def inv(self, sequence: Tensor, token_sizes: Tensor) -> List[List[str]]:
+        assert sequence.dim() == 2, f'{sequence.dim()} != 2'
         assert token_sizes.dim() == 1, f'{token_sizes.dim()} == {1}'
 
-        return [
-            [self.vocab.inv(index) for index in indices]
-            for indices in super(PaddedStrListPipe, self).inv(data=data, token_sizes=token_sizes)
-        ]
+        return self.vocab.inv(super(PaddedStrListPipe, self).inv(sequence=sequence, token_sizes=token_sizes))
