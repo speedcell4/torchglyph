@@ -1,4 +1,5 @@
 import gzip
+import json
 import logging
 import pickle
 import shutil
@@ -50,7 +51,7 @@ def unzip(path: Path) -> Path:
 
 
 def cache_as_torch(method):
-    def wrap(self, path: Path, *args, **kwargs):
+    def _cache_as_torch(self, path: Path, *args, **kwargs):
         cache = path.with_name(f'{path.name}.pt')
         cache.parent.mkdir(parents=True, exist_ok=True)
 
@@ -64,7 +65,27 @@ def cache_as_torch(method):
 
         return obj
 
-    return wrap
+    return _cache_as_torch
+
+
+def cache_as_json(method):
+    def _cache_as_json(self, path: Path, *args, **kwargs):
+        cache = path.with_name(f'{path.name}.json')
+        cache.parent.mkdir(parents=True, exist_ok=True)
+
+        if cache.exists():
+            logger.info(f'loading from {cache}')
+            with cache.open(mode='r', encoding='utf-8') as fp:
+                obj = json.load(fp)
+        else:
+            obj = method(self, path, *args, **kwargs)
+            logger.info(f'saving to {cache}')
+            with cache.open(mode='w', encoding='utf-8') as fp:
+                json.dump(obj, fp=fp, indent=2, ensure_ascii=False)
+
+        return obj
+
+    return _cache_as_json
 
 
 class DownloadMixin(object):
