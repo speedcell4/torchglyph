@@ -49,18 +49,17 @@ def unzip(path: Path) -> Path:
 
 class DownloadMixin(object):
     name: str
-    urls: List[Tuple[str, ...]]
 
     @classmethod
-    def get_urls(cls, **kwargs) -> List[Tuple[str, ...]]:
-        return cls.urls
+    def urls(cls, **kwargs) -> List[Tuple[str, ...]]:
+        raise NotImplementedError
 
     @classmethod
     def paths(cls, root: Path = data_dir, **kwargs) -> List[Path]:
         root = root / getattr(cls, 'name', cls.__name__).lower()
 
         paths = []
-        for url, path, *names in cls.get_urls(**kwargs):
+        for url, path, *names in cls.urls(**kwargs):
             if len(names) == 0:
                 names = [path]
             if any(not (root / name).exists() for name in names):

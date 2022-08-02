@@ -4,13 +4,14 @@ from typing import Iterable, NamedTuple, Any
 
 import torch
 from torch.types import Device
-from torchglyph.proc.vocab import LoadFastText
 from tqdm import tqdm
 
 from torchglyph import data_dir
 from torchglyph.dataset import Dataset, DataLoader
 from torchglyph.formats.conll import iter_sentence
 from torchglyph.pipe.packing import PackedStrListPipe, PackedStrListListPipe
+from torchglyph.proc.vocab import LoadVectors
+from torchglyph.vocab import Glove6B
 
 __all__ = [
     'CoNLL2003',
@@ -24,7 +25,7 @@ class WordPipe(PackedStrListPipe):
             unk_token='<unk>', special_tokens=(), threshold=10,
         )
         self.with_(
-            vocab=... + LoadFastText(str.lower, name='cc', lang='en'),
+            vocab=... + LoadVectors(Glove6B(dim=100), str.lower),
         )
 
 
@@ -45,11 +46,15 @@ class TagPipe(PackedStrListPipe):
 
 
 class CoNLL2003(Dataset):
-    urls = [
-        ('https://raw.githubusercontent.com/glample/tagger/master/dataset/eng.train', 'train.txt'),
-        ('https://raw.githubusercontent.com/glample/tagger/master/dataset/eng.testa', 'dev.txt'),
-        ('https://raw.githubusercontent.com/glample/tagger/master/dataset/eng.testb', 'test.txt'),
-    ]
+    name = 'conll2003'
+
+    @classmethod
+    def urls(cls):
+        return [
+            ('https://raw.githubusercontent.com/glample/tagger/master/dataset/eng.train', 'train.txt'),
+            ('https://raw.githubusercontent.com/glample/tagger/master/dataset/eng.testa', 'dev.txt'),
+            ('https://raw.githubusercontent.com/glample/tagger/master/dataset/eng.testb', 'test.txt'),
+        ]
 
     class Config(NamedTuple):
         word: str
@@ -103,5 +108,5 @@ class CoNLL2003(Dataset):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     train, dev, test = CoNLL2003.new(batch_size=128, device=torch.device('cpu'))
-    # for item in dev:
-    #     print(item)
+    for item in dev:
+        print(item)

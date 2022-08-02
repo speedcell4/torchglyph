@@ -1,7 +1,7 @@
 import logging
 from collections import Counter
 from pathlib import Path
-from typing import List, Tuple
+from typing import Tuple, Literal
 
 import torch
 from torch import Tensor
@@ -12,11 +12,6 @@ from torchglyph.formats.vector import load_word2vec, load_glove
 from torchglyph.io import DownloadMixin
 
 logger = logging.getLogger(__name__)
-
-__all__ = [
-    'Vocab', 'PreTrainedEmbedding',
-    'Glove', 'FastText',
-]
 
 
 class Vocab(object):
@@ -168,50 +163,114 @@ class PreTrainedEmbedding(Vocab, DownloadMixin):
         return tokens, weight
 
 
-class Glove(PreTrainedEmbedding):
+class Glove6B(PreTrainedEmbedding):
+    name = 'glove'
     format = 'glove'
 
-    def __init__(self, name: str, dim: int, root: Path = data_dir) -> None:
-        super(Glove, self).__init__(root=root, name=name, dim=dim)
+    def __init__(self, dim: Literal[50, 100, 200, 300], *, root: Path = data_dir) -> None:
+        super(Glove6B, self).__init__(root=root, dim=dim)
 
     @classmethod
-    def get_urls(cls, name: str, dim: int) -> List[Tuple[str, ...]]:
+    def urls(cls, dim: int):
         return [(
-            f'https://huggingface.co/stanfordnlp/glove/resolve/main/glove.{name}.zip',
-            f'glove.{name}.zip',
-            f'glove.{name}.{dim}d.txt',
+            f'https://huggingface.co/stanfordnlp/glove/resolve/main/glove.6B.zip',
+            f'glove.6B.zip',
+            f'glove.6B.{dim}d.txt',
         )]
 
 
-class FastText(PreTrainedEmbedding):
-    format = 'word2vec'
+class Glove42B(PreTrainedEmbedding):
+    name = 'glove'
+    format = 'glove'
 
-    def __init__(self, name: str, lang: str, root: Path = data_dir) -> None:
-        super(FastText, self).__init__(root=root, name=name, lang=lang)
+    def __init__(self, *, root: Path = data_dir) -> None:
+        super(Glove42B, self).__init__(root=root)
 
     @classmethod
-    def get_urls(cls, name: str, lang: str) -> List[Tuple[str, ...]]:
-        if name == 'cc':
-            return [(
-                f'https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.{lang}.300.vec.gz',
-                f'cc.{lang}.300.vec.gz',
-                f'cc.{lang}.300.vec',
-            )]
-        if name == 'wiki':
-            return [(
-                f'https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.{lang}.vec',
-                f'wiki.{lang}.vec',
-                f'wiki.{lang}.vec',
-            )]
-        if name == 'aligned':
-            return [(
-                f'https://dl.fbaipublicfiles.com/fasttext/vectors-aligned/wiki.{lang}.align.vec',
-                f'wiki.{lang}.align.vec',
-                f'wiki.{lang}.align.vec',
-            )]
+    def urls(cls):
+        return [(
+            f'https://huggingface.co/stanfordnlp/glove/resolve/main/glove.42B.300d.zip',
+            f'glove.42B.300d.zip',
+            f'glove.42B.300d.txt',
+        )]
 
-        raise KeyError(f'{name} is not supported')
+
+class Glove840B(PreTrainedEmbedding):
+    name = 'glove'
+    format = 'glove'
+
+    def __init__(self, *, root: Path = data_dir) -> None:
+        super(Glove840B, self).__init__(root=root)
+
+    @classmethod
+    def urls(cls):
+        return [(
+            f'https://huggingface.co/stanfordnlp/glove/resolve/main/glove.840B.300d.zip',
+            f'glove.840B.300d.zip',
+            f'glove.840B.300d.txt',
+        )]
+
+
+class GloveTwitter(PreTrainedEmbedding):
+    name = 'glove'
+    format = 'glove'
+
+    def __init__(self, *, root: Path = data_dir) -> None:
+        super(GloveTwitter, self).__init__(root=root)
+
+    @classmethod
+    def urls(cls):
+        return [(
+            f'https://huggingface.co/stanfordnlp/glove/resolve/main/glove.twitter.27B.zip',
+            f'glove.twitter.27B.zip',
+            f'glove.twitter.27B.txt',
+        )]
+
+
+class FastTextCc(PreTrainedEmbedding):
+    format = 'word2vec'
+
+    def __init__(self, lang: str, *, root: Path = data_dir) -> None:
+        super(FastTextCc, self).__init__(root=root, lang=lang)
+
+    @classmethod
+    def urls(cls, lang: str):
+        return [(
+            f'https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.{lang}.300.vec.gz',
+            f'cc.{lang}.300.vec.gz',
+            f'cc.{lang}.300.vec',
+        )]
+
+
+class FastTextWiki(PreTrainedEmbedding):
+    format = 'word2vec'
+
+    def __init__(self, lang: str, *, root: Path = data_dir) -> None:
+        super(FastTextWiki, self).__init__(root=root, lang=lang)
+
+    @classmethod
+    def urls(cls, lang: str):
+        return [(
+            f'https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.{lang}.vec',
+            f'wiki.{lang}.vec',
+            f'wiki.{lang}.vec',
+        )]
+
+
+class FastTextAlign(PreTrainedEmbedding):
+    format = 'word2vec'
+
+    def __init__(self, lang: str, *, root: Path = data_dir) -> None:
+        super(FastTextAlign, self).__init__(root=root, lang=lang)
+
+    @classmethod
+    def urls(cls, lang: str):
+        return [(
+            f'https://dl.fbaipublicfiles.com/fasttext/vectors-aligned/wiki.{lang}.align.vec',
+            f'wiki.{lang}.align.vec',
+            f'wiki.{lang}.align.vec',
+        )]
 
 
 if __name__ == '__main__':
-    vectors = Glove(name='6B', dim=100)
+    vectors = FastTextCc(lang='en')

@@ -4,7 +4,7 @@ from collections import Counter
 from typing import Tuple, Any, Set, List, Union
 
 from torchglyph.proc.abc import Proc
-from torchglyph.vocab import Vocab, PreTrainedEmbedding, Glove, FastText
+from torchglyph.vocab import Vocab, PreTrainedEmbedding
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +106,7 @@ class StatsVocab(Proc):
 
 
 class LoadVectors(Proc):
-    def __init__(self, *transforms, embedding: PreTrainedEmbedding) -> None:
+    def __init__(self, embedding: PreTrainedEmbedding, *transforms) -> None:
         super(LoadVectors, self).__init__()
         self.transforms = transforms
         self.embedding = embedding
@@ -122,17 +122,3 @@ class LoadVectors(Proc):
 
         vocab.load_weight(*self.transforms, embedding=self.embedding)
         return vocab
-
-
-class LoadGlove(LoadVectors):
-    def __init__(self, *transforms, name: str, dim: int) -> None:
-        super(LoadGlove, self).__init__(
-            *transforms, embedding=Glove(name=name, dim=dim),
-        )
-
-
-class LoadFastText(LoadVectors):
-    def __init__(self, *transforms, name: str, lang: str) -> None:
-        super(LoadFastText, self).__init__(
-            *transforms, embedding=FastText(name=name, lang=lang),
-        )
