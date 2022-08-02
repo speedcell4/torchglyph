@@ -177,7 +177,7 @@ class Glove(PreTrainedEmbedding):
     @classmethod
     def get_urls(cls, name: str, dim: int) -> List[Tuple[str, ...]]:
         return [(
-            f'https://nlp.stanford.edu/data/glove.{name}.zip',
+            f'https://huggingface.co/stanfordnlp/glove/resolve/main/glove.{name}.zip',
             f'glove.{name}.zip',
             f'glove.{name}.{dim}d.txt',
         )]
@@ -214,4 +214,4 @@ class FastText(PreTrainedEmbedding):
 
 
 if __name__ == '__main__':
-    vectors = FastText(name='cc', lang='en')
+    vectors = Glove(name='6B', dim=100)
