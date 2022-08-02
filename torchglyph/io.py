@@ -1,5 +1,6 @@
 import gzip
 import logging
+import pickle
 import shutil
 import tarfile
 import zipfile
@@ -7,6 +8,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 import requests
+import torch
 from requests import Response
 from tqdm import tqdm
 
@@ -45,6 +47,24 @@ def unzip(path: Path) -> Path:
                 shutil.copyfileobj(fsrc, fdst)
 
     return path
+
+
+def cache_as_torch(method):
+    def wrap(self, path: Path, *args, **kwargs):
+        cache = path.with_name(f'{path.name}.pt')
+        cache.parent.mkdir(parents=True, exist_ok=True)
+
+        if cache.exists():
+            logger.info(f'loading from {cache}')
+            obj = torch.load(cache, map_location=torch.device('cpu'))
+        else:
+            obj = method(self, path, *args, **kwargs)
+            logger.info(f'saving to {cache}')
+            torch.save(obj, f=cache, pickle_protocol=pickle.HIGHEST_PROTOCOL)
+
+        return obj
+
+    return wrap
 
 
 class DownloadMixin(object):

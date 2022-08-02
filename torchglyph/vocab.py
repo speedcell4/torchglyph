@@ -9,7 +9,7 @@ from torch import nn
 
 from torchglyph import data_dir
 from torchglyph.formats.vector import load_word2vec, load_glove
-from torchglyph.io import DownloadMixin
+from torchglyph.io import DownloadMixin, cache_as_torch
 
 logger = logging.getLogger(__name__)
 
@@ -138,29 +138,18 @@ class PreTrainedEmbedding(Vocab, DownloadMixin):
         super(PreTrainedEmbedding, self).__init__()
 
         path, = self.paths(root=root, **kwargs)
-        tokens, weight = self.load_cache(path=path)
+        tokens, weight = self.load(path=path)
         self.build(counter=Counter(tokens), max_size=None, min_freq=1, weight=weight)
 
-    def load_cache(self, path: Path):
-        cache = path.with_name(f'{path.name}.pt')
-        cache.parent.mkdir(parents=True, exist_ok=True)
-
-        if cache.exists():
-            logger.info(f'loading from {cache}')
-            tokens, weight = torch.load(cache, map_location=torch.device('cpu'))
-        else:
-            with path.open('r', encoding='utf-8') as fp:
-                if self.format == 'glove':
-                    tokens, weight = load_glove(fp=fp)
-                elif self.format == 'word2vec':
-                    tokens, weight = load_word2vec(fp=fp)
-                else:
-                    raise KeyError(f'{self.format} is not supported')
-
-            logger.info(f'saving to {cache}')
-            torch.save(obj=(tokens, weight), f=cache)
-
-        return tokens, weight
+    @cache_as_torch
+    def load(self, path: Path):
+        with path.open('r', encoding='utf-8') as fp:
+            if self.format == 'glove':
+                return load_glove(fp=fp)
+            elif self.format == 'word2vec':
+                return load_word2vec(fp=fp)
+            else:
+                raise KeyError(f'{self.format} is not supported')
 
 
 class Glove6B(PreTrainedEmbedding):
@@ -273,4 +262,4 @@ class FastTextAlign(PreTrainedEmbedding):
 
 
 if __name__ == '__main__':
-    vectors = FastTextCc(lang='en')
+    vectors = FastTextCc(lang='ro')
