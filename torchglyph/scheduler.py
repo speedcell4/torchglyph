@@ -26,7 +26,7 @@ class LambdaLR(_LambdaLR):
 
     def report_lr(self) -> None:
         for group, lr in enumerate(self.get_last_lr()):
-            logger.info(f'step {self._step_count} | group {group} | lr => {lr:.10f}')
+            logger.info(f'group {group} | lr => {lr:.10f}')
 
 
 class ConstantScheduler(LambdaLR):

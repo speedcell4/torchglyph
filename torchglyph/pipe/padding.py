@@ -26,7 +26,7 @@ class PaddedNumPipe(Pipe):
 class PaddedStrPipe(PaddedNumPipe):
     def __init__(self, device: Device, dtype: torch.dtype = torch.long,
                  unk_token: str = '<unk>', pad_token: str = '<pad>',
-                 special_tokens: Tuple[str, ...] = (), threshold: int = 10) -> None:
+                 special_tokens: Tuple[str, ...] = (), threshold: int = None) -> None:
         super(PaddedStrPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=CountTokenSequence(),
@@ -63,7 +63,7 @@ class PaddedNumListPipe(Pipe):
 class PaddedStrListPipe(PaddedNumListPipe):
     def __init__(self, device: Device, dtype: torch.dtype = torch.long, batch_first: bool = True,
                  unk_token: str = '<unk>', pad_token: str = '<pad>',
-                 special_tokens: Tuple[str, ...] = (), threshold: int = 10) -> None:
+                 special_tokens: Tuple[str, ...] = (), threshold: int = None) -> None:
         super(PaddedStrListPipe, self).__init__(
             batch_first=batch_first,
             padding_value=0,  # TODO: fix padding_value

@@ -37,7 +37,7 @@ class CattedNumListPipe(Pipe):
 class CattedStrListPipe(CattedNumListPipe):
     def __init__(self, device: Device, dtype: torch.dtype = torch.long,
                  unk_token: Optional[str] = '<unk>',
-                 special_tokens: Tuple[Optional[str], ...] = (), threshold: int = 10) -> None:
+                 special_tokens: Tuple[Optional[str], ...] = (), threshold: int = None) -> None:
         super(CattedStrListPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=CountTokenSequence(),

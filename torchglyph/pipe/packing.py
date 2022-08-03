@@ -42,7 +42,7 @@ class PackedNumListPipe(Pipe):
 class PackedStrListPipe(PackedNumListPipe):
     def __init__(self, device: Device, dtype: torch.dtype = torch.long,
                  unk_token: str = '<unk>', special_tokens: Tuple[str, ...] = (),
-                 threshold: int = 10) -> None:
+                 threshold: int = None) -> None:
         super(PackedStrListPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=CountTokenSequence(),
@@ -72,7 +72,7 @@ class PackedNumListListPipe(Pipe):
 class PackedStrListListPipe(PackedNumListListPipe):
     def __init__(self, device: Device, dtype: torch.dtype = torch.long,
                  unk_token: str = '<unk>', special_tokens: Tuple[str, ...] = (),
-                 threshold: int = 10) -> None:
+                 threshold: int = None) -> None:
         super(PackedStrListListPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=Lift(ToList() + CountTokenSequence()),

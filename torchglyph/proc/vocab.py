@@ -1,4 +1,3 @@
-import heapq
 import logging
 from collections import Counter
 from typing import Tuple, Any, Set, List, Union
@@ -74,7 +73,7 @@ class BuildVocab(Proc):
 
 
 class StatsVocab(Proc):
-    def __init__(self, n: int) -> None:
+    def __init__(self, n: int = None) -> None:
         super(StatsVocab, self).__init__()
         self.n = n
 
@@ -82,24 +81,15 @@ class StatsVocab(Proc):
         return f'{self.n}'
 
     def __call__(self, vocab: Vocab, name: str, *args, **kwargs) -> Vocab:
-        num_tokens = len(vocab)
-        average_freq = sum(vocab.counter.values()) / max(1, num_tokens)
+        logger.info(f"{name}.vocab => {vocab} :: {sum(vocab.counter.values()) / max(1, len(vocab)) :.1f} times/token")
 
-        if num_tokens <= self.n:
-            xs = vocab.counter.most_common()
-            xs = ', '.join([f"'{token}'({freq})" for token, freq in xs])
-
-            logger.info(f"{name}.vocab => {vocab} :: {average_freq:.1f} times/token")
+        items = list(vocab.counter.most_common())
+        if self.n is None:
+            xs = ', '.join([f"'{token}' ({freq})" for token, freq in items])
             logger.info(f"{name}.tokens => [{xs}]")
-
         else:
-            n, m = self.n // 2, (self.n + 1) // 2
-            xs = heapq.nlargest(n, vocab.counter.items(), key=lambda x: x[1])
-            ys = heapq.nsmallest(m, vocab.counter.items(), key=lambda x: x[1])
-            xs = ', '.join([f"'{token}'({freq})" for token, freq in xs])
-            ys = ', '.join([f"'{token}'({freq})" for token, freq in ys[::-1]])
-
-            logger.info(f"{name}.vocab => {vocab} :: {average_freq:.1f} times/token")
+            xs = ', '.join(f"'{token}' ({freq})" for token, freq in items[:+self.n // 2])
+            ys = ', '.join(f"'{token}' ({freq})" for token, freq in items[-self.n // 2:])
             logger.info(f"{name}.tokens => [{xs}, ..., {ys}]")
 
         return vocab
