@@ -106,10 +106,10 @@ class StatsVocab(Proc):
 
 
 class LoadVectors(Proc):
-    def __init__(self, embedding: PreTrainedEmbedding, *transforms) -> None:
+    def __init__(self, *transforms, embedding: PreTrainedEmbedding) -> None:
         super(LoadVectors, self).__init__()
-        self.transforms = transforms
         self.embedding = embedding
+        self.transforms = transforms
 
     def extra_repr(self) -> str:
         return ', '.join([

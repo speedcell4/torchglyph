@@ -25,7 +25,7 @@ class WordPipe(PackedStrListPipe):
             unk_token='<unk>', special_tokens=(), threshold=10,
         )
         self.with_(
-            vocab=... + LoadVectors(Glove6B(dim=100), str.lower),
+            vocab=... + LoadVectors(str.lower, embedding=Glove6B(dim=100)),
         )
 
 
