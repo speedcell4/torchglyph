@@ -52,11 +52,13 @@ class BuildVocab(Proc):
         self.min_freq = min_freq
 
     def extra_repr(self) -> str:
-        return ', '.join([
-            ', '.join(self.special_tokens),
-            f'max_size={self.max_size}',
-            f'min_freq={self.min_freq}',
-        ])
+        args = []
+        if len(self.special_tokens) > 0:
+            args.append(', '.join(self.special_tokens))
+
+        args.append(f'max_size={self.max_size}')
+        args.append(f'min_freq={self.min_freq}')
+        return ', '.join(args)
 
     def __call__(self, vocab: Counter, **kwargs) -> Vocab:
         return Vocab(
