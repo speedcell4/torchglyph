@@ -30,7 +30,7 @@ class Vocab(object):
             if token is not None
         )
 
-        self.index2token = {}
+        self.index2token = []
         self.token2index = {}
 
     @property
@@ -53,9 +53,9 @@ class Vocab(object):
         assert token is not None
 
         if token not in self.token2index:
-            index = len(self.token2index)
+            index = len(self)
+            self.index2token.append(token)
             self.token2index[token] = index
-            self.index2token[index] = token
 
         return self.token2index[token]
 
@@ -79,7 +79,9 @@ class Vocab(object):
 
     def inv(self, sequence):
         if isinstance(sequence, int):
-            return self.index2token.get(sequence, self.unk_token)
+            if 0 <= sequence < len(self.index2token):
+                return self.index2token[sequence]
+            return self.unk_token
         else:
             return type(sequence)([self.inv(seq) for seq in sequence])
 
