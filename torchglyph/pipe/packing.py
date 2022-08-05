@@ -41,13 +41,13 @@ class PackedNumListPipe(Pipe):
 
 class PackedStrListPipe(PackedNumListPipe):
     def __init__(self, device: Device, dtype: torch.dtype = torch.long,
-                 unk_token: str = '<unk>', special_tokens: Tuple[str, ...] = (),
+                 unk_token: str = '<unk>', pad_token: str = '<pad>', special_tokens: Tuple[str, ...] = (),
                  threshold: int = None) -> None:
         super(PackedStrListPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=CountTokenSequence(),
             vocab=[
-                BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
+                BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
                 StatsVocab(n=threshold),
             ],
             post=ToIndexSequence() + ...,
