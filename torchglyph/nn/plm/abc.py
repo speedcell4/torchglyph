@@ -11,7 +11,7 @@ from transformers import PreTrainedTokenizer, AutoTokenizer
 from transformers import PretrainedConfig, AutoConfig
 
 from torchglyph.nn.plm.encode import encode, encode_as_words
-from torchglyph.nn.plm.tokenize import tokenize, tokenize_as_words
+from torchglyph.nn.plm.tokenize import tokenize_as_tokens, tokenize_as_words
 
 logger = getLogger(__name__)
 
@@ -53,27 +53,31 @@ class PLM(object):
         logger.info(f'{model.__class__.__name__}({self.pretrained_model_name}, lang={self.lang})')
         return model
 
-    def tokenize(self, sentence: str, tokenizer: PreTrainedTokenizer = None, *,
-                 as_string: bool = False, add_prefix_space: bool = False, add_special_tokens: bool = True):
-        input_ids = tokenize(
-            sentence=sentence,
+    def tokenize_as_tokens(self, sentence: str, sentence_pair: str = None,
+                           tokenizer: PreTrainedTokenizer = None, *,
+                           max_length: int = None, truncation: bool = True,
+                           as_string: bool = False, add_prefix_space: bool = False,
+                           add_special_tokens: bool = True):
+        return tokenize_as_tokens(
+            sentence=sentence, sentence_pair=sentence_pair,
             tokenizer=self.tokenizer if tokenizer is None else tokenizer,
+            max_length=max_length, truncation=truncation, as_string=as_string,
             add_prefix_space=add_prefix_space,
             add_special_tokens=add_special_tokens,
         )
 
-        return self.tokenizer.convert_ids_to_tokens(input_ids) if as_string else input_ids
-
-    def tokenize_as_words(self, sentence: List[str], tokenizer: PreTrainedTokenizer = None, *,
-                          as_string: bool = False, add_prefix_space: bool = False, add_special_tokens: bool = True):
-        input_ids, duration = tokenize_as_words(
+    def tokenize_as_words(self, sentence: List[str],
+                          tokenizer: PreTrainedTokenizer = None, *,
+                          max_length: int = None, truncation: bool = True,
+                          as_string: bool = False, add_prefix_space: bool = False,
+                          add_special_tokens: bool = True):
+        return tokenize_as_words(
             sentence=sentence,
             tokenizer=self.tokenizer if tokenizer is None else tokenizer,
+            max_length=max_length, truncation=truncation, as_string=as_string,
             add_prefix_space=add_prefix_space,
             add_special_tokens=add_special_tokens,
         )
-
-        return self.tokenizer.convert_ids_to_tokens(input_ids) if as_string else input_ids, duration
 
     def encode(self, input_ids: Union[Tensor, CattedSequence, PackedSequence],
                tokenizer: PreTrainedTokenizer = None, model: PreTrainedModel = None):
