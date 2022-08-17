@@ -10,7 +10,7 @@ from transformers import PreTrainedModel, AutoModel
 from transformers import PreTrainedTokenizer, AutoTokenizer
 from transformers import PretrainedConfig, AutoConfig
 
-from torchglyph.nn.plm.encode import encode, encode_as_words
+from torchglyph.nn.plm.encode import encode_as_tokens, encode_as_words
 from torchglyph.nn.plm.tokenize import tokenize_as_tokens, tokenize_as_words
 
 logger = getLogger(__name__)
@@ -81,7 +81,7 @@ class PLM(object):
 
     def encode(self, input_ids: Union[Tensor, CattedSequence, PackedSequence],
                tokenizer: PreTrainedTokenizer = None, model: PreTrainedModel = None):
-        return encode(
+        return encode_as_tokens(
             input_ids,
             tokenizer=self.tokenizer if tokenizer is None else tokenizer,
             model=self.model if model is None else model,
