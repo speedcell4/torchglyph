@@ -10,6 +10,14 @@ class BertBase(PLM):
         }[self._lang]
 
 
+class BertLarge(PLM):
+    @property
+    def pretrained_model_name(self) -> str:
+        return {
+            'en': 'bert-large-cased',
+        }[self._lang]
+
+
 class RoBERTaBase(PLM):
     @property
     def pretrained_model_name(self) -> str:
@@ -18,6 +26,16 @@ class RoBERTaBase(PLM):
             'de': 'uklfr/gottbert-base',
             'fr': 'camembert-base',
             'zh': 'hfl/chinese-macbert-base',
+        }[self._lang]
+
+
+class RoBERTaLarge(PLM):
+    @property
+    def pretrained_model_name(self) -> str:
+        return {
+            'en': 'roberta-large',
+            'fr': 'camembert-large',
+            'zh': 'hfl/chinese-macbert-large',
         }[self._lang]
 
 
