@@ -130,7 +130,7 @@ def reduce_metric(metrics: List[Tuple[float, ...]]):
 
 def summary(path: List[Path], metrics: Tuple[str, ...], sort: Tuple[str, ...] = (),
             ignore: Tuple[str, ...] = ('study', 'device', 'seed', 'hostname'),
-            common: bool = False, expand: bool = False, fmt: str = 'pretty'):
+            top: bool = False, common: bool = False, expand: bool = False, fmt: str = 'pretty'):
     args, sota = fetch_all(path)
 
     if not expand:
@@ -158,6 +158,20 @@ def summary(path: List[Path], metrics: Tuple[str, ...], sort: Tuple[str, ...] = 
         if len(sort) == 0:
             sort = metrics[::-1]
 
-        indices = [headers.index(x) for x in sort]
-        tabular_data = list(sorted(tabular_data, key=lambda item: [item[index] for index in indices]))
+        sort_indices = [headers.index(index) for index in sort]
+        metric_indices = [headers.index(index) for index in metrics[::-1]]
+
+        if top:
+            group = {}
+
+            for item in tabular_data:
+                sort_key = tuple(item[index] for index in sort_indices)
+                group.setdefault(sort_key, []).append(item)
+
+            tabular_data = [
+                max(values, key=lambda item: [item[index] for index in metric_indices])
+                for values in group.values()
+            ]
+
+        tabular_data = list(sorted(tabular_data, key=lambda item: [item[index] for index in sort_indices]))
         print(tabulate(tabular_data=tabular_data, headers=headers, tablefmt=fmt))
