@@ -1,7 +1,7 @@
 import json
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Set, List, Tuple, Dict, Iterable
+from typing import Any, Set, List, Tuple, Dict, Iterable, Type
 
 import torch
 from filelock import FileLock
@@ -125,53 +125,64 @@ def group_keys(keys: Set[str], args: List[Dict[str, Any]]):
 
 def reduce_metric(metrics: List[Tuple[float, ...]]):
     metrics = torch.tensor(metrics, dtype=torch.float32)
-    return [round(m, 4) for m in metrics.mean(dim=0).detach().tolist()]
+    return [round(m, 2) for m in metrics.mean(dim=0).detach().tolist()]
 
 
-def summary(path: List[Path], metrics: Tuple[str, ...], sort: Tuple[str, ...] = (),
+def group_data(group: Tuple[str, ...] = (), *, data, headers, metrics):
+    if len(group) == 0:
+        return data
+
+    group_indices = [headers.index(key) for key in group]
+    metric_indices = [headers.index(key) for key in metrics[::-1]]
+
+    groups = {}
+    for datum in data:
+        sort_key = tuple(datum[index] for index in group_indices)
+        groups.setdefault(sort_key, []).append(datum)
+
+    return [
+        max(values, key=lambda datum: [datum[index] for index in metric_indices])
+        for values in groups.values()
+    ]
+
+
+def sort_data(sort: Tuple[str, ...] = (), *, data, headers, metrics):
+    if len(sort) == 0:
+        sort = metrics[::-1]
+
+    indices = [headers.index(key) for key in sort]
+    return list(sorted(data, key=lambda datum: [datum[index] for index in indices]))
+
+
+def summary(path: List[Path], metrics: Tuple[str, ...],
+            group: Type[group_data] = group_data, sort: Type[sort_data] = sort_data,
             ignore: Tuple[str, ...] = ('study', 'device', 'seed', 'hostname'),
-            top: bool = False, common: bool = False, expand: bool = False, fmt: str = 'pretty'):
+            common: bool = False, expand: bool = False, fmt: str = 'pretty'):
     args, sota = fetch_all(path)
 
     if not expand:
         ignore = (*ignore, 'path')
 
     keys = set(k for a in args for k in a.keys() if k not in ignore)
-    keys, tabular_data = group_keys(keys=keys, args=args)
+    keys, data = group_keys(keys=keys, args=args)
 
     if common:
-        print(tabulate(tabular_data=tabular_data, headers=['key', 'value'], tablefmt=fmt))
+        print(tabulate(tabular_data=data, headers=['key', 'value'], tablefmt=fmt))
     else:
-        tabular_data = {}
+        data = {}
         for s, a in zip(sota, args):
             if all(m in s for m in metrics):
                 vs = tuple(frozen(a.get(k, '-')) for k in keys)
                 ms = tuple(s[m] for m in metrics)
-                tabular_data.setdefault(vs, []).append(ms)
+                data.setdefault(vs, []).append(ms)
 
-        tabular_data = [
+        data = [
             [*reduce_metric(metrics), len(metrics), *vs]
-            for vs, metrics in tabular_data.items()
+            for vs, metrics in data.items()
         ]
         headers = [*metrics, '@', *keys]
 
-        if len(sort) == 0:
-            sort = metrics[::-1]
+        data = group(data=data, headers=headers, metrics=metrics)
+        data = sort(data=data, headers=headers, metrics=metrics)
 
-        sort_indices = [headers.index(index) for index in sort]
-        metric_indices = [headers.index(index) for index in metrics[::-1]]
-
-        if top:
-            group = {}
-
-            for item in tabular_data:
-                sort_key = tuple(item[index] for index in sort_indices)
-                group.setdefault(sort_key, []).append(item)
-
-            tabular_data = [
-                max(values, key=lambda item: [item[index] for index in metric_indices])
-                for values in group.values()
-            ]
-
-        tabular_data = list(sorted(tabular_data, key=lambda item: [item[index] for index in sort_indices]))
-        print(tabulate(tabular_data=tabular_data, headers=headers, tablefmt=fmt))
+        print(tabulate(tabular_data=data, headers=headers, tablefmt=fmt))
