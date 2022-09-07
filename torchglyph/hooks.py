@@ -128,11 +128,11 @@ def reduce_metric(metrics: List[Tuple[float, ...]]):
     return [round(m, 2) for m in metrics.mean(dim=0).detach().tolist()]
 
 
-def group_data(group: Tuple[str, ...] = (), *, data, headers, metrics):
-    if len(group) == 0:
+def margin_data(margin: Tuple[str, ...] = (), *, data, headers, metrics):
+    if len(margin) == 0:
         return data
 
-    group_indices = [headers.index(key) for key in group]
+    group_indices = [headers.index(key) for key in margin]
     metric_indices = [headers.index(key) for key in metrics[::-1]]
 
     groups = {}
@@ -155,7 +155,7 @@ def sort_data(sort: Tuple[str, ...] = (), *, data, headers, metrics):
 
 
 def summary(path: List[Path], metrics: Tuple[str, ...],
-            group: Type[group_data] = group_data, sort: Type[sort_data] = sort_data,
+            margin: Type[margin_data] = margin_data, sort: Type[sort_data] = sort_data,
             ignore: Tuple[str, ...] = ('study', 'device', 'seed', 'hostname'),
             common: bool = False, expand: bool = False, fmt: str = 'pretty'):
     args, sota = fetch_all(path)
@@ -167,7 +167,7 @@ def summary(path: List[Path], metrics: Tuple[str, ...],
     keys, data = group_keys(keys=keys, args=args)
 
     if common:
-        print(tabulate(tabular_data=data, headers=['key', 'value'], tablefmt=fmt))
+        print(tabulate(tabular_data=sorted(data), headers=['key', 'value'], tablefmt=fmt))
     else:
         data = {}
         for s, a in zip(sota, args):
@@ -182,7 +182,7 @@ def summary(path: List[Path], metrics: Tuple[str, ...],
         ]
         headers = [*metrics, '@', *keys]
 
-        data = group(data=data, headers=headers, metrics=metrics)
+        data = margin(data=data, headers=headers, metrics=metrics)
         data = sort(data=data, headers=headers, metrics=metrics)
 
         print(tabulate(tabular_data=data, headers=headers, tablefmt=fmt))
