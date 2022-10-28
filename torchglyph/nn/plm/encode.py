@@ -1,4 +1,5 @@
 from functools import singledispatch
+from typing import Union
 
 from torch import Tensor
 from torchrua import cat_padded_sequence, pad_catted_sequence, CattedSequence
@@ -6,10 +7,12 @@ from torchrua import pad_packed_sequence, pack_padded_sequence, PackedSequence
 from torchrua import segment_sequence
 from transformers import PreTrainedModel, PreTrainedTokenizer
 
+Sequence = Union[Tensor, CattedSequence, PackedSequence]
+
 
 @singledispatch
-def encode_as_tokens(input_ids: Tensor, token_type_ids: Tensor = None, *,
-                     model: PreTrainedModel, tokenizer: PreTrainedTokenizer) -> Tensor:
+def encode_as_tokens(input_ids: Sequence, token_type_ids: Sequence = None, *,
+                     model: PreTrainedModel, tokenizer: PreTrainedTokenizer) -> Sequence:
     out = model(
         input_ids=input_ids,
         attention_mask=input_ids != tokenizer.pad_token_id,
@@ -48,8 +51,8 @@ def encode_packed_sequence_tokens(input_ids: PackedSequence,
 
 
 @singledispatch
-def encode_as_words(input_ids: Tensor, duration: Tensor, reduce: str,
-                    model: PreTrainedModel, tokenizer: PreTrainedTokenizer) -> Tensor:
+def encode_as_words(input_ids: Sequence, duration: Sequence, reduce: str,
+                    model: PreTrainedModel, tokenizer: PreTrainedTokenizer) -> Sequence:
     raise NotImplementedError
 
 
