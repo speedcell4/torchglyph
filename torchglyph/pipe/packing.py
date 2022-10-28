@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 import torch
 from torch.nn.utils.rnn import PackedSequence
@@ -12,11 +12,6 @@ from torchglyph.proc.catting import CatSequence
 from torchglyph.proc.packing import PackSequence, ComposeCattedSequences
 from torchglyph.proc.tensor import ToTensor
 from torchglyph.proc.vocab import CountTokenSequence, BuildVocab, StatsVocab, ToIndexSequence
-
-__all__ = [
-    'PackedNumListPipe', 'PackedNumListListPipe',
-    'PackedStrListPipe', 'PackedStrListListPipe',
-]
 
 
 class PackedNumListPipe(Pipe):
@@ -40,9 +35,9 @@ class PackedNumListPipe(Pipe):
 
 
 class PackedStrListPipe(PackedNumListPipe):
-    def __init__(self, device: Device, dtype: torch.dtype = torch.long,
-                 unk_token: str = '<unk>', pad_token: str = '<pad>', special_tokens: Tuple[str, ...] = (),
-                 threshold: int = None) -> None:
+    def __init__(self, device: Device, unk_token: Optional[str], pad_token: Optional[str],
+                 special_tokens: Tuple[str, ...] = (),
+                 dtype: torch.dtype = torch.long, threshold: int = None) -> None:
         super(PackedStrListPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=CountTokenSequence(),
@@ -70,9 +65,9 @@ class PackedNumListListPipe(Pipe):
 
 
 class PackedStrListListPipe(PackedNumListListPipe):
-    def __init__(self, device: Device, dtype: torch.dtype = torch.long,
-                 unk_token: str = '<unk>', special_tokens: Tuple[str, ...] = (),
-                 threshold: int = None) -> None:
+    def __init__(self, device: Device, unk_token: Optional[str],
+                 special_tokens: Tuple[str, ...] = (),
+                 dtype: torch.dtype = torch.long, threshold: int = None) -> None:
         super(PackedStrListListPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=Lift(ToList() + CountTokenSequence()),
