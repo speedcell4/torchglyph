@@ -22,6 +22,7 @@ class WordPipe(PackedStrListPipe):
     def __init__(self, device: Device) -> None:
         super(WordPipe, self).__init__(
             device=device, dtype=torch.long,
+            pad_token=None,
             unk_token='<unk>', special_tokens=(), threshold=10,
         )
         self.with_(
@@ -41,6 +42,7 @@ class TagPipe(PackedStrListPipe):
     def __init__(self, device: Device) -> None:
         super(TagPipe, self).__init__(
             device=device, dtype=torch.long,
+            pad_token=None,
             unk_token='O', special_tokens=(), threshold=120,
         )
 
