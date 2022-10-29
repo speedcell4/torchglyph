@@ -1,0 +1,14 @@
+torch~=1.12.1
+hypothesis~=6.50.1
+torchrua~=0.4.0
+torchglyph~=0.3.2
+setuptools~=58.5.3
+tqdm~=4.64.1
+aku~=0.3.0a0
+transformers~=4.23.1
+einops~=0.4.1
+numpy~=1.23.4
+requests~=2.26.0
+filelock~=3.8.0
+tabulate~=0.8.9
+torchlatent~=0.4.2

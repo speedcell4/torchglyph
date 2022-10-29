@@ -1,6 +1,7 @@
 from typing import Tuple, List
 
 from torch import nn, optim
+from torchlatent.crf import CrfDecoder
 
 __all__ = [
     'ignores_default',
@@ -9,6 +10,7 @@ __all__ = [
 
     'SGD', 'Adam',
 ]
+
 
 ignores_default = (
     nn.LayerNorm, nn.GroupNorm, nn.LocalResponseNorm,
@@ -19,6 +21,8 @@ ignores_default = (
 
     nn.InstanceNorm2d, nn.InstanceNorm3d, nn.InstanceNorm3d,
     nn.LazyInstanceNorm2d, nn.LazyInstanceNorm3d, nn.LazyInstanceNorm3d,
+
+    CrfDecoder,
 )
 
 

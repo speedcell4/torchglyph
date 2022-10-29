@@ -4,16 +4,9 @@ from typing import List, Any
 from torch import Tensor
 from torch.nn.utils.rnn import PackedSequence
 from torch.types import Device, Number
-from torchrua import pad_sequence, pad_packed_sequence, pad_catted_sequence, CattedSequence
 
 from torchglyph.proc.abc import Proc
-
-__all__ = [
-    'PaddingProc',
-    'PadSequence',
-    'PadCattedSequence',
-    'PadPackedSequence',
-]
+from torchrua import pad_sequence, pad_packed_sequence, pad_catted_sequence, CattedSequence
 
 
 class PaddingProc(Proc, metaclass=ABCMeta):
@@ -44,15 +37,6 @@ class PadSequence(PaddingProc):
         return sequence
 
 
-class PadPackedSequence(PaddingProc):
-    def __call__(self, data: PackedSequence, **kwargs) -> Tensor:
-        data, _ = pad_packed_sequence(
-            sequence=data, batch_first=self.batch_first,
-            padding_value=self.padding_value, device=self.device,
-        )
-        return data
-
-
 class PadCattedSequence(PaddingProc):
     def __call__(self, data: CattedSequence, **kwargs) -> Tensor:
         sequence, _ = pad_catted_sequence(
@@ -60,3 +44,12 @@ class PadCattedSequence(PaddingProc):
             padding_value=self.padding_value, device=self.device,
         )
         return sequence
+
+
+class PadPackedSequence(PaddingProc):
+    def __call__(self, data: PackedSequence, **kwargs) -> Tensor:
+        data, _ = pad_packed_sequence(
+            sequence=data, batch_first=self.batch_first,
+            padding_value=self.padding_value, device=self.device,
+        )
+        return data
