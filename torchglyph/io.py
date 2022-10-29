@@ -10,6 +10,7 @@ from typing import List, Tuple
 
 import requests
 import torch
+from filelock import FileLock
 from requests import Response
 from tqdm import tqdm
 
@@ -50,18 +51,27 @@ def unzip(path: Path) -> Path:
     return path
 
 
+def get_cache(path: Path, suffix: str, plm=None, **kwargs) -> Path:
+    cache = path.parent.resolve()
+    if plm is not None:
+        cache = cache / plm.pretrained_model_name
+
+    cache.mkdir(parents=True, exist_ok=True)
+    return cache / f'{path.name}.{suffix}'
+
+
 def cache_as_torch(method):
     def _cache_as_torch(self, path: Path, *args, **kwargs):
-        cache = path.with_name(f'{path.name}.pt')
-        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache = get_cache(path=path, suffix='pt', *args, **kwargs)
 
-        if cache.exists():
-            logger.info(f'loading from {cache}')
-            obj = torch.load(cache, map_location=torch.device('cpu'))
-        else:
-            obj = method(self, path, *args, **kwargs)
-            logger.info(f'saving to {cache}')
-            torch.save(obj, f=cache, pickle_protocol=pickle.HIGHEST_PROTOCOL)
+        with FileLock(f'{cache}.lock'):
+            if cache.exists():
+                logger.info(f'loading from {cache}')
+                obj = torch.load(cache, map_location=torch.device('cpu'))
+            else:
+                obj = method(self, path, *args, **kwargs)
+                logger.info(f'saving to {cache}')
+                torch.save(obj, f=cache, pickle_protocol=pickle.HIGHEST_PROTOCOL)
 
         return obj
 
@@ -70,18 +80,18 @@ def cache_as_torch(method):
 
 def cache_as_json(method):
     def _cache_as_json(self, path: Path, *args, **kwargs):
-        cache = path.with_name(f'{path.name}.json')
-        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache = get_cache(path=path, suffix='json', *args, **kwargs)
 
-        if cache.exists():
-            logger.info(f'loading from {cache}')
-            with cache.open(mode='r', encoding='utf-8') as fp:
-                obj = json.load(fp)
-        else:
-            obj = method(self, path, *args, **kwargs)
-            logger.info(f'saving to {cache}')
-            with cache.open(mode='w', encoding='utf-8') as fp:
-                json.dump(obj, fp=fp, indent=2, ensure_ascii=False)
+        with FileLock(f'{cache}.lock'):
+            if cache.exists():
+                logger.info(f'loading from {cache}')
+                with cache.open(mode='r', encoding='utf-8') as fp:
+                    obj = json.load(fp)
+            else:
+                obj = method(self, path, *args, **kwargs)
+                logger.info(f'saving to {cache}')
+                with cache.open(mode='w', encoding='utf-8') as fp:
+                    json.dump(obj, fp=fp, indent=2, ensure_ascii=False)
 
         return obj
 

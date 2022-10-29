@@ -67,6 +67,14 @@ class BartBase(PLM):
         }[self._lang]
 
 
+class BartLarge(PLM):
+    @property
+    def pretrained_model_name(self) -> str:
+        return {
+            'en': 'facebook/bart-large',
+        }[self._lang]
+
+
 class DeBERTaBase(PLM):
     @property
     def pretrained_model_name(self) -> str:
