@@ -6,11 +6,11 @@ from torchglyph.hooks import summary
 aku = Aku()
 
 
-@aku.option
+@aku.register
 def uuid():
     print(glyph_uuid(), end='')
 
 
-aku.option(summary)
+aku.register(summary)
 
 aku.run()
