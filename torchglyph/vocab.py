@@ -9,7 +9,7 @@ from torch import nn
 
 from torchglyph import data_dir
 from torchglyph.formats.vector import load_word2vec, load_glove
-from torchglyph.io import DownloadMixin, cache_as_torch
+from torchglyph.io import DownloadMixin, load_cache, get_cache
 
 logger = logging.getLogger(__name__)
 
@@ -143,8 +143,7 @@ class PreTrainedEmbedding(Vocab, DownloadMixin):
         tokens, weight = self.load(path=path)
         self.build(counter=Counter(tokens), max_size=None, min_freq=1, weight=weight)
 
-    @cache_as_torch
-    def load(self, path: Path):
+    def load_raw(self, path: Path):
         with path.open('r', encoding='utf-8') as fp:
             if self.format == 'glove':
                 return load_glove(fp=fp)
@@ -152,6 +151,12 @@ class PreTrainedEmbedding(Vocab, DownloadMixin):
                 return load_word2vec(fp=fp)
             else:
                 raise KeyError(f'{self.format} is not supported')
+
+    def load(self, path: Path):
+        return load_cache(
+            cache=get_cache(path=path),
+            factory=self.load_raw, path=path,
+        )
 
 
 class Glove6B(PreTrainedEmbedding):
