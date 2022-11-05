@@ -5,11 +5,11 @@ from torch.testing import assert_close
 
 from tests.assertion import assert_grad_close
 from tests.strategy import device, sizes, BATCH_SIZE, NUM_CONJUGATES, EMBEDDING_DIM
-from torchglyph.nn.linear import Linear, LinearKaimingInit, LinearOrthogonalInit, LinearTransformerInit
+from torchglyph.nn.linear import ConjugatedLinear, KaimingConjugatedLinear, OrthogonalConjugatedLinear, BertConjugatedLinear
 
 
 @given(
-    cls=st.sampled_from([Linear, LinearKaimingInit, LinearOrthogonalInit, LinearTransformerInit]),
+    cls=st.sampled_from([ConjugatedLinear, KaimingConjugatedLinear, OrthogonalConjugatedLinear, BertConjugatedLinear]),
     batch_size=sizes(BATCH_SIZE),
     num_conjugates=sizes(NUM_CONJUGATES),
     input_size=sizes(EMBEDDING_DIM),
