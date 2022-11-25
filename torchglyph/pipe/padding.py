@@ -25,13 +25,18 @@ class PaddedNumPipe(Pipe):
 
 class PaddedStrPipe(PaddedNumPipe):
     def __init__(self, device: Device, dtype: torch.dtype = torch.long,
-                 unk_token: str = '<unk>', pad_token: str = '<pad>',
+                 unk_token: str = None, pad_token: str = None,
+                 bos_token: str = None, eos_token: str = None,
                  special_tokens: Tuple[str, ...] = (), threshold: int = None) -> None:
         super(PaddedStrPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=CountToken(),
             vocab=[
-                BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
+                BuildVocab(
+                    unk_token=unk_token, pad_token=pad_token,
+                    bos_token=bos_token, eos_token=eos_token,
+                    special_tokens=special_tokens,
+                ),
                 StatsVocab(n=threshold),
             ],
             post=ToIndex() + ...,
@@ -62,7 +67,8 @@ class PaddedNumListPipe(Pipe):
 
 class PaddedStrListPipe(PaddedNumListPipe):
     def __init__(self, device: Device, dtype: torch.dtype = torch.long, batch_first: bool = True,
-                 unk_token: str = '<unk>', pad_token: str = '<pad>',
+                 unk_token: str = None, pad_token: str = None,
+                 bos_token: str = None, eos_token: str = None,
                  special_tokens: Tuple[str, ...] = (), threshold: int = None) -> None:
         super(PaddedStrListPipe, self).__init__(
             batch_first=batch_first,
@@ -72,7 +78,11 @@ class PaddedStrListPipe(PaddedNumListPipe):
         self.with_(
             pre=CountTokenSequence(),
             vocab=[
-                BuildVocab(unk_token=unk_token, pad_token=pad_token, special_tokens=special_tokens),
+                BuildVocab(
+                    unk_token=unk_token, pad_token=pad_token,
+                    bos_token=bos_token, eos_token=eos_token,
+                    special_tokens=special_tokens,
+                ),
                 StatsVocab(n=threshold),
             ],
             post=ToIndexSequence() + ...,

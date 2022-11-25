@@ -36,13 +36,18 @@ class CattedNumListPipe(Pipe):
 
 class CattedStrListPipe(CattedNumListPipe):
     def __init__(self, device: Device, dtype: torch.dtype = torch.long,
-                 unk_token: Optional[str] = '<unk>',
+                 unk_token: str = None, pad_token: str = None,
+                 bos_token: str = None, eos_token: str = None,
                  special_tokens: Tuple[Optional[str], ...] = (), threshold: int = None) -> None:
         super(CattedStrListPipe, self).__init__(device=device, dtype=dtype)
         self.with_(
             pre=CountTokenSequence(),
             vocab=[
-                BuildVocab(unk_token=unk_token, pad_token=None, special_tokens=special_tokens),
+                BuildVocab(
+                    unk_token=unk_token, pad_token=pad_token,
+                    bos_token=bos_token, eos_token=eos_token,
+                    special_tokens=special_tokens,
+                ),
                 StatsVocab(n=threshold),
             ],
             post=ToIndexSequence() + ...,

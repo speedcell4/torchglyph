@@ -46,7 +46,11 @@ class BuildVocab(Proc):
         self.pad_token = pad_token
         self.bos_token = bos_token
         self.eos_token = eos_token
-        self.special_tokens = special_tokens
+
+        self.special_tokens = tuple(
+            token for token in {unk_token, pad_token, bos_token, eos_token, *special_tokens}
+            if token is not None
+        )
 
         self.max_size = max_size
         self.min_freq = min_freq
