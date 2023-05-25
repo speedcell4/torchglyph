@@ -1,63 +1,54 @@
-import logging
-from collections import Counter
-from pathlib import Path
-from typing import Tuple, Literal
+import itertools
+from logging import getLogger
+from typing import List, Tuple, Type
 
-import torch
-from torch import Tensor
-from torch import nn
+from tokenizers import Tokenizer, models, pre_tokenizers
+from tokenizers.trainers import WordLevelTrainer, WordPieceTrainer
+from torch.distributions.utils import lazy_property
 
-from torchglyph import data_dir
-from torchglyph.formats.vector import load_word2vec, load_glove
-from torchglyph.io import DownloadMixin, load_cache, get_cache
+logger = getLogger(__name__)
 
-logger = logging.getLogger(__name__)
+__all__ = [
+    'WordVocab',
+    'WordPieceVocab',
+]
 
 
 class Vocab(object):
-    def __init__(self, unk_token: str = None, pad_token: str = None,
+    Token: Type
+    Index: Type
+    registry = {}
+
+    def __init__(self, vocab_size: int = 10_0000, min_freq: int = 0, *,
+                 unk_token: str = None, pad_token: str = None,
                  bos_token: str = None, eos_token: str = None,
-                 special_tokens: Tuple[str, ...] = ()) -> None:
+                 mask_token: str = None, special_tokens: Tuple[str, ...] = ()) -> None:
         super(Vocab, self).__init__()
+
+        self.vocab_size = vocab_size
+        self.min_freq = min_freq
 
         self.unk_token = unk_token
         self.pad_token = pad_token
         self.bos_token = bos_token
         self.eos_token = eos_token
+        self.mask_token = mask_token
 
-        self.special_tokens = tuple(
-            token for token in {unk_token, pad_token, bos_token, eos_token, *special_tokens}
-            if token is not None
-        )
+        special_tokens = [unk_token, pad_token, bos_token, eos_token, mask_token, *special_tokens]
+        special_tokens = [token for token in special_tokens if token is not None]
+        self.special_tokens = special_tokens
 
-        self.index2token = []
-        self.token2index = {}
+    def __init_subclass__(cls, **kwargs):
+        if hasattr(cls, 'Token') and hasattr(cls, 'Index'):
+            if (cls.__base__, cls.Token, cls.Index) in cls.registry:
+                logger.warning(f'({cls.__base__}, {cls.Token}, {cls.Index}) is overwritten')
+            cls.registry[cls.__base__, cls.Token, cls.Index] = cls
 
-    @property
-    def unk_index(self) -> int:
-        return self.token2index.get(self.unk_token, None)
+    def __class_getitem__(cls, tp) -> 'Vocab':
+        return cls.registry[cls, tp[0], tp[1]]
 
-    @property
-    def pad_index(self) -> int:
-        return self.token2index.get(self.pad_token, None)
-
-    @property
-    def bos_index(self) -> int:
-        return self.token2index.get(self.bos_token, None)
-
-    @property
-    def eos_index(self) -> int:
-        return self.token2index.get(self.eos_token, None)
-
-    def add_token(self, token: str) -> int:
-        assert token is not None
-
-        if token not in self.token2index:
-            index = len(self)
-            self.index2token.append(token)
-            self.token2index[token] = index
-
-        return self.token2index[token]
+    def __len__(self) -> int:
+        return self.tokenizer.get_vocab_size(with_added_tokens=True)
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.extra_repr()})'
@@ -68,205 +59,229 @@ class Vocab(object):
             *self.special_tokens,
         ])
 
-    def __len__(self) -> int:
-        return len(self.token2index)
+    @lazy_property
+    def tokenizer(self) -> Tokenizer:
+        raise NotImplementedError
 
-    def __contains__(self, token: str) -> bool:
-        return token in self.token2index
+    @lazy_property
+    def trainer(self):
+        raise NotImplementedError
 
-    def __getitem__(self, token: str) -> int:
-        return self.token2index.get(token, self.unk_index)
+    def train_from_iterator(self, *iterators):
+        return self.tokenizer.train_from_iterator(itertools.chain(*iterators), self.trainer)
 
-    def inv(self, sequence):
-        if isinstance(sequence, int):
-            if 0 <= sequence < len(self.index2token):
-                return self.index2token[sequence]
-            return self.unk_token
-        else:
-            return type(sequence)([self.inv(seq) for seq in sequence])
+    def encode(self, sequence: 'Token', pair: 'Token' = None, add_special_tokens: bool = True) -> 'Index':
+        raise NotImplementedError
 
-    def build(self, counter: Counter, max_size: int = None, min_freq: int = 0, weight: Tensor = None) -> 'Vocab':
-        for token in self.special_tokens:
-            self.add_token(token)
+    def encode_batch(self, sequences: List['Token'], add_special_tokens: bool = True) -> List['Index']:
+        raise NotImplementedError
 
-        for token, freq in counter.most_common(n=max_size):
-            if freq < min_freq:
-                break
-            self.add_token(token)
+    def inv(self, index: 'Index'):
+        raise NotImplementedError
 
-        assert len(self.token2index) == len(self.index2token)
+    def inv_batch(self, indices: List['Index']):
+        raise NotImplementedError
 
-        self.counter = counter
-        self.weight = weight
+    def decode(self, index: 'Index', skip_special_tokens: bool = False) -> str:
+        raise NotImplementedError
 
-        logger.critical(f'counter and weight are updated by building vocabulary :: {self}')
-        return self
-
-    @torch.no_grad()
-    def load_weight(self, *transforms, embedding: 'PreTrainedEmbedding') -> 'Vocab':
-        self.weight = nn.Embedding(
-            num_embeddings=len(self),
-            embedding_dim=embedding.weight.size()[1],
-            padding_idx=self.pad_index,
-        ).weight.data.detach()
-        logger.critical(f'weight is updated by loading {embedding}')
-
-        matching = {}
-        for token, index in self.token2index.items():
-            if token in embedding.token2index:
-                matching[token] = (index, embedding.token2index[token])
-            else:
-                for fn in transforms:
-                    if fn(token) in embedding.token2index:
-                        matching[token] = (index, embedding.token2index[fn(token)])
-                        break
-
-        occ_count, tok_count = 0, 0
-        for token, (index1, index2) in matching.items():
-            self.weight[index1] = embedding.weight[index2]
-            occ_count += self.counter[token]
-            tok_count += 1
-
-        tok_ratio = tok_count / len(self)
-        occ_ratio = occ_count / sum(self.counter.values())
-        logger.info(f'{tok_ratio * 100:.2f}% tokens and {occ_ratio * 100:.2f}% occurrences are hit in {embedding}')
-        return self
+    def decode_batch(self, indices: List['Index'], skip_special_tokens: bool = False) -> List[str]:
+        raise NotImplementedError
 
 
-class PreTrainedEmbedding(Vocab, DownloadMixin):
-    format: str
-
-    def __init__(self, root: Path = data_dir, **kwargs) -> None:
-        super(PreTrainedEmbedding, self).__init__()
-
-        path, = self.paths(root=root, **kwargs)
-        tokens, weight = self.load(path=path)
-        self.build(counter=Counter(tokens), max_size=None, min_freq=1, weight=weight)
-
-    def load_raw(self, path: Path):
-        with path.open('r', encoding='utf-8') as fp:
-            if self.format == 'glove':
-                return load_glove(fp=fp)
-            elif self.format == 'word2vec':
-                return load_word2vec(fp=fp)
-            else:
-                raise KeyError(f'{self.format} is not supported')
-
-    def load(self, path: Path):
-        return load_cache(
-            cache=get_cache(path=path),
-            factory=self.load_raw, path=path,
+class WordVocab(Vocab):
+    @lazy_property
+    def trainer(self) -> WordLevelTrainer:
+        return WordLevelTrainer(
+            show_progress=False,
+            vocab_size=self.vocab_size,
+            min_frequency=self.min_freq,
+            special_tokens=self.special_tokens,
         )
 
 
-class Glove6B(PreTrainedEmbedding):
-    name = 'glove'
-    format = 'glove'
+class WordVocab00(WordVocab):
+    Token = str
+    Index = int
 
-    def __init__(self, dim: Literal[50, 100, 200, 300], *, root: Path = data_dir) -> None:
-        super(Glove6B, self).__init__(root=root, dim=dim)
+    @lazy_property
+    def tokenizer(self) -> Tokenizer:
+        obj = Tokenizer(model=models.WordLevel(unk_token=self.unk_token))
+        return obj
 
-    @classmethod
-    def urls(cls, dim: int):
-        return [(
-            f'https://huggingface.co/stanfordnlp/glove/resolve/main/glove.6B.zip',
-            f'glove.6B.zip',
-            f'glove.6B.{dim}d.txt',
-        )]
+    def encode(self, sequence: Token, pair: Token = None, add_special_tokens: bool = True) -> Index:
+        encoding = self.tokenizer.encode(
+            sequence, pair,
+            is_pretokenized=False,
+            add_special_tokens=add_special_tokens,
+        )
+        return encoding.ids[0]
 
+    def encode_batch(self, sequences: List[Token], add_special_tokens: bool = True) -> List[Index]:
+        encodings = self.tokenizer.encode_batch(
+            sequences,
+            is_pretokenized=False,
+            add_special_tokens=add_special_tokens,
+        )
+        return [encoding.ids[0] for encoding in encodings]
 
-class Glove42B(PreTrainedEmbedding):
-    name = 'glove'
-    format = 'glove'
+    def inv(self, index: Index) -> str:
+        return self.tokenizer.id_to_token(index)
 
-    def __init__(self, *, root: Path = data_dir) -> None:
-        super(Glove42B, self).__init__(root=root)
+    def inv_batch(self, index: List[Index]) -> List[str]:
+        return [self.tokenizer.id_to_token(idx) for idx in index]
 
-    @classmethod
-    def urls(cls):
-        return [(
-            f'https://huggingface.co/stanfordnlp/glove/resolve/main/glove.42B.300d.zip',
-            f'glove.42B.300d.zip',
-            f'glove.42B.300d.txt',
-        )]
+    def decode(self, index: Index, skip_special_tokens: bool = False) -> str:
+        return self.tokenizer.decode([index], skip_special_tokens=skip_special_tokens)
 
-
-class Glove840B(PreTrainedEmbedding):
-    name = 'glove'
-    format = 'glove'
-
-    def __init__(self, *, root: Path = data_dir) -> None:
-        super(Glove840B, self).__init__(root=root)
-
-    @classmethod
-    def urls(cls):
-        return [(
-            f'https://huggingface.co/stanfordnlp/glove/resolve/main/glove.840B.300d.zip',
-            f'glove.840B.300d.zip',
-            f'glove.840B.300d.txt',
-        )]
+    def decode_batch(self, indices: List[Index], skip_special_tokens: bool = False) -> List[str]:
+        return self.tokenizer.decode_batch(
+            [[index] for index in indices],
+            skip_special_tokens=skip_special_tokens,
+        )
 
 
-class GloveTwitter(PreTrainedEmbedding):
-    name = 'glove'
-    format = 'glove'
+class WordVocab01(WordVocab):
+    Token = str
+    Index = List[int]
 
-    def __init__(self, *, root: Path = data_dir) -> None:
-        super(GloveTwitter, self).__init__(root=root)
+    @lazy_property
+    def tokenizer(self) -> Tokenizer:
+        obj = Tokenizer(model=models.WordLevel(unk_token=self.unk_token))
+        obj.pre_tokenizer = pre_tokenizers.Sequence([
+            pre_tokenizers.UnicodeScripts(),
+            pre_tokenizers.BertPreTokenizer(),
+        ])
+        return obj
 
-    @classmethod
-    def urls(cls):
-        return [(
-            f'https://huggingface.co/stanfordnlp/glove/resolve/main/glove.twitter.27B.zip',
-            f'glove.twitter.27B.zip',
-            f'glove.twitter.27B.txt',
-        )]
+    def encode(self, sequence: Token, pair: Token = None, add_special_tokens: bool = True) -> Index:
+        encoding = self.tokenizer.encode(
+            sequence, pair,
+            is_pretokenized=False,
+            add_special_tokens=add_special_tokens,
+        )
+        return encoding.ids
 
+    def encode_batch(self, sequences: List[Token], add_special_tokens: bool = True) -> List[Index]:
+        encodings = self.tokenizer.encode_batch(
+            sequences,
+            is_pretokenized=False,
+            add_special_tokens=add_special_tokens,
+        )
+        return [encoding.ids for encoding in encodings]
 
-class FastTextCc(PreTrainedEmbedding):
-    format = 'word2vec'
+    def inv(self, index: Index) -> List[str]:
+        return [self.tokenizer.id_to_token(idx) for idx in index]
 
-    def __init__(self, lang: str, *, root: Path = data_dir) -> None:
-        super(FastTextCc, self).__init__(root=root, lang=lang)
+    def inv_batch(self, indices: List[Index]) -> List[List[str]]:
+        return [[self.tokenizer.id_to_token(idx) for idx in index] for index in indices]
 
-    @classmethod
-    def urls(cls, lang: str):
-        return [(
-            f'https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.{lang}.300.vec.gz',
-            f'cc.{lang}.300.vec.gz',
-            f'cc.{lang}.300.vec',
-        )]
+    def decode(self, index: Index, skip_special_tokens: bool = False) -> str:
+        return self.tokenizer.decode(index, skip_special_tokens=skip_special_tokens)
 
-
-class FastTextWiki(PreTrainedEmbedding):
-    format = 'word2vec'
-
-    def __init__(self, lang: str, *, root: Path = data_dir) -> None:
-        super(FastTextWiki, self).__init__(root=root, lang=lang)
-
-    @classmethod
-    def urls(cls, lang: str):
-        return [(
-            f'https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.{lang}.vec',
-            f'wiki.{lang}.vec',
-            f'wiki.{lang}.vec',
-        )]
+    def decode_batch(self, indices: List[Index], skip_special_tokens: bool = False) -> List[str]:
+        return self.tokenizer.decode_batch(indices, skip_special_tokens=skip_special_tokens)
 
 
-class FastTextAlign(PreTrainedEmbedding):
-    format = 'word2vec'
+class WordVocab11(WordVocab):
+    Token = List[str]
+    Index = List[int]
 
-    def __init__(self, lang: str, *, root: Path = data_dir) -> None:
-        super(FastTextAlign, self).__init__(root=root, lang=lang)
+    @lazy_property
+    def tokenizer(self) -> Tokenizer:
+        obj = Tokenizer(model=models.WordLevel(unk_token=self.unk_token))
+        return obj
 
-    @classmethod
-    def urls(cls, lang: str):
-        return [(
-            f'https://dl.fbaipublicfiles.com/fasttext/vectors-aligned/wiki.{lang}.align.vec',
-            f'wiki.{lang}.align.vec',
-            f'wiki.{lang}.align.vec',
-        )]
+    def encode(self, sequence: Token, pair: Token = None, add_special_tokens: bool = True) -> Index:
+        encoding = self.tokenizer.encode(
+            sequence, pair,
+            is_pretokenized=True,
+            add_special_tokens=add_special_tokens,
+        )
+        return encoding.ids
+
+    def encode_batch(self, sequences: List[Token], add_special_tokens: bool = True) -> List[Index]:
+        encodings = self.tokenizer.encode_batch(
+            sequences,
+            is_pretokenized=True,
+            add_special_tokens=add_special_tokens,
+        )
+        return [encoding.ids for encoding in encodings]
+
+    def inv(self, index: Index) -> List[str]:
+        return [self.tokenizer.id_to_token(idx) for idx in index]
+
+    def inv_batch(self, indices: List[Index]) -> List[List[str]]:
+        return [[self.tokenizer.id_to_token(idx) for idx in index] for index in indices]
+
+    def decode(self, index: Index, skip_special_tokens: bool = False) -> str:
+        return self.tokenizer.decode(index, skip_special_tokens=skip_special_tokens)
+
+    def decode_batch(self, indices: List[Index], skip_special_tokens: bool = False) -> List[str]:
+        return self.tokenizer.decode_batch(indices, skip_special_tokens=skip_special_tokens)
 
 
-if __name__ == '__main__':
-    vectors = FastTextCc(lang='ro')
+class WordPieceVocab(Vocab):
+    @lazy_property
+    def trainer(self) -> WordPieceTrainer:
+        return WordPieceTrainer(
+            show_progress=False,
+            vocab_size=self.vocab_size,
+            min_frequency=self.min_freq,
+            special_tokens=self.special_tokens,
+        )
+
+
+class WordPieceVocab01(WordPieceVocab):
+    Token = str
+    Index = List[int]
+
+    @lazy_property
+    def trainer(self) -> WordPieceTrainer:
+        return WordPieceTrainer(
+            show_progress=False,
+            vocab_size=self.vocab_size,
+            min_frequency=self.min_freq,
+            special_tokens=self.special_tokens,
+        )
+
+    @lazy_property
+    def tokenizer(self) -> Tokenizer:
+        if self.unk_token is None:
+            obj = Tokenizer(model=models.WordPiece())
+        else:
+            obj = Tokenizer(model=models.WordPiece(unk_token=self.unk_token))
+
+        obj.pre_tokenizer = pre_tokenizers.Sequence([
+            pre_tokenizers.UnicodeScripts(),
+            pre_tokenizers.BertPreTokenizer(),
+        ])
+        return obj
+
+    def encode(self, sequence: Token, pair: Token = None, add_special_tokens: bool = True) -> Index:
+        encoding = self.tokenizer.encode(
+            sequence, pair,
+            is_pretokenized=False,
+            add_special_tokens=add_special_tokens,
+        )
+        return encoding.ids
+
+    def encode_batch(self, sequences: List[Token], add_special_tokens: bool = True) -> List[Index]:
+        encodings = self.tokenizer.encode_batch(
+            sequences,
+            is_pretokenized=False,
+            add_special_tokens=add_special_tokens,
+        )
+        return [encoding.ids for encoding in encodings]
+
+    def inv(self, index: Index) -> List[str]:
+        return [self.tokenizer.id_to_token(idx) for idx in index]
+
+    def inv_batch(self, indices: List[Index]) -> List[List[str]]:
+        return [[self.tokenizer.id_to_token(idx) for idx in index] for index in indices]
+
+    def decode(self, index: Index, skip_special_tokens: bool = False) -> str:
+        return self.tokenizer.decode(index, skip_special_tokens=skip_special_tokens)
+
+    def decode_batch(self, indices: List[Index], skip_special_tokens: bool = False) -> List[str]:
+        return self.tokenizer.decode_batch(indices, skip_special_tokens=skip_special_tokens)

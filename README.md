@@ -1,16 +1,15 @@
+<div align="center">
+
 # TorchGlyph
 
-[![Unit Tests](https://github.com/speedcell4/torchglyph/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/speedcell4/torchglyph/actions/workflows/unit-tests.yml)
-[![PyPI version](https://badge.fury.io/py/torchglyph.svg)](https://badge.fury.io/py/torchglyph)
-[![Downloads](https://pepy.tech/badge/torchglyph)](https://pepy.tech/project/torchglyph)
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/speedcell4/torchglyph/unit-tests.yml?cacheSeconds=0)
+![PyPI - Version](https://img.shields.io/pypi/v/torchglyph?label=pypi%20version&cacheSeconds=0)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/torchglyph?cacheSeconds=0)
 
-Data Processor Combinators for Natural Language Processing.
+</div>
 
-## Requirements
-
-- Python 3.8
-- PyTorch 1.10.2
+Yet Another Natural Language Processing Toolbox.
 
 ## Installation
 
-`python -m pip install torchglyph`
+`python -m pip torchglyph`

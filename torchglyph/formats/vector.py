@@ -1,4 +1,4 @@
-from typing import Tuple, IO
+from typing import IO, Tuple
 
 import torch
 from tqdm import tqdm
@@ -14,7 +14,7 @@ def load_meta(fp: IO, *, sep: str = ' ') -> Tuple[int, int]:
 
 
 def loads_vector(string: str, *, sep: str = ' '):
-    token, *values = string.strip().split(sep=sep)
+    token, *values = string.rstrip().split(sep=sep)
     return str(token), tuple(float(value) for value in values)
 
 
@@ -26,9 +26,9 @@ def load_word2vec(fp: IO, *, sep: str = ' '):
     num_embeddings, embedding_dim = load_meta(fp, sep=sep)
 
     tokens, vectors = [], []
-    for string in tqdm(fp.readlines(), initial=0):
+    for string in tqdm(fp.readlines(), initial=0, unit=' tokens'):
         token, vector = loads_vector(string=string, sep=sep)
-        assert embedding_dim == len(vector), f'{embedding_dim} != {len(vector)}'
+        assert embedding_dim == len(vector), f'{token} :: {embedding_dim} != {len(vector)}'
 
         tokens.append(token)
         vectors.append(vector)
@@ -42,9 +42,9 @@ def load_glove(fp: IO, *, sep: str = ' '):
     embedding_dim = len(vector)
 
     tokens, vectors = [token], [vector]
-    for string in tqdm(fp.readlines(), initial=1):
+    for string in tqdm(fp.readlines(), initial=1, unit=' tokens'):
         token, vector = loads_vector(string, sep=sep)
-        assert embedding_dim == len(vector), f'{embedding_dim} != {len(vector)}'
+        assert embedding_dim == len(vector), f'{token} :: {embedding_dim} != {len(vector)}'
 
         tokens.append(token)
         vectors.append(vector)

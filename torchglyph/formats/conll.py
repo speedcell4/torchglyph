@@ -1,6 +1,6 @@
-from typing import Any, Type, Tuple, NamedTuple, IO, Iterable, get_type_hints
+from typing import Any, IO, Iterable, NamedTuple, Tuple, Type, get_type_hints
 
-from torchglyph.formats.primitive import loads_type, dumps_type
+from torchglyph.formats.primitive import dumps_type, loads_type
 
 Token = Tuple[Any, ...]
 Sentence = Tuple[Tuple[Any, ...], ...]

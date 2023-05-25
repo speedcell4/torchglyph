@@ -1,4 +1,4 @@
-# Created by .ignore support plugin (hsz.mobi)
+### Python Experiment template
 ### Python Experiment template
 # Created by .ignore support plugin (hsz.mobi)
 ### Emacs template
@@ -231,7 +231,6 @@ venv.bak/
 [Ll]ib
 [Ll]ib64
 [Ll]ocal
-[Ss]cripts
 pyvenv.cfg
 .venv
 pip-selfcheck.json
@@ -640,4 +639,4 @@ GitHub.sublime-settings
 *.ptx
 *.cubin
 *.fatbin
-!/site/
+!/scripts/

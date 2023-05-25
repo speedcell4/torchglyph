@@ -1,4 +1,4 @@
-from typing import Type, Any
+from typing import Any, Type
 
 __all__ = [
     'loads_type', 'loads_bool',

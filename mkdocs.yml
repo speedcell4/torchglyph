@@ -1,4 +1,0 @@
-site_name: TorchGlyph
-nav:
-  - Home: index.md
-theme: alabaster

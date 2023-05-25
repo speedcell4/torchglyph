@@ -1,16 +1,9 @@
-from typing import Tuple, List
+from logging import getLogger
+from typing import Set, Tuple, Type, Union
 
 from torch import nn, optim
-from torchlatent.crf import CrfDecoder
 
-__all__ = [
-    'ignores_default',
-    'params_with_decay',
-    'params_without_decay',
-
-    'SGD', 'Adam',
-]
-
+logger = getLogger(__name__)
 
 ignores_default = (
     nn.LayerNorm, nn.GroupNorm, nn.LocalResponseNorm,
@@ -21,24 +14,53 @@ ignores_default = (
 
     nn.InstanceNorm2d, nn.InstanceNorm3d, nn.InstanceNorm3d,
     nn.LazyInstanceNorm2d, nn.LazyInstanceNorm3d, nn.LazyInstanceNorm3d,
-
-    CrfDecoder,
 )
 
 
-def params_with_decay(module: nn.Module, ignores: Tuple[nn.Module, ...] = ignores_default) -> List[nn.Parameter]:
-    return [
-        param for mod in module.modules() if not isinstance(mod, ignores)
-        for name, param in mod.named_parameters(recurse=False) if 'bias' not in name
-    ]
+def divide_groups(module: nn.Module, ignores: Tuple[nn.Module, ...] = None):
+    if ignores is None:
+        ignores = ignores_default
+
+    memory = set()
+    with_decay = set()
+    without_decay = set()
+
+    def recur(mod: nn.Module):
+        if mod in memory:
+            return
+
+        memory.add(mod)
+
+        for name, param in mod.named_parameters(recurse=False):
+            if param.requires_grad:
+                if isinstance(mod, ignores) or 'bias' in name:
+                    without_decay.add(param)
+                else:
+                    with_decay.add(param)
+
+        for m in mod._modules.values():
+            recur(mod=m)
+
+    recur(mod=module)
+    validate_groups(module, with_decay=with_decay, without_decay=without_decay)
+
+    return list(with_decay), list(without_decay)
 
 
-def params_without_decay(module: nn.Module, ignores: Tuple[nn.Module, ...] = ignores_default) -> List[nn.Parameter]:
-    return [
-        param for mod in module.modules()
-        for name, param in mod.named_parameters(recurse=False)
-        if isinstance(mod, ignores) or 'bias' in name
-    ]
+def validate_groups(module: nn.Module, with_decay: Set[nn.Parameter], without_decay: Set[nn.Parameter]) -> None:
+    mapping = {param: name for name, param in module.named_parameters() if param.requires_grad}
+
+    union = with_decay | without_decay
+    intersection = with_decay & without_decay
+
+    if len(intersection) > 0:
+        for param in intersection:
+            logger.warning(f'{mapping[param]} is in both groups')
+
+    if len(union) < len(mapping):
+        for param, name in mapping.items():
+            if param not in union:
+                logger.warning(f'{name} is not in any group')
 
 
 class SGD(optim.SGD):
@@ -58,3 +80,9 @@ class Adam(optim.AdamW):
             params=params, lr=lr, betas=(beta1, beta2),
             weight_decay=weight_decay, amsgrad=amsgrad,
         )
+
+
+Optimizers = Union[
+    Type[SGD],
+    Type[Adam],
+]
