@@ -13,6 +13,11 @@ class ReLU(nn.ReLU):
         super(ReLU, self).__init__()
 
 
+class Tanh(nn.Tanh):
+    def __init__(self) -> None:
+        super(Tanh, self).__init__()
+
+
 class GELU(nn.GELU):
     def __init__(self) -> None:
         super(GELU, self).__init__()
@@ -28,16 +33,11 @@ class ELU(nn.ELU):
         super(ELU, self).__init__()
 
 
-class Tanh(nn.Tanh):
-    def __init__(self) -> None:
-        super(Tanh, self).__init__()
-
-
-Activations = Union[
+Activation = Union[
     Type[Identity],
     Type[ReLU],
+    Type[Tanh],
     Type[GELU],
     Type[SiLU],
     Type[ELU],
-    Type[Tanh],
 ]
