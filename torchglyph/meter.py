@@ -12,7 +12,7 @@ from torch.types import Number
 from torchrua import CattedSequence
 
 from torchglyph.dist import all_gather_object, is_master
-from torchglyph.io import save_sota
+from torchglyph.serde import save_sota
 
 logger = getLogger(__name__)
 

@@ -5,8 +5,8 @@ from typing import Any, Dict, Iterable, List, Set, Tuple, Type
 import torch
 from tabulate import tabulate
 
-from torchglyph.io import ARGS_JSON, SOTA_JSON, load_args, load_sota
 from torchglyph.logger import LOG_TXT
+from torchglyph.serde import ARGS_FILENAME, SOTA_FILENAME, load_args, load_sota
 
 logger = getLogger(__name__)
 
@@ -17,7 +17,7 @@ SUMMARY_IGNORES = SUMMARY_IGNORES + tuple(f'co-{ignore}' for ignore in SUMMARY_I
 def iter_dir(path: Path) -> Iterable[Path]:
     for path in path.iterdir():
         if path.is_dir():
-            if (path / ARGS_JSON).exists() and (path / SOTA_JSON).exists():
+            if (path / ARGS_FILENAME).exists() and (path / SOTA_FILENAME).exists():
                 yield path
             else:
                 yield from iter_dir(path)

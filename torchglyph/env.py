@@ -6,8 +6,9 @@ from typing import Type, Union
 
 from torchglyph import DEBUG
 from torchglyph.dist import get_device, init_process, init_seed
-from torchglyph.io import hf_hash, lock_folder, save_args
+from torchglyph.io import hf_hash, lock_folder
 from torchglyph.logger import init_logger
+from torchglyph.serde import save_args
 
 
 def timestamp(*, time_format: str = r'%y%m%d-%H%M%S') -> str:
