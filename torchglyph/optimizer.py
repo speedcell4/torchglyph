@@ -5,7 +5,7 @@ from torch import nn, optim
 
 logger = getLogger(__name__)
 
-ignores_default = (
+IGNORES = (
     nn.LayerNorm, nn.GroupNorm, nn.LocalResponseNorm,
 
     nn.SyncBatchNorm,
@@ -17,10 +17,7 @@ ignores_default = (
 )
 
 
-def divide_groups(module: nn.Module, ignores: Tuple[nn.Module, ...] = None):
-    if ignores is None:
-        ignores = ignores_default
-
+def group_parameters(*modules: nn.Module, ignores: Tuple[Type[nn.Module], ...] = IGNORES):
     memory = set()
     with_decay = set()
     without_decay = set()
@@ -41,48 +38,57 @@ def divide_groups(module: nn.Module, ignores: Tuple[nn.Module, ...] = None):
         for m in mod._modules.values():
             recur(mod=m)
 
-    recur(mod=module)
-    validate_groups(module, with_decay=with_decay, without_decay=without_decay)
+    for module in modules:
+        recur(mod=module)
 
-    return list(with_decay), list(without_decay)
+    return with_decay, without_decay
 
 
-def validate_groups(module: nn.Module, with_decay: Set[nn.Parameter], without_decay: Set[nn.Parameter]) -> None:
-    mapping = {param: name for name, param in module.named_parameters() if param.requires_grad}
-
-    union = with_decay | without_decay
-    intersection = with_decay & without_decay
-
-    if len(intersection) > 0:
-        for param in intersection:
-            logger.warning(f'{mapping[param]} is in both groups')
-
-    if len(union) < len(mapping):
-        for param, name in mapping.items():
-            if param not in union:
-                logger.warning(f'{name} is not in any group')
+def log_parameters(module: nn.Module, with_decay: Set[nn.Parameter], without_decay: Set[nn.Parameter]):
+    for name, param in module.named_parameters():
+        if not param.requires_grad:
+            logger.critical(f'{name} requires no grad')
+        elif param in with_decay:
+            logger.info(f'{name} with decay')
+        elif param in without_decay:
+            logger.info(f'{name} without decay')
+        else:
+            logger.error(f'{name} is not registered')
 
 
 class SGD(optim.SGD):
     def __init__(self, lr: float = 1e-3, momentum: float = 0.9, dampening: float = 0.0,
-                 weight_decay: float = 1e-4, nesterov: bool = False, *, params, **kwargs) -> None:
+                 weight_decay: float = 1e-4, nesterov: bool = False, *modules: nn.Module, **kwargs) -> None:
+        with_decay, without_decay = group_parameters(*modules)
+        for module in modules:
+            log_parameters(module, with_decay=with_decay, without_decay=without_decay)
+
         super(SGD, self).__init__(
-            params=params, lr=lr,
-            momentum=momentum, dampening=dampening,
-            weight_decay=weight_decay, nesterov=nesterov,
+            lr=lr, momentum=momentum, dampening=dampening, nesterov=nesterov,
+            params=[
+                {'params': list(with_decay), 'weight_decay': weight_decay},
+                {'params': list(without_decay), 'weight_decay': 0.0},
+            ],
         )
 
 
 class Adam(optim.AdamW):
     def __init__(self, lr: float = 3e-4, beta1: float = 0.9, beta2: float = 0.98,
-                 weight_decay: float = 1e-4, amsgrad: bool = False, *, params, **kwargs) -> None:
+                 weight_decay: float = 1e-4, amsgrad: bool = False, *modules: nn.Module, **kwargs) -> None:
+        with_decay, without_decay = group_parameters(*modules)
+        for module in modules:
+            log_parameters(module, with_decay=with_decay, without_decay=without_decay)
+
         super(Adam, self).__init__(
-            params=params, lr=lr, betas=(beta1, beta2),
-            weight_decay=weight_decay, amsgrad=amsgrad,
+            lr=lr, betas=(beta1, beta2), amsgrad=amsgrad,
+            params=[
+                {'params': list(with_decay), 'weight_decay': weight_decay},
+                {'params': list(without_decay), 'weight_decay': 0.0},
+            ],
         )
 
 
-Optimizers = Union[
+Optimizer = Union[
     Type[SGD],
     Type[Adam],
 ]
