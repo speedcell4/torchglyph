@@ -9,7 +9,8 @@ from torchglyph import DEBUG, data_dir
 from torchglyph.data.abc import DataLoader, DataStore
 from torchglyph.dist import get_device
 from torchglyph.io import cache_folder, is_dataset_dict_folder, lock_folder
-from torchglyph.nn.plm import PLM, RobertaBase
+from torchglyph.nn.plm.abc import PLM
+from torchglyph.nn.plm.roberta import RobertaBase
 
 logger = getLogger(__name__)
 

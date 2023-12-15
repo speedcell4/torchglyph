@@ -12,8 +12,8 @@ from torchglyph.data.abc import DataLoader, DataStore
 from torchglyph.dist import get_device
 from torchglyph.formats.ptb import iter_ptb
 from torchglyph.io import all_exits, cache_folder, lock_folder
-from torchglyph.nn.plm import RobertaBase
 from torchglyph.nn.plm.abc import PLM
+from torchglyph.nn.plm.roberta import RobertaBase
 from torchglyph.tokenize_utils import encode_batch, get_iterator, train_word_tokenizer
 
 WORD_FILENAME = 'word_tokenizer.json'

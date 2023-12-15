@@ -1,11 +1,26 @@
+from functools import singledispatch
 from logging import getLogger
 from typing import List, Union
 
+from torch import nn
 from transformers import AutoConfig, AutoModel, AutoTokenizer, PreTrainedModel, PreTrainedTokenizer, PretrainedConfig
 
 from torchglyph.nn.plm import utils
 
 logger = getLogger(__name__)
+
+
+def full(model: nn.Module) -> None:
+    model.requires_grad_(True)
+
+
+def frozen(model: nn.Module) -> None:
+    model.requires_grad_(False)
+
+
+@singledispatch
+def qof(model: nn.Module, **kwargs) -> None:
+    pass
 
 
 class PLM(object):
