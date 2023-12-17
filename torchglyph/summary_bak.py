@@ -5,7 +5,7 @@ from typing import Any, Dict, Iterable, List, Set, Tuple, Type
 import torch
 from tabulate import tabulate
 
-from torchglyph.logger import LOG_TXT
+from torchglyph.logger import LOG_FILENAME
 from torchglyph.serde import ARGS_FILENAME, SOTA_FILENAME, load_args, load_sota
 
 logger = getLogger(__name__)
@@ -27,7 +27,7 @@ def fetch_one(out_dir: Path):
     args = load_args(out_dir=out_dir)
     sota = load_sota(out_dir=out_dir)
 
-    return {**args, 'path': out_dir / LOG_TXT}, sota
+    return {**args, 'path': out_dir / LOG_FILENAME}, sota
 
 
 def fetch_all(paths: List[Path]):
