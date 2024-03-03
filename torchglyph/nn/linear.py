@@ -6,8 +6,8 @@ from torch.nn import init
 
 
 class Linear(nn.Module):
-    def __init__(self, bias: bool = True, *, in_features: int,
-                 out_features: int, leading_features: Tuple[int, ...] = ()) -> None:
+    def __init__(self, bias: bool = True, *, in_features: int, out_features: int,
+                 leading_features: Tuple[int, ...] = ()) -> None:
         super(Linear, self).__init__()
 
         self.in_features = in_features
@@ -20,11 +20,15 @@ class Linear(nn.Module):
         self.reset_parameters()
 
     def extra_repr(self) -> str:
-        return ', '.join([
+        args = [
             f'in_features={self.in_features}',
             f'out_features={self.out_features}',
             f'bias={self.bias is not None}',
-        ])
+        ]
+        if self.leading_features != ():
+            args.append(f'leading_features={self.leading_features}')
+
+        return ', '.join(args)
 
     def reset_parameters(self) -> None:
         bound = self.in_features ** -0.5
@@ -47,6 +51,13 @@ class NormLinear(Linear):
             init.zeros_(self.bias)
 
 
+class OrthLinear(Linear):
+    def reset_parameters(self) -> None:
+        init.orthogonal_(self.weight)
+        if self.bias is not None:
+            init.zeros_(self.bias)
+
+
 class ZeroLinear(Linear):
     def reset_parameters(self) -> None:
         init.zeros_(self.weight)
@@ -55,8 +66,8 @@ class ZeroLinear(Linear):
 
 
 class Bilinear(nn.Module):
-    def __init__(self, bias: bool = True, *, in_features1: int, in_features2: int,
-                 out_features: int, leading_features: Tuple[int, ...] = ()) -> None:
+    def __init__(self, bias: bool = True, *, in_features1: int, in_features2: int, out_features: int,
+                 leading_features: Tuple[int, ...] = ()) -> None:
         super(Bilinear, self).__init__()
 
         self.in_features1 = in_features1
@@ -70,12 +81,16 @@ class Bilinear(nn.Module):
         self.reset_parameters()
 
     def extra_repr(self) -> str:
-        return ', '.join([
+        args = [
             f'in_features1={self.in_features1}',
             f'in_features2={self.in_features2}',
             f'out_features={self.out_features}',
             f'bias={self.bias is not None}',
-        ])
+        ]
+        if self.leading_features != ():
+            args.append(f'leading_features={self.leading_features}')
+
+        return ', '.join(args)
 
     def reset_parameters(self) -> None:
         bound = max(self.in_features1, self.in_features2) ** -0.5
@@ -98,6 +113,13 @@ class NormBilinear(Bilinear):
             init.zeros_(self.bias)
 
 
+class OrthBilinear(Bilinear):
+    def reset_parameters(self) -> None:
+        init.orthogonal_(self.weight)
+        if self.bias is not None:
+            init.zeros_(self.bias)
+
+
 class ZeroBilinear(Bilinear):
     def reset_parameters(self) -> None:
         init.zeros_(self.weight)
@@ -108,11 +130,13 @@ class ZeroBilinear(Bilinear):
 Proj = Union[
     Type[Linear],
     Type[NormLinear],
+    Type[OrthLinear],
     Type[ZeroLinear],
 ]
 
 Biproj = Union[
     Type[Bilinear],
     Type[NormBilinear],
+    Type[OrthBilinear],
     Type[ZeroBilinear],
 ]
