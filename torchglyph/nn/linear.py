@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Type, Union
 
 import torch
 from torch import Tensor, nn
@@ -103,3 +103,16 @@ class ZeroBilinear(Bilinear):
         init.zeros_(self.weight)
         if self.bias is not None:
             init.zeros_(self.bias)
+
+
+Proj = Union[
+    Type[Linear],
+    Type[NormLinear],
+    Type[ZeroLinear],
+]
+
+Biproj = Union[
+    Type[Bilinear],
+    Type[NormBilinear],
+    Type[ZeroBilinear],
+]
