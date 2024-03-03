@@ -17,5 +17,6 @@ setup(
     author='speedcell4',
     author_email='speedcell4@gmail.com',
     description='Data Processor Combinators for Natural Language Processing',
+    python_requires='>=3.9',
     install_requires=install_requires,
 )
