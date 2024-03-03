@@ -10,16 +10,8 @@ from torchglyph.nn.plm import utils
 logger = getLogger(__name__)
 
 
-def full(model: nn.Module) -> None:
-    model.requires_grad_(True)
-
-
-def frozen(model: nn.Module) -> None:
-    model.requires_grad_(False)
-
-
 @singledispatch
-def qof(model: nn.Module, **kwargs) -> None:
+def qof(model: nn.Module, /, **kwargs) -> None:
     pass
 
 

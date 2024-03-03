@@ -6,12 +6,12 @@ from torchglyph.nn.plm.abc import PLM, qof
 
 
 @qof.register
-def qof_bert(model: BertModel):
+def qof_bert(model: BertModel, /, ):
     model.requires_grad_(False)
 
     for layer in model.encoder.layer:  # type: BertLayer
         layer.attention.self.query.requires_grad_(True)
-        layer.attention.output.requires_grad_(True)
+        layer.attention.output.dense.requires_grad_(True)
 
         if layer.add_cross_attention:
             layer.crossattention.self.query.requires_grad_(True)

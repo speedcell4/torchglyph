@@ -6,7 +6,7 @@ from torchglyph.nn.plm.abc import PLM, qof
 
 
 @qof.register
-def qof_bart(model: BartModel) -> None:
+def qof_bart(model: BartModel, /, ) -> None:
     model.requires_grad_(False)
 
     for layer in model.encoder.layers:  # type: BartEncoderLayer
@@ -14,7 +14,7 @@ def qof_bart(model: BartModel) -> None:
         layer.self_attn.out_proj.requires_grad_(True)
 
         layer.fc1.requires_grad_(True)
-        layer.fc2.out_proj.requires_grad_(True)
+        layer.fc2.requires_grad_(True)
 
     for layer in model.decoder.layers:  # type: BartDecoderLayer
         layer.self_attn.q_proj.requires_grad_(True)
@@ -24,7 +24,7 @@ def qof_bart(model: BartModel) -> None:
         layer.encoder_attn.out_proj.requires_grad_(True)
 
         layer.fc1.requires_grad_(True)
-        layer.fc2.out_proj.requires_grad_(True)
+        layer.fc2.requires_grad_(True)
 
 
 class BartBase(PLM):

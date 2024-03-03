@@ -4,7 +4,7 @@ from torchglyph.nn.plm.abc import PLM, qof
 
 
 @qof.register
-def qof_gpt(model: GPT2Model) -> None:
+def qof_gpt(model: GPT2Model, /, ) -> None:
     model.requires_grad_(False)
 
     for layer in model.h:  # type: GPT2Block
