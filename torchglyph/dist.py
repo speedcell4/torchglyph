@@ -36,7 +36,7 @@ def get_generator() -> Generator:
     if not torch.cuda.is_available():
         return torch.default_generator
 
-    return torch.cuda.default_generators[distributed.get_rank()]
+    return torch.cuda.default_generators[get_rank()]
 
 
 def all_reduce(tensor: Tensor) -> Tensor:
@@ -51,11 +51,11 @@ def all_gather_object(obj: Any, word_size: int = None) -> List[Any]:
         return [obj]
 
     if word_size is None:
-        word_size = distributed.get_world_size()
+        word_size = get_world_size()
 
-    gather_list = [None for _ in range(word_size)]
-    distributed.all_gather_object(gather_list, obj)
-    return gather_list
+    object_list = [None for _ in range(word_size)]
+    distributed.all_gather_object(object_list, obj)
+    return object_list
 
 
 def all_gather(tensor: Tensor, word_size: int = None) -> List[Tensor]:
@@ -63,14 +63,14 @@ def all_gather(tensor: Tensor, word_size: int = None) -> List[Tensor]:
         return [tensor]
 
     if word_size is None:
-        word_size = distributed.get_world_size()
+        word_size = get_world_size()
 
-    gather_list = [
+    tensor_list = [
         torch.empty(size, dtype=dtype, device=tensor.device)
         for size, dtype in zip(
             all_gather_object(tensor.size(), word_size=word_size),
             all_gather_object(tensor.dtype, word_size=word_size),
         )
     ]
-    distributed.all_gather(gather_list, tensor)
-    return gather_list
+    distributed.all_gather(tensor_list, tensor)
+    return tensor_list
