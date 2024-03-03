@@ -46,11 +46,11 @@ def log_params(*modules: nn.Module, require: Set[nn.Parameter], without: Set[nn.
     for module in modules:
         for name, param in module.named_parameters():
             if not param.requires_grad:
-                logger.critical(f'{name} {tuple(param.size())} requires no grad')
+                logger.critical(f'{name} {tuple(param.size())} -> no grad')
             elif param in require:
-                logger.info(f'{name} {tuple(param.size())} requires weight decay')
+                logger.info(f'{name} {tuple(param.size())} -> decay')
             elif param in without:
-                logger.info(f'{name} {tuple(param.size())} requires no weight decay')
+                logger.info(f'{name} {tuple(param.size())} -> no decay')
             else:
                 logger.error(f'{name} {tuple(param.size())} is not registered')
 
@@ -63,12 +63,11 @@ class SGD(optim.SGD):
         log_params(*modules, require=require, without=without)
 
         super(SGD, self).__init__(
+            lr=lr, momentum=momentum, dampening=dampening, nesterov=nesterov,
             params=[
                 {'params': list(require), 'weight_decay': weight_decay},
-                {'params': list(without), 'weight_decay': 0},
+                {'params': list(without), 'weight_decay': 0.0},
             ],
-            lr=lr, momentum=momentum,
-            dampening=dampening, nesterov=nesterov,
         )
 
 
@@ -80,11 +79,11 @@ class Adam(optim.AdamW):
         log_params(*modules, require=require, without=without)
 
         super(Adam, self).__init__(
+            lr=lr, betas=(beta1, beta2), amsgrad=amsgrad,
             params=[
                 {'params': list(require), 'weight_decay': weight_decay},
-                {'params': list(without), 'weight_decay': 0},
+                {'params': list(without), 'weight_decay': 0.0},
             ],
-            lr=lr, betas=(beta1, beta2), amsgrad=amsgrad,
         )
 
 
