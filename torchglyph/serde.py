@@ -22,9 +22,9 @@ def get_hash(**kwargs) -> str:
     return hasher.hexdigest()
 
 
-def get_cache(path: Path, **kwargs) -> Path:
+def get_cache(path: Path, exist_ok: bool = True, **kwargs) -> Path:
     cache = path / get_hash(**kwargs, __torchglyph=DEBUG)
-    cache.mkdir(parents=True, exist_ok=True)
+    cache.mkdir(parents=True, exist_ok=exist_ok)
     return cache
 
 
