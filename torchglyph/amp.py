@@ -2,7 +2,6 @@ from typing import Type, Union
 
 from torch import Tensor, autocast
 from torch.cuda.amp import GradScaler, autocast
-from torch.optim import Optimizer
 
 
 class amp(object):
@@ -24,10 +23,10 @@ class amp(object):
     def scale(self, loss: Tensor) -> Tensor:
         raise NotImplementedError
 
-    def unscale(self, optimizer: Optimizer) -> None:
+    def unscale(self, optimizer) -> None:
         raise NotImplementedError
 
-    def step(self, optimizer: Optimizer) -> None:
+    def step(self, optimizer) -> None:
         raise NotImplementedError
 
 
@@ -35,10 +34,10 @@ class fp32(amp):
     def scale(self, loss: Tensor) -> Tensor:
         return loss
 
-    def unscale(self, optimizer: Optimizer) -> None:
+    def unscale(self, optimizer) -> None:
         pass
 
-    def step(self, optimizer: Optimizer) -> None:
+    def step(self, optimizer) -> None:
         optimizer.step()
         optimizer.zero_grad()
 
@@ -60,10 +59,10 @@ class fp16(amp):
     def scale(self, loss: Tensor) -> Tensor:
         return self.grad_scaler.scale(loss)
 
-    def unscale(self, optimizer: Optimizer) -> None:
+    def unscale(self, optimizer) -> None:
         return self.grad_scaler.unscale_(optimizer)
 
-    def step(self, optimizer: Optimizer) -> None:
+    def step(self, optimizer) -> None:
         self.grad_scaler.step(optimizer)
         self.grad_scaler.update()
         optimizer.zero_grad()
