@@ -8,14 +8,24 @@ import yaml
 logger = getLogger(__name__)
 
 
-def load_json(path: Path) -> Any:
-    with path.open(mode='r', encoding='utf-8') as fp:
-        return json.load(fp=fp)
+def load_json(path: Path, default: Any = None) -> Any:
+    try:
+        with path.open(mode='r', encoding='utf-8') as fp:
+            return json.load(fp=fp)
+    except FileNotFoundError as error:
+        if default is not None:
+            return default
+        raise error
 
 
-def load_yaml(path: Path) -> Any:
-    with path.open(mode='r', encoding='utf-8') as fp:
-        return yaml.load(stream=fp, Loader=yaml.CLoader)
+def load_yaml(path: Path, default: Any = None) -> Any:
+    try:
+        with path.open(mode='r', encoding='utf-8') as fp:
+            return yaml.load(stream=fp, Loader=yaml.CLoader)
+    except FileNotFoundError as error:
+        if default is not None:
+            return default
+        raise error
 
 
 def save_json(path: Path, **kwargs) -> None:
@@ -49,8 +59,8 @@ def load_sota(out_dir: Path, name: str = SOTA_FILENAME) -> Any:
 
 
 def save_args(out_dir: Path, name: str = ARGS_FILENAME, **kwargs) -> None:
-    return save_json(path=load_json(out_dir / name), **kwargs)
+    return save_json(path=out_dir / name, **{**load_json(out_dir / name, default={}), **kwargs})
 
 
 def save_sota(out_dir: Path, name: str = SOTA_FILENAME, **kwargs) -> None:
-    return save_json(path=load_json(out_dir / name), **kwargs)
+    return save_json(path=out_dir / name, **{**load_json(out_dir / name, default={}), **kwargs})
