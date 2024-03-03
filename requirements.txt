@@ -13,3 +13,7 @@ colorlog
 tabulate
 torchrua
 aku
+torchglyph
+setuptools
+torchmetrics
+yaml
