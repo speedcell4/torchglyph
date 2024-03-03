@@ -7,7 +7,6 @@ datasets
 nltk
 seqeval
 filelock
-pyyaml
 tqdm
 colorlog
 tabulate
@@ -16,4 +15,3 @@ aku
 torchglyph
 setuptools
 torchmetrics
-yaml
