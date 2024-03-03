@@ -201,15 +201,6 @@ celerybeat-schedule
 # SageMath parsed files
 *.sage.py
 
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -232,7 +223,6 @@ venv.bak/
 [Ll]ib64
 [Ll]ocal
 pyvenv.cfg
-.venv
 pip-selfcheck.json
 ### C template
 # Prerequisites
