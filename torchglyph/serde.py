@@ -3,7 +3,6 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any
 
-import yaml
 from datasets.config import DATASETDICT_JSON_FILENAME, DATASET_INFO_FILENAME
 from datasets.fingerprint import Hasher
 
@@ -45,16 +44,6 @@ def load_json(path: Path, default: Any = None) -> Any:
         raise error
 
 
-def load_yaml(path: Path, default: Any = None) -> Any:
-    try:
-        with path.open(mode='r', encoding='utf-8') as fp:
-            return yaml.load(stream=fp, Loader=yaml.CLoader)
-    except FileNotFoundError as error:
-        if default is not None:
-            return default
-        raise error
-
-
 def save_json(path: Path, **kwargs) -> None:
     if not path.exists():
         logger.info(f'saving to {path}')
@@ -62,15 +51,6 @@ def save_json(path: Path, **kwargs) -> None:
 
     with path.open(mode='w', encoding='utf-8') as fp:
         return json.dump(obj=kwargs, fp=fp, indent=2, ensure_ascii=False)
-
-
-def save_yaml(path: Path, **kwargs) -> None:
-    if not path.exists():
-        logger.info(f'saving to {path}')
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-    with path.open(mode='w', encoding='utf-8') as fp:
-        return yaml.dump(data=kwargs, stream=fp, indent=2, allow_unicode=True)
 
 
 ARGS_FILENAME = 'args.json'
