@@ -4,8 +4,35 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from datasets.config import DATASETDICT_JSON_FILENAME, DATASET_INFO_FILENAME
+from datasets.fingerprint import Hasher
+
+from torchglyph import DEBUG
 
 logger = getLogger(__name__)
+
+
+def get_hash(**kwargs) -> str:
+    hasher = Hasher()
+
+    for key, value in sorted(kwargs.items()):
+        hasher.update(key)
+        hasher.update(value)
+
+    return hasher.hexdigest()
+
+
+def get_cache(path: Path, **kwargs) -> Path:
+    cache = path / get_hash(**kwargs, __torchglyph=DEBUG)
+    cache.mkdir(parents=True, exist_ok=True)
+    return cache
+
+
+def is_cached(path: Path, *names: str) -> bool:
+    return all([
+        all((path / name).exists() for name in names),
+        any((path / name).exists() for name in (DATASET_INFO_FILENAME, DATASETDICT_JSON_FILENAME)),
+    ])
 
 
 def load_json(path: Path, default: Any = None) -> Any:
