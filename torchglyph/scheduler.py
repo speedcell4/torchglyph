@@ -10,7 +10,7 @@ logger = getLogger(__name__)
 
 class LambdaLR(lr_scheduler.LambdaLR):
     def __init__(self, num_training_steps: int = 20 if DEBUG else 5_0000,
-                 num_warmup_steps: int = 20 if DEBUG else 3000, *,
+                 num_warmup_steps: int = 20 if DEBUG else 4000, *,
                  optimizer: Optimizer, last_epoch: int = -1, **kwargs) -> None:
         self.num_training_steps = num_training_steps
         self.num_warmup_steps = num_warmup_steps
