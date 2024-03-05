@@ -34,7 +34,7 @@ class Linear(nn.Module):
         bound = self.in_features ** -0.5
         init.uniform_(self.weight, -bound, +bound)
         if self.bias is not None:
-            init.uniform_(self.bias, -bound, +bound)
+            init.zeros_(self.bias)
 
     def forward(self, tensor: Tensor) -> Tensor:
         tensor = torch.einsum('...x,...yx->...y', tensor, self.weight)
@@ -96,7 +96,7 @@ class Bilinear(nn.Module):
         bound = max(self.in_features1, self.in_features2) ** -0.5
         init.uniform_(self.weight, -bound, +bound)
         if self.bias is not None:
-            init.uniform_(self.bias, -bound, +bound)
+            init.zeros_(self.bias)
 
     def forward(self, tensor1: Tensor, tensor2: Tensor) -> Tensor:
         tensor = torch.einsum('...x,...zyx,...y->...z', tensor1, self.weight, tensor2)
