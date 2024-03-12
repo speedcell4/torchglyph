@@ -12,7 +12,7 @@ logger = getLogger(__name__)
 
 @singledispatch
 def qof(model: nn.Module, /, **kwargs) -> None:
-    pass
+    raise NotImplementedError(f'{type(model)} is not supported')
 
 
 class PLM(object):
