@@ -5,7 +5,7 @@ from pathlib import Path
 
 from matplotlib import pyplot as plt
 
-data_dir = (Path.home() / '.torchglyph').resolve()
+data_dir = (Path.home() / '.cache' / 'torchglyph').resolve()
 if not data_dir.exists():
     data_dir.mkdir(parents=True, exist_ok=True)
 
