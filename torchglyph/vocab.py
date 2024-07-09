@@ -2,16 +2,20 @@ import itertools
 from logging import getLogger
 from typing import List, Tuple, Type
 
+from datasets import Dataset
 from tokenizers import Tokenizer, models, pre_tokenizers
 from tokenizers.trainers import WordLevelTrainer, WordPieceTrainer
 from torch.distributions.utils import lazy_property
+from tqdm import tqdm
 
 logger = getLogger(__name__)
 
-__all__ = [
-    'WordVocab',
-    'WordPieceVocab',
-]
+
+def get_iterator(*datasets: Dataset, keys: List[str]):
+    for dataset in tqdm(datasets):
+        for data in tqdm(dataset):
+            for key in keys:
+                yield data[key]
 
 
 class Vocab(object):
@@ -25,7 +29,7 @@ class Vocab(object):
                  mask_token: str = None, special_tokens: Tuple[str, ...] = ()) -> None:
         super(Vocab, self).__init__()
 
-        self.vocab_size = vocab_size
+        self._vocab_size = vocab_size
         self.min_freq = min_freq
 
         self.unk_token = unk_token
@@ -37,6 +41,26 @@ class Vocab(object):
         special_tokens = [unk_token, pad_token, bos_token, eos_token, mask_token, *special_tokens]
         special_tokens = [token for token in special_tokens if token is not None]
         self.special_tokens = special_tokens
+
+    @property
+    def unk_id(self) -> int:
+        return self.tokenizer.token_to_id(self.unk_token)
+
+    @property
+    def pad_id(self) -> int:
+        return self.tokenizer.token_to_id(self.pad_token)
+
+    @property
+    def bos_id(self) -> int:
+        return self.tokenizer.token_to_id(self.bos_token)
+
+    @property
+    def eos_id(self) -> int:
+        return self.tokenizer.token_to_id(self.eos_token)
+
+    @property
+    def mask_id(self) -> int:
+        return self.tokenizer.token_to_id(self.mask_token)
 
     def __init_subclass__(cls, **kwargs):
         if hasattr(cls, 'Token') and hasattr(cls, 'Index'):
@@ -93,8 +117,8 @@ class WordVocab(Vocab):
     @lazy_property
     def trainer(self) -> WordLevelTrainer:
         return WordLevelTrainer(
-            show_progress=False,
-            vocab_size=self.vocab_size,
+            show_progress=True,
+            vocab_size=self._vocab_size,
             min_frequency=self.min_freq,
             special_tokens=self.special_tokens,
         )
@@ -225,8 +249,8 @@ class WordPieceVocab(Vocab):
     @lazy_property
     def trainer(self) -> WordPieceTrainer:
         return WordPieceTrainer(
-            show_progress=False,
-            vocab_size=self.vocab_size,
+            show_progress=True,
+            vocab_size=self._vocab_size,
             min_frequency=self.min_freq,
             special_tokens=self.special_tokens,
         )
@@ -239,8 +263,8 @@ class WordPieceVocab01(WordPieceVocab):
     @lazy_property
     def trainer(self) -> WordPieceTrainer:
         return WordPieceTrainer(
-            show_progress=False,
-            vocab_size=self.vocab_size,
+            show_progress=True,
+            vocab_size=self._vocab_size,
             min_frequency=self.min_freq,
             special_tokens=self.special_tokens,
         )
