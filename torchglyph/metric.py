@@ -1,9 +1,7 @@
-from typing import Union
-
 import torch
 from torch import Tensor
 from torchmetrics import MaxMetric, MeanMetric, MetricCollection, MinMetric
-from torchrua import C, D, P
+from torchrua import Z
 
 
 class TensorMetric(MetricCollection):
@@ -32,7 +30,7 @@ class SeqMetric(MetricCollection):
             'max': MaxMetric(),
         })
 
-    def update(self, sequence: Union[C, D, P]) -> None:
+    def update(self, sequence: Z) -> None:
         _, token_sizes = sequence.idx().cat()
 
         self['snt'].update(token_sizes.size()[0])

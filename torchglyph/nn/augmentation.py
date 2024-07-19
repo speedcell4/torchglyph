@@ -1,8 +1,8 @@
-from typing import Tuple, Union
+from typing import Tuple
 
 import torch
 from torch import nn
-from torchrua import C, D, P
+from torchrua import Z
 
 
 class Aug(nn.Module):
@@ -25,12 +25,12 @@ class Aug(nn.Module):
             f'specials={self.special_token_ids.detach().cpu().tolist()}',
         ])
 
-    def forward(self, sequence: Union[C, D, P], **kwargs) -> Union[C, D, P]:
+    def forward(self, sequence: Z, **kwargs) -> Z:
         raise NotImplementedError
 
 
 class TokenAug(Aug):
-    def forward(self, sequence: Union[C, D, P], **kwargs) -> Union[C, D, P]:
+    def forward(self, sequence: Z, **kwargs) -> Z:
         if not self.training:
             return sequence
 
