@@ -9,6 +9,7 @@ from torch.utils import data
 
 from torchglyph import data_dir
 from torchglyph.data.sampler import SortishBatchSampler, SortishSampler
+from torchglyph.dist import get_rank, get_world_size
 
 logger = getLogger(__name__)
 
@@ -82,6 +83,10 @@ class DataLoader(data.DataLoader):
 
         loaders = []
         for index, (data_source, batch_size) in enumerate(zip(data_sources, batch_sizes)):
+            training = index == 0
+            if not training:
+                data_source = data_source.select(range(get_rank(), len(data_source), get_world_size()))
+
             sampler = SortishSampler(
                 data_source=data_source,
                 section=section_size,
@@ -89,7 +94,6 @@ class DataLoader(data.DataLoader):
             )
             logger.debug(f'{index}.sampler => {sampler}')
 
-            training = index == 0
             batch_sampler = SortishBatchSampler(
                 sampler=sampler, batch_size=batch_size,
                 training=training, drop_last=training and drop_last,

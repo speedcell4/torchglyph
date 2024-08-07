@@ -39,7 +39,8 @@ def group_params(modules: Tuple[nn.Module, ...], ignores: Tuple[Type[nn.Module],
     for m in modules:
         recur(module=m)
 
-    return require, without
+    common = require & without
+    return require - common, without | common
 
 
 def log_params(*modules: nn.Module, require: Set[nn.Parameter], without: Set[nn.Parameter]):
