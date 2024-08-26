@@ -1,7 +1,7 @@
 from typing import Type, Union
 
 from torch import Tensor, autocast
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler
 
 
 class amp(object):
@@ -45,10 +45,10 @@ class fp32(amp):
 class fp16(amp):
     def __init__(self) -> None:
         super(fp16, self).__init__()
-        self.grad_scaler = GradScaler()
+        self.grad_scaler = GradScaler('cuda')
 
     def __enter__(self):
-        self.env = autocast()
+        self.env = autocast('cuda')
         self.env.__enter__()
         return self
 
