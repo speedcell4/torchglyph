@@ -43,14 +43,10 @@ class SeqMetric(MetricCollection):
 class HashMetric(MetricCollection):
     def __init__(self) -> None:
         super(HashMetric, self).__init__({
-            'loss': MeanMetric(),
             'pos': MeanMetric(),
             'neg': MeanMetric(),
             'unique': MeanMetric(),
         })
-
-    def update_loss(self, loss: Tensor) -> None:
-        self['loss'].update(loss)
 
     def update(self, x: Tensor, y: Tensor, t1: Tensor, t2: Tensor) -> None:
         pos = t1[:, None] == t2[None, :]
