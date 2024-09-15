@@ -81,7 +81,7 @@ class DataLoader(data.DataLoader):
     def new(cls, data_sources: Tuple[Dataset, ...],
             collate_fn: Union[Callable, Tuple[Callable, ...]],
             batch_size: Union[int, Tuple[int, ...]],
-            shard: Union[bool, Tuple[bool]] = True,
+            shard: Union[bool, Tuple[bool, ...]] = True,
             drop_last: Union[bool, Tuple[bool, ...]] = False,
             section_size: Union[int, Tuple[int, ...]] = 1 << 12,
             sortish_key: Union[str, Tuple[str, ...]] = 'size') -> List['DataLoader']:
