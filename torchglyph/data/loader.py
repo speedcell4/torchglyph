@@ -88,18 +88,12 @@ class DataLoader(data.DataLoader):
         assert len(data_sources) > 0
 
         loaders = []
-        for index, (data_source, collate_fn, batch_size, sharding, drop_last, section_size, sortish_key) in enumerate(zip(
-                data_sources,
-                unpack(collate_fn),
-                unpack(batch_size),
-                unpack(sharding),
-                unpack(drop_last),
-                unpack(section_size),
-                unpack(sortish_key),
-        )):
+        for index, (data_source, collate_fn, batch_size, sharding, drop_last, section_size, sortish_key) in enumerate(
+                zip(data_sources, unpack(collate_fn), unpack(batch_size),
+                    unpack(sharding), unpack(drop_last), unpack(section_size), unpack(sortish_key))):
             training = index == 0
             if sharding:
-                data_source = data_source.select(range(get_rank(), len(data_source), get_world_size()))
+                data_source = data_source.shard(num_shards=get_world_size(), index=get_rank())
 
             sampler = SortishSampler(
                 data_source=data_source,
