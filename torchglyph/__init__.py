@@ -16,4 +16,8 @@ if system_name != 'darwin':
     plt.switch_backend('agg')
 
 DEBUG = os.environ.get('DEBUG', f"{system_name == 'darwin'}").lower() in ('1', 'y', 'yes', 't', 'true')
-DEV = os.environ.get('DEV', f"{system_name == 'darwin'}").lower() in ('1', 'y', 'yes', 't', 'true')
+
+CHECK = os.environ.get('CHECK', '').strip().lower().split(',')
+CHECK_LOG = 'log' in CHECK
+CHECK_DATA = 'data' in CHECK
+CHECK_EVAL = 'eval' in CHECK
