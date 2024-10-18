@@ -3,7 +3,6 @@ from typing import Iterator, List
 
 import torch
 from datasets import Dataset
-from torch import distributed
 from torch.utils import data
 
 logger = getLogger(__name__)
@@ -27,7 +26,7 @@ class SortishSampler(data.Sampler[int]):
         super(SortishSampler, self).__init__()
 
         self.section = section
-        self.descending = None
+        self.descending = True
 
         self.sizes = data_source[sortish_key]
         self.indices = []
@@ -39,10 +38,6 @@ class SortishSampler(data.Sampler[int]):
         self.indices.extend(indices)
 
     def __iter__(self) -> Iterator[int]:
-        if self.descending is None:
-            self.descending = True
-            if distributed.is_initialized():
-                self.descending = distributed.get_rank() % 2 == 0
 
         sizes = torch.tensor(self.sizes, dtype=torch.long)
         indices = torch.randperm(len(self), dtype=torch.long, generator=torch.default_generator)
