@@ -78,20 +78,21 @@ class DataLoader(data.DataLoader):
     dataset: Dataset
 
     @classmethod
-    def new(cls, data_sources: Tuple[Dataset, ...],
+    def new(cls, data_source: Tuple[Dataset, ...],
             collate_fn: Union[Callable, Tuple[Callable, ...]],
+            is_training: Union[bool, Tuple[bool, ...]],
             batch_size: Union[int, Tuple[int, ...]],
             sharding: Union[bool, Tuple[bool, ...]] = True,
             drop_last: Union[bool, Tuple[bool, ...]] = False,
             section_size: Union[int, Tuple[int, ...]] = 1 << 12,
             sortish_key: Union[str, Tuple[str, ...]] = 'size') -> List['DataLoader']:
-        assert len(data_sources) > 0
+        assert len(data_source) > 0
 
         loaders = []
-        for index, (data_source, collate_fn, batch_size, sharding, drop_last, section_size, sortish_key) in enumerate(
-                zip(data_sources, unpack(collate_fn), unpack(batch_size),
-                    unpack(sharding), unpack(drop_last), unpack(section_size), unpack(sortish_key))):
-            training = index == 0
+        for index, (data_source, collate_fn, is_training, batch_size,
+                    sharding, drop_last, section_size, sortish_key) in enumerate(
+            zip(data_source, unpack(collate_fn), unpack(is_training), unpack(batch_size),
+                unpack(sharding), unpack(drop_last), unpack(section_size), unpack(sortish_key))):
             if sharding:
                 data_source = data_source.shard(num_shards=get_world_size(), index=get_rank())
 
@@ -104,7 +105,7 @@ class DataLoader(data.DataLoader):
 
             batch_sampler = SortishBatchSampler(
                 sampler=sampler, batch_size=batch_size,
-                training=training, drop_last=training and drop_last,
+                training=is_training, drop_last=is_training and drop_last,
             )
             logger.debug(f'{index}.batch_sampler => {batch_sampler}')
 
