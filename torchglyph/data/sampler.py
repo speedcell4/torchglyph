@@ -1,89 +1,73 @@
 from logging import getLogger
-from typing import Iterator, List
 
-import torch
 from datasets import Dataset
+from torch import distributed
 from torch.utils import data
 
 logger = getLogger(__name__)
 
 
-class SequentialSampler(data.SequentialSampler):
-    def __init__(self, data_source: Dataset) -> None:
-        super(SequentialSampler, self).__init__(data_source=data_source)
+class _SortishSampler(data.Sampler[int]):
+    def __init__(self, ds: Dataset, key: str, section_size: int, sharding: bool) -> None:
+        super(_SortishSampler, self).__init__()
 
+        self.section_size = section_size
 
-class RandomSampler(data.RandomSampler):
-    def __init__(self, data_source: Dataset, replacement: bool = False) -> None:
-        super(RandomSampler, self).__init__(
-            data_source=data_source, replacement=replacement,
-            num_samples=None, generator=torch.default_generator,
-        )
+        ds = ds.select_columns([key]).rename_column(key, 'key')
+        ds = ds.add_column('idx', range(len(ds)))
+        if sharding and distributed.is_initialized():
+            ds = ds.shard(
+                num_shards=distributed.get_world_size(),
+                index=distributed.get_rank(),
+            )
 
-
-class SortishSampler(data.Sampler[int]):
-    def __init__(self, data_source: Dataset, section: int = 1 << 12, sortish_key: str = 'token_size') -> None:
-        super(SortishSampler, self).__init__()
-
-        self.section = section
-        self.descending = True
-
-        self.sizes = data_source[sortish_key]
-        self.indices = []
+        self.ds = ds
 
     def __len__(self) -> int:
-        return len(self.sizes)
+        return len(self.ds)
 
-    def extend(self, indices: List[int]):
-        self.indices.extend(indices)
 
-    def __iter__(self) -> Iterator[int]:
+class SequentialSortishSampler(_SortishSampler):
+    def __init__(self, ds: Dataset, key: str, section_size: int, sharding: bool) -> None:
+        super(SequentialSortishSampler, self).__init__(ds=ds, key=key, section_size=section_size, sharding=sharding)
+        self.ds = self.ds.sort(column_names=['key'], reverse=True)
 
-        sizes = torch.tensor(self.sizes, dtype=torch.long)
-        indices = torch.randperm(len(self), dtype=torch.long, generator=torch.default_generator)
+    def __iter__(self):
+        for batch in self.ds.iter(batch_size=self.section_size, drop_last_batch=False):
+            yield list(zip(batch['idx'], batch['key']))
 
-        if len(self.indices) > 0:
-            indices = torch.cat([torch.tensor(self.indices, dtype=torch.long), indices], dim=0)
-            self.indices = []
 
-        for index in torch.split(indices, self.section, dim=0):
-            args = torch.argsort(sizes[index], dim=0, descending=self.descending)
-            self.descending ^= True
+class RandomSortishSampler(_SortishSampler):
+    def __iter__(self):
+        idx, key, reverse = [], [], True
 
-            yield from index[args].detach().cpu().tolist()
+        while True:
+            for batch in self.ds.shuffle().iter(batch_size=self.section_size, drop_last_batch=False):
+                idx.extend(batch['idx'])
+                key.extend(batch['key'])
+
+                if len(idx) < self.section_size:
+                    continue
+
+                yield sorted(list(zip(idx, key)), key=lambda item: item[1], reverse=reverse)
+                idx, key, reverse = [], [], not reverse
 
 
 class SortishBatchSampler(data.BatchSampler):
-    sampler: SortishSampler
-
-    def __init__(self, sampler: SortishSampler, batch_size: int, training: bool, drop_last: bool = False) -> None:
+    def __init__(self, sampler, batch_size: int, drop_last: bool = False) -> None:
         super(SortishBatchSampler, self).__init__(sampler=sampler, batch_size=batch_size, drop_last=drop_last)
 
-        self.sizes = sampler.sizes
-        self.training = training
+    def __iter__(self):
+        batch, size = [], 0
 
-    def __iter__(self) -> Iterator[List[int]]:
-        batch, batch_size = [], 0
-
-        while True:
-            for index in self.sampler:
-                if not (0 < self.sizes[index] <= self.batch_size):
-                    logger.warning(f'sizes[{index}] = {self.sizes[index]} is not in (0, {self.batch_size}]')
-                    continue
-
-                if batch_size + self.sizes[index] > self.batch_size:
+        for examples in self.sampler:
+            for idx, key in examples:
+                if size + key > self.batch_size:
                     yield batch
-                    batch, batch_size = [], 0
+                    batch, size = [], 0
 
-                batch.append(index)
-                batch_size += self.sizes[index]
+                batch.append(idx)
+                size += key
 
-            if len(batch) > 0 and not self.drop_last:
-                if self.training:
-                    self.sampler.extend(batch)
-                else:
-                    yield batch
-
-            batch, batch_size = [], 0
-            if not self.training:
-                break
+        if len(batch) > 0 and not self.drop_last:
+            yield batch
