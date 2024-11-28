@@ -39,7 +39,12 @@ class SequentialSortishSampler(_SortishSampler):
 
 class RandomSortishSampler(_SortishSampler):
     def __iter__(self):
-        idx, key, reverse = [], [], True
+        idx, key = [], []
+
+        if distributed.is_initialized():
+            reverse = distributed.get_rank() % 2 == 0
+        else:
+            reverse = True
 
         while True:
             for batch in self.ds.shuffle().iter(batch_size=self.section_size, drop_last_batch=False):
