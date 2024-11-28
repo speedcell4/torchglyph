@@ -6,9 +6,8 @@ from typing import List, Tuple
 from datasets import Dataset, DownloadConfig, DownloadManager
 from torch.utils import data
 
-from data.sampler import RandomSortishSampler, SequentialSortishSampler
 from torchglyph import data_dir
-from torchglyph.data.sampler import SortishBatchSampler
+from torchglyph.data.sampler import RandomSortishSampler, SequentialSortishSampler, SortishBatchSampler
 
 logger = getLogger(__name__)
 
