@@ -65,6 +65,18 @@ class HashMetric(MetricCollection):
         self['unique'].update(y / t2, t2)
 
 
+class Accuracy(MeanMetric):
+    def __init__(self, ignore_index: int = -100) -> None:
+        super(Accuracy, self).__init__()
+        self.ignore_index = ignore_index
+
+    def update(self, prediction: Tensor, target: Tensor) -> None:
+        return super(Accuracy, self).update((prediction == target).float()[target != self.ignore_index])
+
+    def compute(self) -> Tensor:
+        return super(Accuracy, self).compute() * 100.
+
+
 class SacreBLEUScore(_SacreBLEUScore):
     def __init__(self, lang: str):
         tokenize = {
