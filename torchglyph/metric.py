@@ -1,6 +1,7 @@
 import torch
 from torch import Tensor
 from torchmetrics import MaxMetric, MeanMetric, MetricCollection, MinMetric
+from torchmetrics.text import SacreBLEUScore as _SacreBLEUScore
 from torchrua import Z
 
 
@@ -62,3 +63,16 @@ class HashMetric(MetricCollection):
 
         self['unique'].update(x / t1, t1)
         self['unique'].update(y / t2, t2)
+
+
+class SacreBLEUScore(_SacreBLEUScore):
+    def __init__(self, lang: str):
+        tokenize = {
+            'zh': 'zh',
+            'ja': 'ja-mecab',
+            'ko': 'ko-mecab',
+        }
+        super(SacreBLEUScore, self).__init__(tokenize=tokenize.get(lang, '13a'))
+
+    def compute(self) -> Tensor:
+        return super(SacreBLEUScore, self).compute() * 100.
