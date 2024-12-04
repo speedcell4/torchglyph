@@ -50,19 +50,22 @@ class HashMetric(MetricCollection):
         })
 
     def update(self, x: Tensor, y: Tensor, t1: Tensor, t2: Tensor) -> None:
-        pos = t1[:, None] == t2[None, :]
-        neg = t1[:, None] != t2[None, :]
+        self['pos'].update((x[:, None] == y[None, :])[t1[:, None] == t2[None, :]].float())
+        self['neg'].update((x[:, None] != y[None, :])[t1[:, None] != t2[None, :]].float())
 
-        self['pos'].update((x[:, None] == y[None, :])[pos].float())
-        self['neg'].update((x[:, None] != y[None, :])[neg].float())
+        n, *_ = torch.unique(x, dim=0).size()
+        m, *_ = torch.unique(t1, dim=0).size()
+        self['unique'].update(n / m, m)
 
-        x, *_ = torch.unique(x, dim=0).size()
-        y, *_ = torch.unique(y, dim=0).size()
-        t1, *_ = torch.unique(t1, dim=0).size()
-        t2, *_ = torch.unique(t2, dim=0).size()
+        n, *_ = torch.unique(y, dim=0).size()
+        m, *_ = torch.unique(t2, dim=0).size()
+        self['unique'].update(n / m, m)
 
-        self['unique'].update(x / t1, t1)
-        self['unique'].update(y / t2, t2)
+    def compute(self):
+        return {
+            key: value * 100.
+            for key, value in super(HashMetric, self).compute().items()
+        }
 
 
 class Accuracy(MeanMetric):
