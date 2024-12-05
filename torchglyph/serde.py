@@ -5,6 +5,7 @@ from typing import Any
 
 from datasets.config import DATASETDICT_JSON_FILENAME, DATASET_INFO_FILENAME
 from datasets.fingerprint import Hasher
+from torch import distributed
 
 from torchglyph import DEBUG
 
@@ -45,6 +46,9 @@ def load_json(path: Path, default: Any = None) -> Any:
 
 
 def save_json(path: Path, **kwargs) -> None:
+    if distributed.is_initialized() and distributed.get_rank() != 0:
+        return
+
     if not path.exists():
         logger.info(f'saving to {path}')
         path.parent.mkdir(parents=True, exist_ok=True)
