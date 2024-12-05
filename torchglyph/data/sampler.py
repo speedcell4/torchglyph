@@ -28,13 +28,15 @@ class _SortishSampler(data.Sampler[int]):
 
 
 class SequentialSortishSampler(_SortishSampler):
-    def __init__(self, ds: Dataset, key: str, section_size: int, sharding: bool) -> None:
-        super(SequentialSortishSampler, self).__init__(ds=ds, key=key, section_size=section_size, sharding=sharding)
-        self.ds = self.ds.sort(column_names=['key'], reverse=True)
-
     def __iter__(self):
+        reverse = True
+
         for batch in self.ds.iter(batch_size=self.section_size, drop_last_batch=False):
-            yield list(zip(batch['idx'], batch['key']))
+            idx = batch['idx']
+            key = batch['key']
+
+            yield sorted(list(zip(idx, key)), key=lambda item: item[1], reverse=reverse)
+            reverse = not reverse
 
 
 class RandomSortishSampler(_SortishSampler):
