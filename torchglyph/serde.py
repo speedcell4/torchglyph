@@ -49,12 +49,17 @@ def save_json(path: Path, **kwargs) -> None:
     if distributed.is_initialized() and distributed.get_rank() != 0:
         return
 
-    if not path.exists():
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    obj = {}
+    if path.exists():
+        with path.open(mode='r', encoding='utf-8') as fp:
+            obj = json.load(fp=fp)
+    else:
         logger.info(f'saving to {path}')
-        path.parent.mkdir(parents=True, exist_ok=True)
 
     with path.open(mode='w', encoding='utf-8') as fp:
-        return json.dump(obj=kwargs, fp=fp, indent=2, ensure_ascii=False)
+        return json.dump(obj={**obj, **kwargs}, fp=fp, indent=2, ensure_ascii=False)
 
 
 ARGS_FILENAME = 'args.json'
@@ -70,8 +75,8 @@ def load_sota(out_dir: Path, name: str = SOTA_FILENAME) -> Any:
 
 
 def save_args(out_dir: Path, name: str = ARGS_FILENAME, **kwargs) -> None:
-    return save_json(path=out_dir / name, **{**load_json(out_dir / name, default={}), **kwargs})
+    return save_json(path=out_dir / name, **kwargs)
 
 
 def save_sota(out_dir: Path, name: str = SOTA_FILENAME, **kwargs) -> None:
-    return save_json(path=out_dir / name, **{**load_json(out_dir / name, default={}), **kwargs})
+    return save_json(path=out_dir / name, **kwargs)
