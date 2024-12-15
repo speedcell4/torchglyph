@@ -47,7 +47,7 @@ def log_params(*modules: nn.Module, require: Set[nn.Parameter], without: Set[nn.
     for module in modules:
         for name, param in module.named_parameters():
             if not param.requires_grad:
-                logger.critical(f'{name} {tuple(param.size())} -> no grad')
+                logger.debug(f'{name} {tuple(param.size())} -> no grad')
             elif param in require:
                 logger.info(f'{name} {tuple(param.size())} -> decay')
             elif param in without:
