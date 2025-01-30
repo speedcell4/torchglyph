@@ -74,10 +74,24 @@ class Accuracy(MeanMetric):
         self.ignore_index = ignore_index
 
     def update(self, prediction: Tensor, target: Tensor) -> None:
-        return super(Accuracy, self).update((prediction == target).float()[target != self.ignore_index])
+        mask = prediction == target
+        return super(Accuracy, self).update(mask.float()[target != self.ignore_index])
 
     def compute(self) -> Tensor:
         return super(Accuracy, self).compute() * 100.
+
+
+class TopK(MeanMetric):
+    def __init__(self, ignore_index: int = -100) -> None:
+        super(TopK, self).__init__()
+        self.ignore_index = ignore_index
+
+    def update(self, prediction: Tensor, target: Tensor) -> None:
+        mask = (prediction == target[..., None]).any(dim=-1)
+        return super(TopK, self).update(mask.float()[target != self.ignore_index])
+
+    def compute(self) -> Tensor:
+        return super(TopK, self).compute() * 100.
 
 
 class SacreBLEUScore(_SacreBLEUScore):
