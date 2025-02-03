@@ -19,6 +19,7 @@ class _SortishSampler(data.Sampler[int]):
             ds = ds.shard(
                 num_shards=distributed.get_world_size(),
                 index=distributed.get_rank(),
+                contiguous=False,
             )
 
         self.ds = ds
