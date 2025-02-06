@@ -69,22 +69,24 @@ class SGD(optim.SGD):
                 {'params': list(require), 'weight_decay': weight_decay},
                 {'params': list(without), 'weight_decay': 0.0},
             ],
+            **kwargs
         )
 
 
 class Adam(optim.AdamW):
     def __init__(self, lr: float = 3e-4, beta1: float = 0.9, beta2: float = 0.98,
-                 weight_decay: float = 1e-4, amsgrad: bool = False, *,
+                 weight_decay: float = 1e-4, amsgrad: bool = False, eps: float = 1e-6, *,
                  modules: Tuple[nn.Module, ...], **kwargs) -> None:
         require, without = group_params(modules)
         log_params(*modules, require=require, without=without)
 
         super(Adam, self).__init__(
-            lr=lr, betas=(beta1, beta2), amsgrad=amsgrad,
+            lr=lr, betas=(beta1, beta2), amsgrad=amsgrad, eps=eps,
             params=[
                 {'params': list(require), 'weight_decay': weight_decay},
                 {'params': list(without), 'weight_decay': 0.0},
             ],
+            **kwargs
         )
 
 
