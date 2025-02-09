@@ -1,32 +1,29 @@
-from typing import Literal
+from torch import Tensor, nn
 
-from torch import Tensor, distributed, nn
-
-from torchglyph.utils import all_gather_object
+from torchglyph.nn.criterion.utils import get_scaling
 
 
-class CrossEntropy(nn.CrossEntropyLoss):
-    def __init__(self, label_smoothing: float = 0,
-                 reduction: Literal['mean', 'sum', 'none'] = 'mean',
-                 scaling: bool = True, *, ignore_index: int = -100) -> None:
-        super(CrossEntropy, self).__init__(
-            label_smoothing=label_smoothing,
+class CrossEntropyLoss(nn.CrossEntropyLoss):
+    def __init__(self, label_smoothing: float = 0.0, ignore_index: int = -100) -> None:
+        super(CrossEntropyLoss, self).__init__(
             ignore_index=ignore_index,
-            reduction=reduction,
-        )
-        self.scaling = scaling
-
-    def forward(self, input: Tensor, target: Tensor) -> Tensor:
-        loss = super(CrossEntropy, self).forward(
-            input=input.flatten(end_dim=-2),
-            target=target.flatten(end_dim=-1),
+            label_smoothing=label_smoothing,
+            reduction='mean',
         )
 
-        if not distributed.is_initialized() or not self.scaling:
-            return loss
+    def extra_repr(self) -> str:
+        return ', '.join([
+            f'ignore_index={self.ignore_index}',
+            f'label_smoothing={self.label_smoothing}',
+        ])
 
-        weight = (target != self.ignore_index).to(dtype=loss.dtype)
-        weight = weight.sum().detach().cpu().item()
-        weights = all_gather_object(weight)
+    def forward(self, tensor: Tensor, labels: Tensor) -> Tensor:
+        loss = super(CrossEntropyLoss, self).forward(
+            tensor.flatten(end_dim=-2),
+            labels.flatten(end_dim=-1),
+        )
 
-        return loss * (sum(weights) / (len(weights) * weight))
+        mask = labels != self.ignore_index
+        scaling = get_scaling(mask.long().sum().detach().cpu().item())
+
+        return loss * scaling
