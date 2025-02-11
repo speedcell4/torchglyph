@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from typing import Any, List, Union
 
-from torch import distributed
+from torch import Tensor, distributed
 
 
 def get_rank() -> int:
@@ -39,6 +39,21 @@ def all_gather_object(obj: Any, world_size: int = None) -> List[Any]:
         return object_list
 
     return [obj]
+
+
+def all_gather(tensor: Tensor, world_size: int = None) -> List[Tensor]:
+    if distributed.is_initialized():
+        if world_size is None:
+            world_size = distributed.get_world_size()
+
+        tensor_list = [
+            tensor.new_empty(size)
+            for size in all_gather_object(tuple(tensor.size()), world_size=world_size)
+        ]
+        distributed.all_gather(tensor_list=tensor_list, tensor=tensor)
+        return tensor_list
+
+    return [tensor]
 
 
 def load_json(path: Union[Path, str]) -> Any:
