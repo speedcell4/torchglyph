@@ -2,12 +2,15 @@ import functools
 import json
 import random
 import socket
+import warnings
 from logging import getLogger
 from pathlib import Path
 from typing import Any, List, Union
 
 import numpy as np
 import torch
+from datasets.fingerprint import Hasher
+from filelock import FileLock
 from torch import Tensor, distributed
 
 SOTA_FILENAME = 'sota.json'
@@ -91,6 +94,34 @@ def save_args(obj: Any, *, out_dir: Path) -> None:
 @master_only
 def save_sota(obj: Any, *, out_dir: Path) -> None:
     return save_json(path=out_dir / SOTA_FILENAME, obj=obj)
+
+
+def hash_kwargs(**kwargs) -> str:
+    hasher = Hasher()
+
+    for key, value in sorted(kwargs.items()):
+        hasher.update(key)
+        hasher.update(value)
+
+    return hasher.hexdigest()
+
+
+def init_dir(study: str, *, project_out_dir: Path, **kwargs) -> Path:
+    out_dir = project_out_dir / study / hash_kwargs(**kwargs)
+
+    if is_master_process():
+        with FileLock(project_out_dir / '.lock'):
+            try:
+                out_dir.parent.mkdir(parents=True, exist_ok=study == 'demo')
+                save_args(obj=kwargs, out_dir=out_dir)
+            except FileExistsError:
+                warnings.warn('duplicated experiment')
+                exit()
+
+    if distributed.is_initialized():
+        distributed.barrier()
+
+    return out_dir
 
 
 def init_seed(seed: int = 42) -> None:
