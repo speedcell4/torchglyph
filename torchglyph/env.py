@@ -1,6 +1,7 @@
 import functools
 import json
 import random
+import socket
 from logging import getLogger
 from pathlib import Path
 from typing import Any, List, Union
@@ -8,6 +9,9 @@ from typing import Any, List, Union
 import numpy as np
 import torch
 from torch import Tensor, distributed
+
+SOTA_FILENAME = 'sota.json'
+ARGS_FILENAME = 'args.json'
 
 logger = getLogger(__name__)
 
@@ -74,19 +78,23 @@ def load_json(path: Union[Path, str]) -> Any:
         return json.load(fp=fp)
 
 
-load_json_master_only = master_only(load_json)
-
-
-def dump_json(path: Union[Path, str], obj: Any) -> None:
+def save_json(path: Union[Path, str], obj: Any) -> None:
     with Path(path).open(mode='w', encoding='utf-8') as fp:
         json.dump(obj, fp=fp, indent=2, ensure_ascii=False)
 
 
-dump_json_master_only = master_only(dump_json)
+@master_only
+def save_args(obj: Any, *, out_dir: Path) -> None:
+    return save_json(path=out_dir / ARGS_FILENAME, obj=obj)
+
+
+@master_only
+def save_sota(obj: Any, *, out_dir: Path) -> None:
+    return save_json(path=out_dir / SOTA_FILENAME, obj=obj)
 
 
 def init_seed(seed: int = 42) -> None:
-    rank = get_local_rank()
+    rank = get_rank()
     seed = seed + rank
 
     random.seed(seed)
@@ -99,4 +107,4 @@ def init_seed(seed: int = 42) -> None:
     if distributed.is_initialized():
         distributed.barrier()
 
-    return logger.warning(f'#{rank}.seed <- {seed}')
+    return logger.warning(f'#{rank} ({socket.gethostname()}-{get_local_rank()}) <- {seed}')
