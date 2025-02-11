@@ -1,7 +1,7 @@
 import functools
 import json
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, List, Union
 
 from torch import distributed
 
@@ -27,6 +27,18 @@ def master_only(fn):
             return fn(*args, **kwargs)
 
     return _fn
+
+
+def all_gather_object(obj: Any, world_size: int = None) -> List[Any]:
+    if distributed.is_initialized():
+        if world_size is None:
+            world_size = distributed.get_world_size()
+
+        object_list = [None for _ in range(world_size)]
+        distributed.all_gather_object(object_list=object_list, obj=obj)
+        return object_list
+
+    return [obj]
 
 
 def load_json(path: Union[Path, str]) -> Any:
