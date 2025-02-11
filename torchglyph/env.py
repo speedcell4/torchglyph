@@ -1,14 +1,27 @@
 import functools
 import json
+import random
+from logging import getLogger
 from pathlib import Path
 from typing import Any, List, Union
 
+import numpy as np
+import torch
 from torch import Tensor, distributed
+
+logger = getLogger(__name__)
 
 
 def get_rank() -> int:
     if distributed.is_initialized():
         return distributed.get_rank()
+
+    return 0
+
+
+def get_local_rank() -> int:
+    if distributed.is_initialized():
+        return distributed.get_node_local_rank()
 
     return 0
 
@@ -70,3 +83,20 @@ def dump_json(path: Union[Path, str], obj: Any) -> None:
 
 
 dump_json_master_only = master_only(dump_json)
+
+
+def init_seed(seed: int = 42) -> None:
+    rank = get_local_rank()
+    seed = seed + rank
+
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+
+    if distributed.is_initialized():
+        distributed.barrier()
+
+    return logger.warning(f'#{rank}.seed <- {seed}')
