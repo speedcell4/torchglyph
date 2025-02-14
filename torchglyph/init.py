@@ -12,7 +12,7 @@ from filelock import FileLock
 from torch import distributed
 
 from torchglyph import DEBUG
-from torchglyph.dist import get_device, logger
+from torchglyph.env import get_device, logger
 from torchglyph.logger import init_logger
 from torchglyph.serde import get_cache, save_args
 

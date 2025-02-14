@@ -7,7 +7,7 @@ import torch
 from torch import Tensor, nn
 from torchmetrics import Metric, MetricCollection
 
-from torchglyph.dist import is_master
+from torchglyph.env import is_master_process
 from torchglyph.serde import save_sota
 
 logger = getLogger(__name__)
@@ -72,7 +72,7 @@ class Meter(nn.Module):
                 msg = ' | '.join(f'{key} {value}' for key, value in values.items())
                 logger.info(f'{desc} {step} => {msg}')
 
-                if out_dir is not None and is_master():
+                if out_dir is not None and is_master_process():
                     save_sota(out_dir=out_dir, step=step, **{
                         f'{desc}-{key}': value
                         for key, value in values.items()
