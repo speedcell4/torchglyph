@@ -13,6 +13,8 @@ from datasets.fingerprint import Hasher
 from filelock import FileLock
 from torch import Tensor, distributed
 
+from torchglyph.logger import init_logger
+
 SOTA_FILENAME = 'sota.json'
 ARGS_FILENAME = 'args.json'
 
@@ -31,6 +33,13 @@ def get_local_rank() -> int:
         return distributed.get_node_local_rank()
 
     return 0
+
+
+def get_device() -> torch.device:
+    if not torch.cuda.is_initialized():
+        return torch.device('cpu')
+
+    return torch.device(f'cuda:{get_local_rank()}')
 
 
 def is_master_process() -> bool:
@@ -112,7 +121,7 @@ def init_dir(study: str, *, project_out_dir: Path, **kwargs) -> Path:
     if is_master_process():
         with FileLock(project_out_dir / '.lock'):
             try:
-                out_dir.parent.mkdir(parents=True, exist_ok=study == 'demo')
+                out_dir.mkdir(parents=True, exist_ok=study == 'demo')
                 save_args(obj=kwargs, out_dir=out_dir)
             except FileExistsError:
                 warnings.warn('duplicated experiment')
@@ -124,8 +133,7 @@ def init_dir(study: str, *, project_out_dir: Path, **kwargs) -> Path:
     return out_dir
 
 
-def init_seed(seed: int = 42) -> None:
-    rank = get_rank()
+def init_seed(seed: int = 42, *, rank: int) -> None:
     seed = seed + rank
 
     random.seed(seed)
@@ -138,4 +146,15 @@ def init_seed(seed: int = 42) -> None:
     if distributed.is_initialized():
         distributed.barrier()
 
-    return logger.warning(f'#{rank} ({socket.gethostname()}-{get_local_rank()}) <- {seed}')
+    logger.warning(f'#{rank} ({socket.gethostname()}-{get_local_rank()}) <- {seed}')
+
+
+def init_process_group(study: str, seed: int = 42, *, project_out_dir: Path, **kwargs):
+    distributed.init_process_group('nccl')
+    torch.cuda.set_device(get_local_rank())
+
+    out_dir = init_dir(study=study, project_out_dir=project_out_dir, **kwargs)
+    init_logger(out_dir=out_dir, rank=get_rank())
+    init_seed(seed=seed, rank=get_rank())
+
+    return out_dir, get_device()
