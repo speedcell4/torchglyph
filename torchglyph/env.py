@@ -117,13 +117,13 @@ def hash_kwargs(**kwargs) -> str:
 
 
 def init_dir(study: str, *, project_out_dir: Path, **kwargs) -> Path:
-    out_dir = project_out_dir / study / hash_kwargs(**kwargs)
+    out_dir = project_out_dir / study / hash_kwargs(**kwargs['@aku'])
 
     if is_master_process():
         with FileLock(project_out_dir / '.lock'):
             try:
                 out_dir.mkdir(parents=True, exist_ok=study == 'demo')
-                save_args(obj=kwargs, out_dir=out_dir)
+                save_args(obj=kwargs['@aku'], out_dir=out_dir)
             except FileExistsError:
                 warnings.warn('duplicated experiment')
                 exit()
