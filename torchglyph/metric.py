@@ -48,6 +48,8 @@ class HashMetric(MetricCollection):
         super(HashMetric, self).__init__({
             'pos': MeanMetric(),
             'neg': MeanMetric(),
+            'code': MeanMetric(),
+            'target': MeanMetric(),
             'unique': MeanMetric(),
         })
 
@@ -57,16 +59,25 @@ class HashMetric(MetricCollection):
 
         n, *_ = torch.unique(x, dim=0).size()
         m, *_ = torch.unique(t1, dim=0).size()
+        self['code'].update(n)
+        self['target'].update(m)
         self['unique'].update(n / m, m)
 
         n, *_ = torch.unique(y, dim=0).size()
         m, *_ = torch.unique(t2, dim=0).size()
+        self['code'].update(n)
+        self['target'].update(m)
         self['unique'].update(n / m, m)
 
     def compute(self):
+        info = super(HashMetric, self).compute()
+
         return {
-            key: value * 100.
-            for key, value in super(HashMetric, self).compute().items()
+            'pos': info['pos'] * 100.,
+            'neg': info['neg'] * 100.,
+            'unique': info['unique'] * 100.,
+            'code': info['code'],
+            'target': info['target'],
         }
 
 
