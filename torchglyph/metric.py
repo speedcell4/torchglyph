@@ -26,9 +26,9 @@ class TensorMetric(MetricCollection):
 class SeqMetric(MetricCollection):
     def __init__(self) -> None:
         super(SeqMetric, self).__init__({
-            'snt': MeanMetric(),
-            'tok': MeanMetric(),
-            'len': MeanMetric(),
+            'spb': MeanMetric(),  # number of sentences per batch
+            'tpb': MeanMetric(),  # number of tokens per batch
+            'tps': MeanMetric(),  # number of tokens per sentence
             'min': MinMetric(),
             'max': MaxMetric(),
         })
@@ -36,9 +36,9 @@ class SeqMetric(MetricCollection):
     def update(self, sequence: Z) -> None:
         _, token_sizes = sequence.idx().cat()
 
-        self['snt'].update(token_sizes.size()[0])
-        self['tok'].update(token_sizes.sum())
-        self['len'].update(token_sizes)
+        self['spb'].update(token_sizes.size()[0])
+        self['tpb'].update(token_sizes.sum())
+        self['tps'].update(token_sizes)
         self['min'].update(token_sizes)
         self['max'].update(token_sizes)
 
@@ -48,9 +48,9 @@ class HashMetric(MetricCollection):
         super(HashMetric, self).__init__({
             'pos': MeanMetric(),
             'neg': MeanMetric(),
-            'code': MeanMetric(),
-            'target': MeanMetric(),
-            'unique': MeanMetric(),
+            'cpb': MeanMetric(),  # number of unique codes per batch
+            'tpb': MeanMetric(),  # number of unique tokens per batch
+            'unq': MeanMetric(),
         })
 
     def update(self, x: Tensor, y: Tensor, t1: Tensor, t2: Tensor) -> None:
@@ -59,15 +59,15 @@ class HashMetric(MetricCollection):
 
         n, *_ = torch.unique(x, dim=0).size()
         m, *_ = torch.unique(t1, dim=0).size()
-        self['code'].update(n)
-        self['target'].update(m)
-        self['unique'].update(n / m, m)
+        self['cpb'].update(n)
+        self['tpb'].update(m)
+        self['unq'].update(n / m, m)
 
         n, *_ = torch.unique(y, dim=0).size()
         m, *_ = torch.unique(t2, dim=0).size()
-        self['code'].update(n)
-        self['target'].update(m)
-        self['unique'].update(n / m, m)
+        self['cpb'].update(n)
+        self['tpb'].update(m)
+        self['unq'].update(n / m, m)
 
     def compute(self):
         info = super(HashMetric, self).compute()
@@ -75,9 +75,9 @@ class HashMetric(MetricCollection):
         return {
             'pos': info['pos'] * 100.,
             'neg': info['neg'] * 100.,
-            'unique': info['unique'] * 100.,
-            'code': info['code'],
-            'target': info['target'],
+            'cpb': info['cpb'],
+            'tpb': info['tpb'],
+            'unq': info['unq'] * 100.,
         }
 
 
