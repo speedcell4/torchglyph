@@ -46,38 +46,38 @@ class SeqMetric(MetricCollection):
 class HashMetric(MetricCollection):
     def __init__(self) -> None:
         super(HashMetric, self).__init__({
-            'pos': MeanMetric(),
-            'neg': MeanMetric(),
-            'cpb': MeanMetric(),  # number of unique codes per batch
-            'tpb': MeanMetric(),  # number of unique tokens per batch
-            'unq': MeanMetric(),
+            'same': MeanMetric(),
+            'diff': MeanMetric(),
+            'code': MeanMetric(),  # number of unique codes per batch
+            'target': MeanMetric(),  # number of unique tokens per batch
+            'unique': MeanMetric(),
         })
 
     def update(self, x: Tensor, y: Tensor, t1: Tensor, t2: Tensor) -> None:
-        self['pos'].update((x[:, None] == y[None, :])[t1[:, None] == t2[None, :]].float())
-        self['neg'].update((x[:, None] != y[None, :])[t1[:, None] != t2[None, :]].float())
+        self['same'].update((x[:, None] == y[None, :])[t1[:, None] == t2[None, :]].float())
+        self['diff'].update((x[:, None] != y[None, :])[t1[:, None] != t2[None, :]].float())
 
         n, *_ = torch.unique(x, dim=0).size()
         m, *_ = torch.unique(t1, dim=0).size()
-        self['cpb'].update(n)
-        self['tpb'].update(m)
-        self['unq'].update(n / m, m)
+        self['code'].update(n)
+        self['target'].update(m)
+        self['unique'].update(n / m, m)
 
         n, *_ = torch.unique(y, dim=0).size()
         m, *_ = torch.unique(t2, dim=0).size()
-        self['cpb'].update(n)
-        self['tpb'].update(m)
-        self['unq'].update(n / m, m)
+        self['code'].update(n)
+        self['target'].update(m)
+        self['unique'].update(n / m, m)
 
     def compute(self):
         info = super(HashMetric, self).compute()
 
         return {
-            'pos': info['pos'] * 100.,
-            'neg': info['neg'] * 100.,
-            'cpb': info['cpb'],
-            'tpb': info['tpb'],
-            'unq': info['unq'] * 100.,
+            'same': info['same'],
+            'diff': info['diff'],
+            'code': info['code'],
+            'target': info['target'],
+            'unique': info['unique'],
         }
 
 
