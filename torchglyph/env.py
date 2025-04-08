@@ -147,9 +147,6 @@ def init_seed(seed: int = 42, *, rank: int) -> None:
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    if distributed.is_initialized():
-        distributed.barrier()
-
     logger.warning(f'#{rank} ({socket.gethostname()}-{get_local_rank()}) <- {seed}')
 
 
