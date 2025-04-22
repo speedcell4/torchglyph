@@ -153,7 +153,7 @@ def init_seed(seed: int = 42, *, rank: int) -> None:
 def init_process_group(study: str, seed: int = 42, *, project_out_dir: Path, **kwargs):
     if 'LOCAL_RANK' in os.environ:
         distributed.init_process_group('nccl')
-        torch.cuda.set_device(get_local_rank())
+        torch.cuda.set_device(int(os.environ['LOCAL_RANK']))
 
     out_dir = init_dir(study=study, project_out_dir=project_out_dir, **kwargs)
     init_logger(out_dir=out_dir, rank=get_rank())
