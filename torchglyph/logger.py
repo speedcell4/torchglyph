@@ -49,7 +49,7 @@ def init_logger(*, out_dir: Path, rank: int) -> None:
     if rank == 0:
         level = logging.DEBUG if DEBUG else logging.INFO
     else:
-        level = logging.DEBUG if DEBUG else logging.WARNING
+        level = logging.DEBUG if DEBUG else logging.CRITICAL
 
     clear_root(level=level)
 
