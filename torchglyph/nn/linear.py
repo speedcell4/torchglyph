@@ -1,8 +1,7 @@
-from typing import Tuple, Type, Union
-
 import torch
 from torch import Tensor, nn
 from torch.nn import init
+from typing import Tuple, Type, Union
 
 
 class Linear(nn.Module):

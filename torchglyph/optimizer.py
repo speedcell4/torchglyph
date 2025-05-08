@@ -1,7 +1,7 @@
 from logging import getLogger
-from typing import Set, Tuple, Type, Union
 
 from torch import nn, optim
+from typing import Set, Tuple, Type, Union
 
 logger = getLogger(__name__)
 

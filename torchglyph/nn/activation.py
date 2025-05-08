@@ -1,6 +1,5 @@
-from typing import Type, Union
-
 from torch import nn
+from typing import Type, Union
 
 
 class Identity(nn.Identity):

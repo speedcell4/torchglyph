@@ -1,9 +1,8 @@
 import os
 import platform
 import socket
-from pathlib import Path
-
 from matplotlib import pyplot as plt
+from pathlib import Path
 
 data_dir = (Path.home() / '.cache' / 'torchglyph').resolve()
 if not data_dir.exists():

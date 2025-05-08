@@ -1,7 +1,6 @@
-from typing import IO, Tuple
-
 import torch
 from tqdm import tqdm
+from typing import IO, Tuple
 
 
 def loads_meta(string: str, *, sep: str = ' ') -> Tuple[int, int]:

@@ -1,7 +1,6 @@
-from typing import List
-
 import torch
 from torch import Tensor
+from typing import List
 
 
 def get_shape(shape: torch.Size, dim: int, value: int) -> torch.Size:

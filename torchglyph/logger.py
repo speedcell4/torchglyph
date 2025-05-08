@@ -1,9 +1,9 @@
-import logging
-import sys
 from logging import getLogger
-from pathlib import Path
 
 import colorlog
+import logging
+import sys
+from pathlib import Path
 
 from torchglyph import DEBUG
 

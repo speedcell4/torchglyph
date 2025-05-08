@@ -1,10 +1,9 @@
-from typing import Any, Dict, List, Tuple
-
 import torch
 from torch import Tensor
 from torchmetrics import MaxMetric, MeanMetric, MetricCollection, MinMetric
 from torchmetrics.text import SacreBLEUScore as _SacreBLEUScore
 from torchrua import Z
+from typing import Any, Dict, List, Tuple
 
 
 class TensorMetric(MetricCollection):
