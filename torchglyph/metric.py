@@ -1,9 +1,10 @@
+from typing import Any, Dict, List, Tuple
+
 import torch
 from torch import Tensor
 from torchmetrics import MaxMetric, MeanMetric, MetricCollection, MinMetric
 from torchmetrics.text import SacreBLEUScore as _SacreBLEUScore
 from torchrua import Z
-from typing import Any, Dict, List, Tuple
 
 
 class TensorMetric(MetricCollection):
@@ -49,34 +50,26 @@ class HashMetric(MetricCollection):
             'diff': MeanMetric(),
             'code': MeanMetric(),  # number of unique codes per batch
             'target': MeanMetric(),  # number of unique tokens per batch
-            'unique': MeanMetric(),
         })
 
-    def update(self, x: Tensor, y: Tensor, t1: Tensor, t2: Tensor) -> None:
-        self['same'].update((x[:, None] == y[None, :])[t1[:, None] == t2[None, :]].float())
-        self['diff'].update((x[:, None] != y[None, :])[t1[:, None] != t2[None, :]].float())
+    def update(self, x: Tensor, ys: Tensor, l: Tensor, r: Tensor) -> None:
+        self['same'].update((x[:, None] == ys[None, :])[l[:, None] == r[None, :]].float())
+        self['diff'].update((x[:, None] != ys[None, :])[l[:, None] != r[None, :]].float())
 
         n, *_ = torch.unique(x, dim=0).size()
-        m, *_ = torch.unique(t1, dim=0).size()
+        m, *_ = torch.unique(l, dim=0).size()
         self['code'].update(n)
         self['target'].update(m)
-        self['unique'].update(n / m, m)
-
-        n, *_ = torch.unique(y, dim=0).size()
-        m, *_ = torch.unique(t2, dim=0).size()
-        self['code'].update(n)
-        self['target'].update(m)
-        self['unique'].update(n / m, m)
 
     def compute(self):
         info = super(HashMetric, self).compute()
 
         return {
-            'same': info['same'],
-            'diff': info['diff'],
+            'same': info['same'] * 100.,
+            'diff': info['diff'] * 100.,
             'code': info['code'],
             'target': info['target'],
-            'unique': info['unique'],
+            'unique': info['code'] * 100. / info['target'],
         }
 
 
