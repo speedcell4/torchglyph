@@ -1,6 +1,7 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 import torch
+from sacremoses import MosesTokenizer
 from torch import Tensor
 from torchmetrics import MaxMetric, MeanMetric, MetricCollection, MinMetric, text
 from torchrua import Z
@@ -94,8 +95,21 @@ class CHRFScore(text.CHRFScore):
 
 
 class BLEUScore(text.BLEUScore):
-    def __init__(self):
+    def __init__(self, lang: str):
         super(BLEUScore, self).__init__()
+        self.tokenizer = MosesTokenizer(lang=lang)
+
+    def update(self, preds: Sequence[str], target: Sequence[Sequence[str]]) -> None:
+        return super(BLEUScore, self).update(
+            preds=[
+                self.tokenizer.tokenize(t, aggressive_dash_splits=True, return_str=True)
+                for t in preds
+            ],
+            target=[
+                [self.tokenizer.tokenize(t, aggressive_dash_splits=True, return_str=True) for t in ts]
+                for ts in target
+            ],
+        )
 
     def compute(self) -> Tensor:
         return super(BLEUScore, self).compute() * 100.

@@ -16,3 +16,4 @@ torchglyph
 setuptools
 torchmetrics
 accelerate
+sacremoses
