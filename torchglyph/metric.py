@@ -2,8 +2,7 @@ from typing import Any, Dict, List, Tuple
 
 import torch
 from torch import Tensor
-from torchmetrics import MaxMetric, MeanMetric, MetricCollection, MinMetric
-from torchmetrics.text import SacreBLEUScore as _SacreBLEUScore
+from torchmetrics import MaxMetric, MeanMetric, MetricCollection, MinMetric, text
 from torchrua import Z
 
 
@@ -86,7 +85,15 @@ class Accuracy(MeanMetric):
         return super(Accuracy, self).compute() * 100.
 
 
-class SacreBLEUScore(_SacreBLEUScore):
+class BLEUScore(text.BLEUScore):
+    def __init__(self):
+        super(BLEUScore, self).__init__()
+
+    def compute(self) -> Tensor:
+        return super(BLEUScore, self).compute() * 100.
+
+
+class SacreBLEUScore(text.SacreBLEUScore):
     def __init__(self, lang: str):
         tokenize = {
             'zh': 'zh',
