@@ -85,6 +85,14 @@ class Accuracy(MeanMetric):
         return super(Accuracy, self).compute() * 100.
 
 
+class CHRFScore(text.CHRFScore):
+    def __init__(self):
+        super(CHRFScore, self).__init__()
+
+    def compute(self) -> Tensor:
+        return super(CHRFScore, self).compute() * 100.
+
+
 class BLEUScore(text.BLEUScore):
     def __init__(self):
         super(BLEUScore, self).__init__()
