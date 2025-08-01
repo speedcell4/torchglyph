@@ -1,14 +1,15 @@
-import numpy as np
 import os
 import random
 import socket
-import torch
 import warnings
 from datetime import datetime
-from filelock import FileLock
 from pathlib import Path
-from torch import distributed
 from typing import Type, Union
+
+import numpy as np
+import torch
+from filelock import FileLock
+from torch import distributed
 
 from torchglyph import DEBUG
 from torchglyph.env import get_device, logger
@@ -43,6 +44,11 @@ def get_port() -> int:
 def init_process_group(*, rank: int, port: int) -> None:
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = f'{port}'
+
+    os.environ["WORLD_SIZE"] = str(torch.cuda.device_count())
+    os.environ["RANK"] = str(rank)
+    os.environ["LOCAL_RANK"] = str(rank)
+
     distributed.init_process_group(
         backend='nccl', init_method=f'env://',
         world_size=torch.cuda.device_count(), rank=rank,

@@ -147,7 +147,7 @@ def init_seed(seed: int = 42, *, rank: int) -> None:
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    logger.warning(f'#{rank} ({socket.gethostname()}-{get_local_rank()}) <- {seed}')
+    logger.warning(f'#{rank} ({socket.gethostname()}) <- {seed}')
 
 
 def init_process_group(study: str, seed: int = 42, *, project_out_dir: Path, **kwargs):
