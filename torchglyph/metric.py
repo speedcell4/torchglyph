@@ -52,12 +52,12 @@ class HashMetric(MetricCollection):
             'target': MeanMetric(),  # number of unique tokens per batch
         })
 
-    def update(self, x: Tensor, ys: Tensor, l: Tensor, r: Tensor) -> None:
-        self['same'].update((x[:, None] == ys[None, :])[l[:, None] == r[None, :]].float())
-        self['diff'].update((x[:, None] != ys[None, :])[l[:, None] != r[None, :]].float())
+    def update(self, l1: Tensor, l2s: Tensor, t1: Tensor, t2s: Tensor) -> None:
+        self['same'].update((l1[:, None] == l2s[None, :])[t1[:, None] == t2s[None, :]].float())
+        self['diff'].update((l1[:, None] != l2s[None, :])[t1[:, None] != t2s[None, :]].float())
 
-        n, *_ = torch.unique(x, dim=0).size()
-        m, *_ = torch.unique(l, dim=0).size()
+        n, *_ = torch.unique(l1, dim=0).size()
+        m, *_ = torch.unique(t1, dim=0).size()
         self['code'].update(n)
         self['target'].update(m)
 
