@@ -24,23 +24,26 @@ class TensorMetric(MetricCollection):
 
 
 class SeqMetric(MetricCollection):
-    def __init__(self) -> None:
+    def __init__(self, unk_token_id: int = -100) -> None:
         super(SeqMetric, self).__init__({
             'spb': MeanMetric(),  # number of sentences per batch
             'tpb': MeanMetric(),  # number of tokens per batch
             'tps': MeanMetric(),  # number of tokens per sentence
             'min': MinMetric(),
             'max': MaxMetric(),
+            'unk': MeanMetric(),
         })
+        self.unk_token_id = unk_token_id
 
     def update(self, sequence: Z) -> None:
-        _, token_sizes = sequence.idx().cat()
+        data, token_sizes = sequence.idx().cat()
 
         self['spb'].update(token_sizes.size()[0])
         self['tpb'].update(token_sizes.sum())
         self['tps'].update(token_sizes)
         self['min'].update(token_sizes)
         self['max'].update(token_sizes)
+        self['unk'].update((data == self.unk_token_id).float() * 100)
 
 
 class HashMetric(MetricCollection):
