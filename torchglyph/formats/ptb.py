@@ -1,7 +1,8 @@
-from nltk import Tree
-from nltk.corpus import BracketParseCorpusReader
 from pathlib import Path
 from typing import List
+
+from nltk import Tree
+from nltk.corpus import BracketParseCorpusReader
 
 PTB_UNESCAPE_MAPPING = {
     "«": '"',

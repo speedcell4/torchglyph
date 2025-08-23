@@ -1,10 +1,10 @@
-from logging import getLogger
-
 from abc import ABCMeta
-from datasets import Dataset, DownloadConfig, DownloadManager
+from logging import getLogger
 from pathlib import Path
-from torch.utils import data
 from typing import List, Tuple
+
+from datasets import Dataset, DownloadConfig, DownloadManager
+from torch.utils import data
 
 from torchglyph import data_dir
 from torchglyph.data.sampler import RandomSortishSampler, SequentialSortishSampler, SortishBatchSampler

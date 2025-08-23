@@ -1,5 +1,6 @@
-from transformers import PreTrainedTokenizer
 from typing import List, Union
+
+from transformers import PreTrainedTokenizer
 
 
 def tokenize_sequence(text: str, *, tokenizer: PreTrainedTokenizer, max_length: int = None,

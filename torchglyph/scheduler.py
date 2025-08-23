@@ -1,7 +1,7 @@
 from logging import getLogger
+from typing import Type, Union
 
 from torch.optim import Optimizer, lr_scheduler
-from typing import Type, Union
 
 from torchglyph import DEBUG
 

@@ -1,11 +1,11 @@
 from logging import getLogger
-
-import torch
 from numbers import Number
 from pathlib import Path
+from typing import Tuple, Union
+
+import torch
 from torch import Tensor, nn
 from torchmetrics import Metric, MetricCollection
-from typing import Tuple, Union
 
 from torchglyph.env import is_master_process
 from torchglyph.serde import save_sota

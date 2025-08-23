@@ -1,6 +1,7 @@
+from typing import Type, Union
+
 from torch import Tensor, autocast
 from torch.amp import GradScaler
-from typing import Type, Union
 
 
 class amp(object):

@@ -1,9 +1,9 @@
-from logging import getLogger
-
 from functools import singledispatch
+from logging import getLogger
+from typing import List, Union
+
 from torch import nn
 from transformers import AutoConfig, AutoModel, AutoTokenizer, PreTrainedModel, PreTrainedTokenizer, PretrainedConfig
-from typing import List, Union
 
 from torchglyph.nn.plm import utils
 
